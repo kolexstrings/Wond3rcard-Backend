@@ -1,0 +1,217 @@
+import mongoose from "mongoose";
+import HttpException from "../../exceptions/http.exception";
+import logger from "../../services/logger/logger";
+import userModel from "../user/user.model";
+import organizationModel from "./organization.model";
+import { Organization, OrganizationMember, TeamRole } from "./organization.protocol";
+
+class OrganizationService {
+
+  private org = organizationModel;
+
+  public async createOrganization(
+    creatorId: string,
+    name: string,
+    members: OrganizationMember[] = []
+  ): Promise<Organization> {
+    try {
+      const defaultMember: OrganizationMember = {
+        memberId: creatorId,
+        organizationId: '',
+        role: TeamRole.Lead,
+      };
+
+      const organization = await this.org.create({
+        creatorId,
+        name,
+        members: [defaultMember, ...members],
+      });
+
+      organization.members = organization.members.map((member) => ({
+        ...member,
+        organizationId: organization.id,
+      }));
+
+      await organization.save();
+
+      const creator = await userModel.findById(creatorId);
+      if (!creator) {
+        throw new HttpException(404, 'User Not Found', 'The creator does not exist');
+      }
+
+      if (!creator.organizations.includes(organization.id)) {
+        creator.organizations.push(organization.id);
+        await creator.save();
+      }
+
+      return organization;
+    } catch (error) {
+      throw new HttpException(500, 'failed', `Unable to create organization: ${error.message}`);
+    }
+  }
+
+  public async getUserOrganizations(userId: string): Promise<Organization[]> {
+    try {
+      const organizations = await this.org.find({
+        $or: [
+          { creatorId: userId },
+          { 'members.memberId': userId },
+        ],
+      });
+
+      return organizations;
+    } catch (error) {
+      logger.error(`Failed to retrieve organizations for user: ${userId}`);
+      throw new HttpException(500, 'failed', 'Unable to retrieve organizations');
+    }
+  }
+
+  public async addMemberToOrganization(
+    orgId: string,
+    memberId: string,
+    role: TeamRole
+  ): Promise<Organization> {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(orgId)) {
+        throw new HttpException(400, "Bad Request", "Invalid organization ID format");
+      }
+
+      const organization = await this.org.findById(orgId);
+
+      if (!organization) {
+        throw new HttpException(404, "Not Found", "Organization not found");
+      }
+
+      const isAlreadyMember = organization.members.some(
+        (member) => member.memberId === memberId
+      );
+
+      if (isAlreadyMember) {
+        throw new HttpException(409, "Conflict", "Member already exists in the organization");
+      }
+
+      const newMember: OrganizationMember = { memberId, organizationId: orgId, role };
+      organization.members.push(newMember);
+
+      await organization.save();
+
+      return organization;
+    } catch (error) {
+      throw new HttpException(500, "Failed", `Error adding member: ${error.message}`);
+    }
+  }
+
+  public async getMembersOfOrganization(orgId: string): Promise<OrganizationMember[]> {
+    try {
+      const organization = await this.org.findById(orgId);
+
+      if (!organization) {
+        throw new HttpException(404, 'not_found', 'Organization not found');
+      }
+
+      return organization.members || [];
+    } catch (error) {
+      throw new HttpException(500, 'failed', `Error retrieving members: ${error.message}`);
+    }
+  }
+
+  public async changeMemberRole(
+    orgId: string,
+    memberId: string,
+    newRole: TeamRole
+  ): Promise<Organization> {
+    try {
+      const organization = await this.org.findById(orgId);
+
+      if (!organization) {
+        throw new HttpException(404, 'not_found', 'Organization not found');
+      }
+
+      const member = organization.members?.find((m) => m.memberId === memberId);
+
+      if (!member) {
+        throw new HttpException(404, 'not_found', 'Member not found in the organization');
+      }
+
+      member.role = newRole;
+
+      await organization.save();
+
+      return organization;
+    } catch (error) {
+      throw new HttpException(500, 'failed', `Error changing member role: ${error.message}`);
+    }
+  }
+
+  public async removeMember(
+    orgId: string,
+    memberId: string
+  ): Promise<Organization> {
+    try {
+      const organization = await this.org.findById(orgId);
+
+      if (!organization) {
+        throw new HttpException(404, 'not_found', 'Organization not found');
+      }
+
+      const initialMemberCount = organization.members?.length || 0;
+
+      organization.members = organization.members?.filter((m) => m.memberId !== memberId);
+
+      if (organization.members?.length === initialMemberCount) {
+        throw new HttpException(404, 'not_found', 'Member not found in the organization');
+      }
+
+      await organization.save();
+
+      return organization;
+    } catch (error) {
+      throw new HttpException(500, 'failed', `Error removing member: ${error.message}`);
+    }
+  }
+
+  public async deleteOrganization(orgId: string): Promise<void> {
+    try {
+      const organization = await this.org.findById(orgId);
+
+      if (!organization) {
+        throw new HttpException(404, 'not_found', 'Organization not found');
+      }
+
+      await this.org.findByIdAndDelete(orgId);
+    } catch (error) {
+      throw new HttpException(500, 'failed', `Error deleting organization: ${error.message}`);
+    }
+  }
+
+  public async updateOrganization(
+    orgId: string,
+    updates: Partial<Organization>
+  ): Promise<Organization> {
+    try {
+      const organization = await this.org.findById(orgId);
+
+      if (!organization) {
+        throw new HttpException(404, 'not_found', 'Organization not found');
+      }
+
+      Object.assign(organization, updates);
+      await organization.save();
+
+      return organization;
+    } catch (error) {
+      throw new HttpException(500, 'failed', `Error updating organization: ${error.message}`);
+    }
+  }
+
+  public async getAllOrganizations() {
+    try {
+      const organizations = await this.org.find();
+      return organizations
+    } catch (error) {
+      throw new HttpException(500, 'failed', `Error retrieving organizations: ${error.message}`);
+    }
+  }
+}
+
+export default OrganizationService

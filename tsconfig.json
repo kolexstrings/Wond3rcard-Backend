@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "module": "commonjs",
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "outDir": "dist",
+    "sourceMap": true,
+    "strict": false,
+    "target": "es2017",
+    "resolveJsonModule": true,
+    "skipLibCheck": false,
+    "lib": ["es5", "es6", "dom", "dom.iterable"]
+  },
+  "compileOnSave": true,
+  "include": ["src"],
+  "exclude": ["node_modules"],
+  "files": ["./src/utils/definitions/custom.d.ts"]
+}
