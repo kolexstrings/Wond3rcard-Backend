@@ -3,22 +3,27 @@ import { OrganizationMember } from "../organization/organization.protocol";
 
 enum UserStatus {
   Active = "active",
+  Suspended = "suspended",
   Banned = "banned",
-  Suspended = "suspended"
 }
 
 enum UserRole {
-  normal = "normal",
-  premium = "premium",
   admin = "admin",
-  team = "team",
-  business = "business"
+  staff = "staff",
+  customer = "customer",
 }
 
+enum UserTiers {
+  basic = "basic",
+  premium = "premium",
+  business = "business",
+}
+
+//we need to completely replace UserType in the code base
 enum UserType {
   Customer = "customer",
   Admin = "admin",
-  Moderator = "moderator"
+  Moderator = "moderator",
 }
 
 interface User extends Document {
@@ -34,15 +39,12 @@ interface User extends Document {
   isSoftDeleted: boolean;
   isVerified: boolean;
   refreshToken: string;
-  userType: UserType;
+  userTiers: UserTiers;
   organizations: OrganizationMember[];
-  paystackCustomerId: string,
-  stripeCustomerId: string
-
-
+  paystackCustomerId: string;
+  stripeCustomerId: string;
 
   isValidPassword(password: string): Promise<Error | boolean>;
 }
 
-export { User, UserRole, UserStatus, UserType };
-
+export { User, UserRole, UserStatus, UserTiers };
