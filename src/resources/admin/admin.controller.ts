@@ -78,7 +78,6 @@ class AdminController implements GlobalController {
       next(error);
     }
   };
-
   private assignGlobal2FA = async (
     req: Request,
     res: Response,
@@ -86,9 +85,9 @@ class AdminController implements GlobalController {
   ): Promise<Response | void> => {
     try {
       const response = await this.adminService.enable2FAGlobally();
-      return res.status(201).json({ message: response });
+      return res.status(201).json({ message: "Global 2FA enabled", response });
     } catch (error) {
-      next(error);
+      next(new HttpException(500, "Internal Server Error", error.message));
     }
   };
 }
