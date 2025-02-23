@@ -1,11 +1,16 @@
 import { NextFunction, Request, Response, Router } from "express";
 import HttpException from "../../exceptions/http.exception";
 import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
-import profileMiddleware from "../../middlewares/profile.middleware";
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
+import {
+  validateUpdateUser,
+  validateEnableGlobal2FA,
+  validateToggleMaintenance,
+} from "./admin.validation";
 import GlobalController from "../../protocols/global.controller";
 import { User, UserRole } from "../user/user.protocol";
 import AdminService from "./admin.service";
+import validationMiddleware from "../../middlewares/validation.middleware";
 
 class AdminController implements GlobalController {
   public path = "/admin";
@@ -23,12 +28,6 @@ class AdminController implements GlobalController {
       this.getAllUsers
     );
 
-    this.router.put(
-      `${this.path}/enable-2fa-globally`,
-      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
-      this.assignGlobal2FA
-    );
-
     this.router.get(
       `${this.path}/users/:id`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
@@ -37,7 +36,11 @@ class AdminController implements GlobalController {
 
     this.router.patch(
       `${this.path}/users/:id`,
-      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateUpdateUser),
+      ],
       this.updateUser
     );
 
@@ -59,9 +62,23 @@ class AdminController implements GlobalController {
       this.unbanUser
     );
 
+    this.router.put(
+      `${this.path}/enable-2fa-globally`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateEnableGlobal2FA),
+      ],
+      this.assignGlobal2FA
+    );
+
     this.router.patch(
       `${this.path}/maintenance`,
-      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateToggleMaintenance),
+      ],
       this.toggleMaintenance
     );
   }
