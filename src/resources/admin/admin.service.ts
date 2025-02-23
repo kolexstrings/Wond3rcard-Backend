@@ -1,5 +1,4 @@
 import { exec } from "child_process";
-import dotenv from "dotenv";
 import fs from "fs";
 import { promisify } from "util";
 import path from "path";
@@ -9,7 +8,7 @@ import HttpException from "../../exceptions/http.exception";
 import MailTemplates from "../mails/mail.templates";
 import NodeMailerService from "../mails/nodemailer.service";
 import userModel from "../user/user.model";
-import { User } from "../user/user.protocol";
+import { User, UserStatus } from "../user/user.protocol";
 
 class AdminService {
   private user = userModel;
@@ -33,9 +32,118 @@ class AdminService {
     }
   }
 
+  /**
+   * Fetch a user by ID
+   */
+  public async getUserById(userId: string): Promise<User> {
+    try {
+      const user = await this.user.findById(userId);
+      if (!user) {
+        throw new HttpException(404, "user_not_found", "User not found");
+      }
+      return user;
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "fetch_user_failed",
+        `Failed to fetch user: ${error}`
+      );
+    }
+  }
+
+  /**
+   * Update user details (email, name, role, etc.)
+   */
+  public async updateUser(
+    userId: string,
+    updateData: Partial<User>
+  ): Promise<User> {
+    try {
+      const updatedUser = await this.user.findByIdAndUpdate(
+        userId,
+        updateData,
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        throw new HttpException(404, "user_not_found", "User not found");
+      }
+      return updatedUser;
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "update_user_failed",
+        `Failed to update user: ${error}`
+      );
+    }
+  }
+
+  /**
+   * Completely delete a user from the system
+   */
+  public async deleteUser(userId: string): Promise<string> {
+    try {
+      const deletedUser = await this.user.findByIdAndDelete(userId);
+      if (!deletedUser) {
+        throw new HttpException(404, "user_not_found", "User not found");
+      }
+      return "User successfully deleted from the system.";
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "delete_user_failed",
+        `Failed to delete user: ${error}`
+      );
+    }
+  }
+
+  /**
+   * Ban a user (set status to 'Banned')
+   */
+  public async banUser(userId: string): Promise<string> {
+    try {
+      const user = await this.user.findById(userId);
+      if (!user) {
+        throw new HttpException(404, "user_not_found", "User not found");
+      }
+
+      user.userStatus = UserStatus.Banned;
+      await user.save();
+      return "User has been banned.";
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "ban_user_failed",
+        `Failed to ban user: ${error}`
+      );
+    }
+  }
+
+  /**
+   * Unban a user (set status to 'Active')
+   */
+  public async unbanUser(userId: string): Promise<string> {
+    try {
+      const user = await this.user.findById(userId);
+      if (!user) {
+        throw new HttpException(404, "user_not_found", "User not found");
+      }
+
+      user.userStatus = UserStatus.Active;
+      await user.save();
+      return "User has been unbanned.";
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "unban_user_failed",
+        `Failed to unban user: ${error}`
+      );
+    }
+  }
+
   public async toggleMaintenanceMode(enabled: boolean): Promise<string> {
     try {
-      const envFilePath = path.join(process.cwd(), ".env"); // Dynamically resolve .env path
+      const envFilePath = path.join(process.cwd(), ".env");
 
       const envContent = await readFileAsync(envFilePath, "utf8");
       const updatedEnvContent = envContent

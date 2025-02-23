@@ -17,12 +17,6 @@ class AdminController implements GlobalController {
   }
 
   initializeRoute(): void {
-    this.router.get(
-      `${this.path}/profile`,
-      profileMiddleware,
-      this.staffProfile
-    );
-
     this.router.put(
       `${this.path}/enable-2fa-globally`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
@@ -78,6 +72,7 @@ class AdminController implements GlobalController {
       next(error);
     }
   };
+
   private assignGlobal2FA = async (
     req: Request,
     res: Response,
