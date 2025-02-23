@@ -8,15 +8,15 @@ enum UserStatus {
 }
 
 enum UserRole {
-  admin = "admin",
-  staff = "staff",
-  customer = "customer",
+  Admin = "admin",
+  Staff = "staff",
+  Customer = "customer",
 }
 
 enum UserTiers {
-  basic = "basic",
-  premium = "premium",
-  business = "business",
+  Basic = "basic",
+  Premium = "premium",
+  Business = "business",
 }
 
 //we need to completely replace UserType in the code base
