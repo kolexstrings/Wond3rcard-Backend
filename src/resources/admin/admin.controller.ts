@@ -17,6 +17,12 @@ class AdminController implements GlobalController {
   }
 
   initializeRoute(): void {
+    this.router.get(
+      `${this.path}/all-users`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getAllUsers
+    );
+
     this.router.put(
       `${this.path}/enable-2fa-globally`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
@@ -24,9 +30,33 @@ class AdminController implements GlobalController {
     );
 
     this.router.get(
-      `${this.path}/all-users`,
+      `${this.path}/users/:id`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
-      this.getAllUsers
+      this.getUserById
+    );
+
+    this.router.patch(
+      `${this.path}/users/:id`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.updateUser
+    );
+
+    this.router.delete(
+      `${this.path}/users/:id`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.deleteUser
+    );
+
+    this.router.post(
+      `${this.path}/users/:id/ban`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.banUser
+    );
+
+    this.router.post(
+      `${this.path}/users/:id/unban`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.unbanUser
     );
 
     this.router.patch(
@@ -56,6 +86,95 @@ class AdminController implements GlobalController {
       console.log(`ERROR ${error}`);
 
       next(new HttpException(400, "failed", error.message));
+    }
+  };
+
+  /**
+   * Fetch details of a specific user
+   */
+  private getUserById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.params.id;
+      const user = await this.adminService.getUserById(userId);
+      res.status(200).json({
+        status: "success",
+        message: "User retrieved",
+        payload: user,
+      });
+    } catch (error) {
+      next(new HttpException(400, "Failed to fetch user", error.message));
+    }
+  };
+
+  /**
+   * Update user details (email, name, role)
+   */
+  private updateUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.params.id;
+      const updatedUser = await this.adminService.updateUser(userId, req.body);
+      res.status(200).json({
+        status: "success",
+        message: "User updated successfully",
+        payload: updatedUser,
+      });
+    } catch (error) {
+      next(new HttpException(400, "Failed to update user", error.message));
+    }
+  };
+
+  /**
+   * Permanently delete user
+   */
+  private deleteUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.params.id;
+      const message = await this.adminService.deleteUser(userId);
+      res.status(200).json({ status: "success", message });
+    } catch (error) {
+      next(new HttpException(400, "Failed to delete user", error.message));
+    }
+  };
+
+  /**
+   * Ban user by updating their status to "Banned"
+   */
+  private banUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.params.id;
+      const message = await this.adminService.banUser(userId);
+      res.status(200).json({ status: "success", message });
+    } catch (error) {
+      next(new HttpException(400, "Failed to ban user", error.message));
+    }
+  };
+
+  /**
+   * Unban user by setting status back to "Active"
+   */
+  private unbanUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.params.id;
+      const message = await this.adminService.unbanUser(userId);
+      res.status(200).json({ status: "success", message });
+    } catch (error) {
+      next(new HttpException(400, "Failed to unban user", error.message));
     }
   };
 
