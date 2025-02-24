@@ -43,6 +43,14 @@ class UserService {
     }
   }
 
+  public async updateUserRole(userId: string, role: string): Promise<User> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new Error("User not found");
+
+    user.userRole = role;
+    return await this.userRepository.save(user);
+  }
+
   public async changeUserType(userId: string, type: UserType): Promise<void> {
     try {
       const user = await this.user.findById(userId);

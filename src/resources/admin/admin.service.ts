@@ -141,6 +141,139 @@ class AdminService {
     }
   }
 
+  /**
+   * get all statuses available
+   */
+  public async getSubscriptionTiers(): Promise<string[]> {
+    try {
+      const tiers = await this.tier.find();
+      return tiers.map((tier) => tier.name);
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "get_subscription_tiers_failed",
+        `Failed to retrieve subscription tiers: ${error}`
+      );
+    }
+  }
+
+  /**
+   * change subscription tier of a specific user
+   */
+  public async getStatuses(): Promise<string[]> {
+    try {
+      const statuses = await this.status.find();
+      return statuses.map((status) => status.name);
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "get_statuses_failed",
+        `Failed to retrieve statuses: ${error}`
+      );
+    }
+  }
+
+  /**
+   * change role of a specific user
+   */
+  public async getRoles(): Promise<string[]> {
+    try {
+      const roles = await this.role.find();
+      return roles.map((role) => role.name);
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "get_roles_failed",
+        `Failed to retrieve roles: ${error}`
+      );
+    }
+  }
+
+  public async updateUserRole(
+    userId: string,
+    newRole: string
+  ): Promise<string> {
+    try {
+      const user = await this.user.findById(userId);
+      if (!user) {
+        throw new HttpException(404, "user_not_found", "User not found");
+      }
+
+      const roleExists = await this.role.findOne({ name: newRole });
+      if (!roleExists) {
+        throw new HttpException(400, "invalid_role", "Role does not exist");
+      }
+
+      user.userRole = newRole;
+      await user.save();
+      return "User role updated successfully.";
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "update_user_role_failed",
+        `Failed to update user role: ${error}`
+      );
+    }
+  }
+
+  public async updateUserStatus(
+    userId: string,
+    newStatus: string
+  ): Promise<string> {
+    try {
+      const user = await this.user.findById(userId);
+      if (!user) {
+        throw new HttpException(404, "user_not_found", "User not found");
+      }
+
+      const statusExists = await this.status.findOne({ name: newStatus });
+      if (!statusExists) {
+        throw new HttpException(400, "invalid_status", "Status does not exist");
+      }
+
+      user.userStatus = newStatus;
+      await user.save();
+      return "User status updated successfully.";
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "update_user_status_failed",
+        `Failed to update user status: ${error}`
+      );
+    }
+  }
+
+  public async updateUserTier(
+    userId: string,
+    newTier: string
+  ): Promise<string> {
+    try {
+      const user = await this.user.findById(userId);
+      if (!user) {
+        throw new HttpException(404, "user_not_found", "User not found");
+      }
+
+      const tierExists = await this.tier.findOne({ name: newTier });
+      if (!tierExists) {
+        throw new HttpException(
+          400,
+          "invalid_tier",
+          "Subscription tier does not exist"
+        );
+      }
+
+      user.userTiers = newTier;
+      await user.save();
+      return "User subscription tier updated successfully.";
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "update_user_tier_failed",
+        `Failed to update user subscription tier: ${error}`
+      );
+    }
+  }
+
   public async toggleMaintenanceMode(enabled: boolean): Promise<string> {
     try {
       const envFilePath = path.join(process.cwd(), ".env");

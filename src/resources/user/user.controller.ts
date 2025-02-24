@@ -18,44 +18,12 @@ class UserController implements GeneralController {
   }
 
   initializeRoute(): void {
-
     this.router.get(
       `${this.path}/user-profile`,
       [authenticatedMiddleware],
       this.getProfile
     );
-
-    this.router.patch(
-      `${this.path}/change-user-role`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validate.changeUserRole),
-        verifyRolesMiddleware([UserType.Admin]),
-      ],
-      this.changeUserRole
-    );
-
-    this.router.patch(
-      `${this.path}/change-user-type`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validate.changeUserType),
-        verifyRolesMiddleware([UserType.Admin]),
-      ],
-      this.changeUserType
-    );
-
-    this.router.patch(
-      `${this.path}/change-user-status`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validate.changeUserStatus),
-        verifyRolesMiddleware([UserType.Admin]),
-      ],
-      this.changeUserStatus
-    );
   }
-
 
   private getProfile = async (
     req: Request,
@@ -88,9 +56,11 @@ class UserController implements GeneralController {
     next: NextFunction
   ): Promise<Response | void> => {
     try {
-      const { userId, role } = req.body
-      await this.userService.changeUserRole(userId, role as UserRole)
-      return res.status(200).json({ message: "User role updated successfully." });
+      const { userId, role } = req.body;
+      await this.userService.changeUserRole(userId, role as UserRole);
+      return res
+        .status(200)
+        .json({ message: "User role updated successfully." });
     } catch (error) {
       next(new HttpException(500, "error", `${error}`));
     }
@@ -102,9 +72,11 @@ class UserController implements GeneralController {
     next: NextFunction
   ): Promise<Response | void> => {
     try {
-      const { userId, type } = req.body
-      await this.userService.changeUserType(userId, type as UserType)
-      return res.status(200).json({ message: "User type updated successfully." });
+      const { userId, type } = req.body;
+      await this.userService.changeUserType(userId, type as UserType);
+      return res
+        .status(200)
+        .json({ message: "User type updated successfully." });
     } catch (error) {
       next(new HttpException(500, "error", `${error}`));
     }
@@ -116,9 +88,11 @@ class UserController implements GeneralController {
     next: NextFunction
   ): Promise<Response | void> => {
     try {
-      const { userId, status } = req.body
-      await this.userService.changeUserStatus(userId, status as UserStatus)
-      return res.status(200).json({ message: "User status updated successfully." });
+      const { userId, status } = req.body;
+      await this.userService.changeUserStatus(userId, status as UserStatus);
+      return res
+        .status(200)
+        .json({ message: "User status updated successfully." });
     } catch (error) {
       next(new HttpException(500, "error", `${error}`));
     }
