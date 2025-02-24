@@ -6,6 +6,9 @@ import {
   validateUpdateUser,
   validateEnableGlobal2FA,
   validateToggleMaintenance,
+  validateChangeUserRole,
+  validateChangeUserStatus,
+  validateChangeUserTier,
 } from "./admin.validation";
 import GlobalController from "../../protocols/global.controller";
 import { User, UserRole } from "../user/user.protocol";
@@ -60,6 +63,54 @@ class AdminController implements GlobalController {
       `${this.path}/users/:id/unban`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.unbanUser
+    );
+
+    this.router.get(
+      `${this.path}/roles`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getRoles
+    );
+
+    this.router.get(
+      `${this.path}/statuses`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getStatuses
+    );
+
+    this.router.get(
+      `${this.path}/subscription-tiers`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getSubscriptionTiers
+    );
+
+    this.router.patch(
+      `${this.path}/users/:id/role`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateChangeUserRole),
+      ],
+      this.changeUserRole
+    );
+
+    this.router.patch(
+      `${this.path}/users/:id/tier`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateChangeUserTier),
+      ],
+      this.changeUserTier
+    );
+
+    this.router.patch(
+      `${this.path}/users/:id/status`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateChangeUserStatus),
+      ],
+      this.changeUserStatus
     );
 
     this.router.put(
@@ -164,7 +215,6 @@ class AdminController implements GlobalController {
       next(new HttpException(400, "Failed to delete user", error.message));
     }
   };
-
   /**
    * Ban user by updating their status to "Banned"
    */
@@ -192,6 +242,154 @@ class AdminController implements GlobalController {
       res.status(200).json({ status: "success", message });
     } catch (error) {
       next(new HttpException(400, "Failed to unban user", error.message));
+    }
+  };
+
+  /**
+   * get all roles available
+   */
+  private getRoles = async (
+    _req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const roles = await this.adminService.getRoles();
+      res.status(200).json({
+        status: "success",
+        message: "Roles retrieved successfully",
+        payload: roles,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(new HttpException(400, "Failed to retrieve roles", error.message));
+    }
+  };
+
+  /**
+   * get all statuses available
+   */
+  private getStatuses = async (
+    _req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const statuses = await this.adminService.getStatuses();
+      res.status(200).json({
+        status: "success",
+        message: "Statuses retrieved successfully",
+        payload: statuses,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(
+        new HttpException(400, "Failed to retrieve statuses", error.message)
+      );
+    }
+  };
+
+  /**
+   * get all subscription tiers available
+   */
+  private getSubscriptionTiers = async (
+    _req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const tiers = await this.adminService.getSubscriptionTiers();
+      res.status(200).json({
+        status: "success",
+        message: "Subscription tiers retrieved successfully",
+        payload: tiers,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(
+        new HttpException(
+          400,
+          "Failed to retrieve subscription tiers",
+          error.message
+        )
+      );
+    }
+  };
+
+  /**
+   * change role of a specific user
+   */
+  private changeUserRole = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    const { id } = req.params;
+    const { userRole } = req.body;
+
+    try {
+      const updatedUser = await this.adminService.updateUserRole(id, userRole);
+      res.status(200).json({
+        status: "success",
+        message: "User role updated successfully",
+        payload: updatedUser,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(new HttpException(400, "Failed to update user role", error.message));
+    }
+  };
+
+  /**
+   * change subscription tier of a specific user
+   */
+  private changeUserTier = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    const { id } = req.params;
+    const { userTiers } = req.body;
+
+    try {
+      const updatedUser = await this.adminService.updateUserTier(id, userTiers);
+      res.status(200).json({
+        status: "success",
+        message: "User tier updated successfully",
+        payload: updatedUser,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(new HttpException(400, "Failed to update user tier", error.message));
+    }
+  };
+
+  /**
+   * change role of a specific user
+   */
+  private changeUserStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    const { id } = req.params;
+    const { userStatus } = req.body;
+
+    try {
+      const updatedUser = await this.adminService.updateUserStatus(
+        id,
+        userStatus
+      );
+      res.status(200).json({
+        status: "success",
+        message: "User status updated successfully",
+        payload: updatedUser,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(
+        new HttpException(400, "Failed to update user status", error.message)
+      );
     }
   };
 

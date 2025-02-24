@@ -26,3 +26,15 @@ export const validateEnableGlobal2FA = Joi.object({
 export const validateToggleMaintenance = Joi.object({
   enable: Joi.boolean().required(),
 });
+
+export const validateChangeUserRole = Joi.object({
+  userRole: Joi.string().valid("admin", "staff", "customer").required(),
+});
+
+export const validateChangeUserTier = Joi.object({
+  userTiers: Joi.string().valid("basic", "premium", "business").required(),
+});
+
+export const validateChangeUserStatus = Joi.object({
+  userStatus: Joi.string().valid("active", "banned", "suspended").required(),
+});

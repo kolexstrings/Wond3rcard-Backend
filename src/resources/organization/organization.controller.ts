@@ -17,7 +17,6 @@ class OrganizationController implements GeneralController {
   private orgService = new OrganizationService();
 
   constructor() {
-
     this.initializeRoute();
   }
 
@@ -305,7 +304,6 @@ class OrganizationController implements GeneralController {
       next(new HttpException(500, "failed", err.message));
     }
   }
-
 }
 
 export default OrganizationController;
