@@ -8,11 +8,17 @@ import HttpException from "../../exceptions/http.exception";
 import MailTemplates from "../mails/mail.templates";
 import NodeMailerService from "../mails/nodemailer.service";
 import userModel from "../user/user.model";
+import roleModel from "./role/role.model";
+import statusModel from "./status/status.model";
+import tierModel from "./subscriptionTier/tier.model";
 import { User, UserStatus } from "../user/user.protocol";
 
 class AdminService {
   private user = userModel;
   private mailer = new NodeMailerService();
+  private role = roleModel;
+  private status = statusModel;
+  private tierModel = tierModel;
 
   public async getAllUsers(
     page: number = 1,
@@ -142,23 +148,23 @@ class AdminService {
   }
 
   /**
-   * get all statuses available
+   * get all roles available
    */
-  public async getSubscriptionTiers(): Promise<string[]> {
+  public async getRoles(): Promise<string[]> {
     try {
-      const tiers = await this.tier.find();
-      return tiers.map((tier) => tier.name);
+      const roles = await this.role.find();
+      return roles.map((role) => role.name);
     } catch (error) {
       throw new HttpException(
         500,
-        "get_subscription_tiers_failed",
-        `Failed to retrieve subscription tiers: ${error}`
+        "get_roles_failed",
+        `Failed to retrieve roles: ${error}`
       );
     }
   }
 
   /**
-   * change subscription tier of a specific user
+   * get all statuses available
    */
   public async getStatuses(): Promise<string[]> {
     try {
@@ -174,22 +180,25 @@ class AdminService {
   }
 
   /**
-   * change role of a specific user
+   * get all subscription tiers available
    */
-  public async getRoles(): Promise<string[]> {
+  public async getSubscriptionTiers(): Promise<string[]> {
     try {
-      const roles = await this.role.find();
-      return roles.map((role) => role.name);
+      const tiers = await this.tier.find();
+      return tiers.map((tier) => tier.name);
     } catch (error) {
       throw new HttpException(
         500,
-        "get_roles_failed",
-        `Failed to retrieve roles: ${error}`
+        "get_subscription_tiers_failed",
+        `Failed to retrieve subscription tiers: ${error}`
       );
     }
   }
 
-  public async updateUserRole(
+  /**
+   * change role of a specific user
+   */
+  public async changeUserRole(
     userId: string,
     newRole: string
   ): Promise<string> {
@@ -216,7 +225,10 @@ class AdminService {
     }
   }
 
-  public async updateUserStatus(
+  /**
+   * change role of a specific user
+   */
+  public async changeUserStatus(
     userId: string,
     newStatus: string
   ): Promise<string> {
@@ -243,7 +255,10 @@ class AdminService {
     }
   }
 
-  public async updateUserTier(
+  /**
+   * change subscription tier of a specific user
+   */
+  public async changeUserTier(
     userId: string,
     newTier: string
   ): Promise<string> {

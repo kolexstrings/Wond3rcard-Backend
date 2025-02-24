@@ -328,7 +328,7 @@ class AdminController implements GlobalController {
     const { userRole } = req.body;
 
     try {
-      const updatedUser = await this.adminService.updateUserRole(id, userRole);
+      const updatedUser = await this.adminService.changeUserRole(id, userRole);
       res.status(200).json({
         status: "success",
         message: "User role updated successfully",
@@ -337,30 +337,6 @@ class AdminController implements GlobalController {
     } catch (error) {
       console.error(`ERROR: ${error}`);
       next(new HttpException(400, "Failed to update user role", error.message));
-    }
-  };
-
-  /**
-   * change subscription tier of a specific user
-   */
-  private changeUserTier = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    const { id } = req.params;
-    const { userTiers } = req.body;
-
-    try {
-      const updatedUser = await this.adminService.updateUserTier(id, userTiers);
-      res.status(200).json({
-        status: "success",
-        message: "User tier updated successfully",
-        payload: updatedUser,
-      });
-    } catch (error) {
-      console.error(`ERROR: ${error}`);
-      next(new HttpException(400, "Failed to update user tier", error.message));
     }
   };
 
@@ -376,7 +352,7 @@ class AdminController implements GlobalController {
     const { userStatus } = req.body;
 
     try {
-      const updatedUser = await this.adminService.updateUserStatus(
+      const updatedUser = await this.adminService.changeUserStatus(
         id,
         userStatus
       );
@@ -390,6 +366,30 @@ class AdminController implements GlobalController {
       next(
         new HttpException(400, "Failed to update user status", error.message)
       );
+    }
+  };
+
+  /**
+   * change subscription tier of a specific user
+   */
+  private changeUserTier = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    const { id } = req.params;
+    const { userTiers } = req.body;
+
+    try {
+      const updatedUser = await this.adminService.changeUserTier(id, userTiers);
+      res.status(200).json({
+        status: "success",
+        message: "User tier updated successfully",
+        payload: updatedUser,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(new HttpException(400, "Failed to update user tier", error.message));
     }
   };
 
