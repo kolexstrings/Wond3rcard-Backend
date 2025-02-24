@@ -11,14 +11,14 @@ import userModel from "../user/user.model";
 import roleModel from "./role/role.model";
 import statusModel from "./status/status.model";
 import tierModel from "./subscriptionTier/tier.model";
-import { User, UserStatus } from "../user/user.protocol";
+import { User, UserRole, UserStatus, UserTiers } from "../user/user.protocol";
 
 class AdminService {
   private user = userModel;
   private mailer = new NodeMailerService();
   private role = roleModel;
   private status = statusModel;
-  private tierModel = tierModel;
+  private tier = tierModel;
 
   public async getAllUsers(
     page: number = 1,
@@ -200,7 +200,7 @@ class AdminService {
    */
   public async changeUserRole(
     userId: string,
-    newRole: string
+    newRole: UserRole
   ): Promise<string> {
     try {
       const user = await this.user.findById(userId);
@@ -230,7 +230,7 @@ class AdminService {
    */
   public async changeUserStatus(
     userId: string,
-    newStatus: string
+    newStatus: UserStatus
   ): Promise<string> {
     try {
       const user = await this.user.findById(userId);
@@ -260,7 +260,7 @@ class AdminService {
    */
   public async changeUserTier(
     userId: string,
-    newTier: string
+    newTier: UserTiers
   ): Promise<string> {
     try {
       const user = await this.user.findById(userId);
