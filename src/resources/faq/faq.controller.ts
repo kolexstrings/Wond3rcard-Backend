@@ -3,7 +3,7 @@ import authenticatedMiddleware from "../../middlewares/authenticated.middleware"
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
-import { UserType } from "../user/user.protocol";
+import { UserRole } from "../user/user.protocol";
 import FAQService from "./faq.service";
 import validate from "./faq.validation";
 
@@ -13,21 +13,17 @@ class FAQController implements GeneralController {
   private service = new FAQService();
 
   constructor() {
-
     this.initializeRoute();
   }
 
   initializeRoute(): void {
-    this.router.get(
-      `${this.path}/`,
-      this.getAllFAQs
-    );
+    this.router.get(`${this.path}/`, this.getAllFAQs);
 
     this.router.post(
       `${this.path}/`,
       [
         authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         validationMiddleware(validate.faqValidationSchema),
       ],
       this.createFAQ
@@ -35,19 +31,13 @@ class FAQController implements GeneralController {
 
     this.router.put(
       `${this.path}/:id`,
-      [
-        authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
-      ],
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.updateFAQ
     );
 
     this.router.delete(
       `${this.path}/:id`,
-      [
-        authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
-      ],
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.deleteFAQ
     );
   }
@@ -60,7 +50,9 @@ class FAQController implements GeneralController {
     try {
       const { category } = req.query;
       const faqs = await this.service.getAllFAQs(category as string);
-      return res.status(200).json({ message: 'FAQs retrieved successfully', payload: faqs });
+      return res
+        .status(200)
+        .json({ message: "FAQs retrieved successfully", payload: faqs });
     } catch (error) {
       next(error);
     }
@@ -74,7 +66,9 @@ class FAQController implements GeneralController {
     try {
       const data = req.body;
       const newFAQ = await this.service.createFAQ(data);
-      return res.status(201).json({ message: 'FAQ created successfully', payload: newFAQ });
+      return res
+        .status(201)
+        .json({ message: "FAQ created successfully", payload: newFAQ });
     } catch (error) {
       next(error);
     }
@@ -90,9 +84,11 @@ class FAQController implements GeneralController {
       const data = req.body;
       const updatedFAQ = await this.service.updateFAQ(id, data);
       if (!updatedFAQ) {
-        return res.status(404).json({ message: 'FAQ not found' });
+        return res.status(404).json({ message: "FAQ not found" });
       }
-      return res.status(200).json({ message: 'FAQ updated successfully', payload: updatedFAQ });
+      return res
+        .status(200)
+        .json({ message: "FAQ updated successfully", payload: updatedFAQ });
     } catch (error) {
       next(error);
     }
@@ -107,9 +103,11 @@ class FAQController implements GeneralController {
       const { id } = req.params;
       const deletedFAQ = await this.service.deleteFAQ(id);
       if (!deletedFAQ) {
-        return res.status(404).json({ message: 'FAQ not found' });
+        return res.status(404).json({ message: "FAQ not found" });
       }
-      return res.status(200).json({ message: 'FAQ deleted successfully', payload: deletedFAQ });
+      return res
+        .status(200)
+        .json({ message: "FAQ deleted successfully", payload: deletedFAQ });
     } catch (error) {
       next(error);
     }

@@ -4,7 +4,7 @@ import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
 import { uploadSocialMediaMiddleware } from "../../services/multers.config";
-import { UserType } from "../user/user.protocol";
+import { UserRole } from "../user/user.protocol";
 import SocialMediaService from "./social-media.service";
 import validate from "./social-media.validations";
 
@@ -14,21 +14,17 @@ class SocialMediaController implements GeneralController {
   private socialMediaService = new SocialMediaService();
 
   constructor() {
-
     this.initializeRoute();
   }
 
   initializeRoute(): void {
-    this.router.get(
-      `${this.path}/`,
-      this.getAllSocialMedias
-    );
+    this.router.get(`${this.path}/`, this.getAllSocialMedias);
 
     this.router.post(
       `${this.path}/`,
       [
         authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         uploadSocialMediaMiddleware,
         validationMiddleware(validate.createSocialMediaValidator),
       ],
@@ -39,7 +35,7 @@ class SocialMediaController implements GeneralController {
       `${this.path}/:id`,
       [
         authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         uploadSocialMediaMiddleware,
       ],
       this.updateSocialMedia
@@ -47,13 +43,9 @@ class SocialMediaController implements GeneralController {
 
     this.router.delete(
       `${this.path}/:id`,
-      [
-        authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
-      ],
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.deleteSocialMedia
     );
-
   }
 
   private getAllSocialMedias = async (
@@ -63,7 +55,9 @@ class SocialMediaController implements GeneralController {
   ): Promise<Response | void> => {
     try {
       const links = await this.socialMediaService.getAll();
-      return res.status(200).json({ message: 'Social Media links', payload: links })
+      return res
+        .status(200)
+        .json({ message: "Social Media links", payload: links });
     } catch (error) {
       next(error);
     }
@@ -76,21 +70,28 @@ class SocialMediaController implements GeneralController {
   ): Promise<Response | void> => {
     try {
       const { name, link, mediaType, description } = req.body;
-      const file = req.file
+      const file = req.file;
 
       if (!file) {
-        return res.status(400).json({ error: "Image upload failed", });
+        return res.status(400).json({ error: "Image upload failed" });
       }
 
-      const socialMedial = await this.socialMediaService.checkAndUpdateOrCreate(name, file.path, link, mediaType, description);
+      const socialMedial = await this.socialMediaService.checkAndUpdateOrCreate(
+        name,
+        file.path,
+        link,
+        mediaType,
+        description
+      );
 
-      return res.status(201).json({ message: 'social media created successfully', payload: { socialMedial } })
-
+      return res.status(201).json({
+        message: "social media created successfully",
+        payload: { socialMedial },
+      });
     } catch (error) {
       next(error);
     }
   };
-
 
   private updateSocialMedia = async (
     req: Request,
@@ -104,8 +105,14 @@ class SocialMediaController implements GeneralController {
         updates.imageUrl = req.file.path;
       }
 
-      const updatedSocialMedia = await this.socialMediaService.update(id, updates);
-      return res.status(200).json({ message: 'Social media updated successfully', payload: updatedSocialMedia });
+      const updatedSocialMedia = await this.socialMediaService.update(
+        id,
+        updates
+      );
+      return res.status(200).json({
+        message: "Social media updated successfully",
+        payload: updatedSocialMedia,
+      });
     } catch (error) {
       next(error);
     }
@@ -119,11 +126,12 @@ class SocialMediaController implements GeneralController {
     try {
       const { id } = req.params;
       await this.socialMediaService.delete(id);
-      return res.status(200).json({ message: 'Social media deleted successfully', });
+      return res
+        .status(200)
+        .json({ message: "Social media deleted successfully" });
     } catch (error) {
       next(error);
     }
   };
-
 }
-export default SocialMediaController
+export default SocialMediaController;

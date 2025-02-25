@@ -11,7 +11,6 @@ class ProfileController {
   private profileService = new ProfileService();
 
   constructor() {
-
     this.initializeRoutes();
   }
 
