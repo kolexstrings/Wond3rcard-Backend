@@ -4,11 +4,13 @@
   "description": "Wonder Card Backend",
   "main": "dist/index.js",
   "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc",
     "start": "node dist/index.js",
-    "build": "tsc",
-    "dev": "npx kill-port 3000 && tsc && nodemon dist/index.js"
+    "dev": "npx kill-port 3000 && tsc --watch & nodemon --exec node dist/index.js",
+    "dev:ts": "npx kill-port 3000 && nodemon --ext ts --exec ts-node src/index.ts"
   },
-  "author": "Muhammad Buhari",
+  "author": "Wonder Card",
   "license": "ISC",
   "dependencies": {
     "@redis/client": "^1.6.0",
