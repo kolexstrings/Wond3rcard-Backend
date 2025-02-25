@@ -4,7 +4,6 @@ import { Profile } from "../profile/profile.protocol";
 import userModel from "./user.model";
 
 class UserService {
-  private user = userModel;
   private profile = profileModel;
 
   public async getProfile(uid: string): Promise<Profile> {

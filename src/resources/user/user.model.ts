@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { model, Schema } from "mongoose";
+import mongoose, { model, Schema } from "mongoose";
 import { User, UserRole, UserStatus, UserTiers } from "./user.protocol";
 
 const UserSchema = new Schema(

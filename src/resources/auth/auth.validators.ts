@@ -107,7 +107,7 @@ const changeUserRole = Joi.object({
 
 const changeUserTier = Joi.object({
   userId: Joi.string().required(),
-  type: Joi.string().valid("admin", "customer", "moderator").required(),
+  tier: Joi.string().valid("admin", "customer", "moderator").required(),
 });
 
 const changeUserStatus = Joi.object({

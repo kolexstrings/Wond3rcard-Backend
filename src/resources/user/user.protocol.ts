@@ -19,13 +19,6 @@ enum UserTiers {
   Business = "business",
 }
 
-//we need to completely replace UserType in the code base
-enum UserType {
-  Customer = "customer",
-  Admin = "admin",
-  Moderator = "moderator",
-}
-
 interface User extends Document {
   username: string;
   email: string;

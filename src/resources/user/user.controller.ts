@@ -16,7 +16,7 @@ class UserController implements GeneralController {
   initializeRoute(): void {
     this.router.get(
       `${this.path}/user-profile`,
-      [authenticatedMiddleware],
+      authenticatedMiddleware,
       this.getProfile
     );
   }
@@ -25,7 +25,7 @@ class UserController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       if (!req.user) {
         return next(new HttpException(401, "error", "No signed-in user"));
@@ -33,7 +33,7 @@ class UserController implements GeneralController {
 
       const profile = await this.userService.getProfile(req.user.id);
 
-      return res.status(200).json({
+      res.status(200).json({
         statusCode: 200,
         status: "success",
         payload: {
@@ -41,6 +41,8 @@ class UserController implements GeneralController {
           profile,
         },
       });
+
+      return; // Explicitly return void
     } catch (error) {
       next(error);
     }

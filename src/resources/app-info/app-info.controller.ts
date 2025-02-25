@@ -3,7 +3,7 @@ import authenticatedMiddleware from "../../middlewares/authenticated.middleware"
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
-import { UserType } from "../user/user.protocol";
+import { UserRole } from "../user/user.protocol";
 import AppInfoService from "./app-info.service";
 import validate from "./app-info.validation";
 
@@ -17,16 +17,13 @@ class AppInfoController implements GeneralController {
   }
 
   private initializeRoutes(): void {
-    this.router.get(
-      `${this.path}`,
-      this.getAppInfo
-    );
+    this.router.get(`${this.path}`, this.getAppInfo);
 
     this.router.post(
       `${this.path}`,
       [
         authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         validationMiddleware(validate.appInfoValidationSchema),
       ],
       this.createOrUpdateAppInfo
@@ -36,7 +33,7 @@ class AppInfoController implements GeneralController {
       `${this.path}/:id`,
       [
         authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         validationMiddleware(validate.appInfoValidationSchema),
       ],
       this.updateAppInfo
@@ -44,10 +41,7 @@ class AppInfoController implements GeneralController {
 
     this.router.delete(
       `${this.path}/:id`,
-      [
-        authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
-      ],
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.deleteAppInfo
     );
   }
@@ -73,9 +67,10 @@ class AppInfoController implements GeneralController {
     try {
       const data = req.body;
       const updatedAppInfo = await this.service.upsertAppInfo(data);
-      return res
-        .status(200)
-        .json({ message: "App Info updated successfully", payload: updatedAppInfo });
+      return res.status(200).json({
+        message: "App Info updated successfully",
+        payload: updatedAppInfo,
+      });
     } catch (error) {
       next(error);
     }
@@ -89,10 +84,14 @@ class AppInfoController implements GeneralController {
     try {
       const { id } = req.params;
       const data = req.body;
-      const updatedAppInfo = await this.service.upsertAppInfo({ ...data, _id: id });
-      return res
-        .status(200)
-        .json({ message: "App Info updated successfully", payload: updatedAppInfo });
+      const updatedAppInfo = await this.service.upsertAppInfo({
+        ...data,
+        _id: id,
+      });
+      return res.status(200).json({
+        message: "App Info updated successfully",
+        payload: updatedAppInfo,
+      });
     } catch (error) {
       next(error);
     }
