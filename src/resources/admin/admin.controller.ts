@@ -378,10 +378,10 @@ class AdminController implements GlobalController {
     next: NextFunction
   ): Promise<void> => {
     const { id } = req.params;
-    const { userTiers } = req.body;
+    const { userTier } = req.body;
 
     try {
-      const updatedUser = await this.adminService.changeUserTier(id, userTiers);
+      const updatedUser = await this.adminService.changeUserTier(id, userTier);
       res.status(200).json({
         status: "success",
         message: "User tier updated successfully",

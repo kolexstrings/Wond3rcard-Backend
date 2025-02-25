@@ -24,7 +24,7 @@ const UserSchema = new Schema(
     },
     isSoftDeleted: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
-    userType: {
+    userTier: {
       type: String,
       enum: Object.values(UserTiers),
       required: true,
