@@ -1,16 +1,16 @@
 {
   "name": "won3rcard_backend",
   "version": "1.0.0",
-  "description": "Wonder Card Backend",
+  "description": "Wond3r Card Backend",
   "main": "dist/index.js",
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc",
     "start": "node dist/index.js",
-    "dev": "npx kill-port 3000 && tsc --watch & nodemon --exec node dist/index.js",
+    "dev": "npx kill-port 3000 && nodemon --ext ts --exec ts-node src/index.ts",
     "dev:ts": "npx kill-port 3000 && nodemon --ext ts --exec ts-node src/index.ts"
   },
-  "author": "Wonder Card",
+  "author": "Wond3r Card",
   "license": "ISC",
   "dependencies": {
     "@redis/client": "^1.6.0",
