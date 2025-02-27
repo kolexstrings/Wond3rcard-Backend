@@ -30,21 +30,19 @@ const contactInfoSchema = Joi.object({
   address: Joi.string().allow("").default(""),
 }).default();
 
-const socialMediaLinksSchema = Joi.array()
-  .items(
-    Joi.object({
-      link: Joi.object({
-        iconUrl: Joi.string().uri().required(),
-        name: Joi.string().required(),
-        type: Joi.string().required(),
-        link: Joi.string().uri().required(),
-      }).required(),
-      handle: Joi.string().uri().required(),
-      active: Joi.boolean().default(true),
-      label: Joi.string().required(),
-    })
-  )
-
+const socialMediaLinksSchema = Joi.array().items(
+  Joi.object({
+    link: Joi.object({
+      iconUrl: Joi.string().uri().required(),
+      name: Joi.string().required(),
+      type: Joi.string().required(),
+      link: Joi.string().uri().required(),
+    }).required(),
+    handle: Joi.string().uri().required(),
+    active: Joi.boolean().default(true),
+    label: Joi.string().required(),
+  })
+);
 
 const organizationInfoSchema = Joi.object({
   organizationId: JoiExtended.objectId().allow("").default(""),
@@ -90,8 +88,18 @@ const deleteUserOrgCard = Joi.object({
   organizationId: JoiExtended.objectId().required(),
 });
 
-const parseFormData = (req: Request, res: Response, next: NextFunction) => {
+const validateShareCard = Joi.object({
+  cardId: JoiExtended.objectId().required().messages({
+    "any.required": "Card ID is required",
+    "any.invalid": "Invalid Card ID",
+  }),
+  recipientId: JoiExtended.objectId().required().messages({
+    "any.required": "Recipient ID is required",
+    "any.invalid": "Invalid Recipient ID",
+  }),
+});
 
+const parseFormData = (req: Request, res: Response, next: NextFunction) => {
   if (req.body.socialMediaLinks) {
     req.body.socialMediaLinks = Array.isArray(req.body.socialMediaLinks)
       ? req.body.socialMediaLinks.map((item: string) => JSON.parse(item))
@@ -107,5 +115,6 @@ export default {
   validateGetCard,
   updateCard,
   deleteUserOrgCard,
+  validateShareCard,
   parseFormData,
 };

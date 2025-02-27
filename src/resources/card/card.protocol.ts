@@ -71,6 +71,11 @@ interface SocialMediaLink {
   link: string;
 }
 
+interface SharedWith {
+  userId: Types.ObjectId;
+  sharedAt: Date;
+}
+
 interface CardSocialMediaLink {
   media: SocialMediaLink;
   username: string;
@@ -94,6 +99,7 @@ export interface Card extends Document {
   lastName: string;
   designation: string;
   testimonials: CardTestimony[];
+  sharedWith: SharedWith[];
   catelogue: CardCatelog[];
   videoUrl: string;
   cardPictureUrl: string;
@@ -110,5 +116,6 @@ export {
   CardSocialMediaLink,
   CardStyle,
   CardTestimony,
+  SharedWith,
   SocialMediaLink,
 };

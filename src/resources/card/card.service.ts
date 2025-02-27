@@ -646,6 +646,65 @@ class CardService {
     return ownerId.toString() === uid;
   }
 
+  public async shareCard(
+    cardId: string,
+    ownerId: string,
+    recipientId: string
+  ): Promise<Card> {
+    try {
+      const cardObjectId = new Types.ObjectId(cardId);
+      const recipientObjectId = new Types.ObjectId(recipientId);
+
+      const card = await cardModel.findOne({ _id: cardObjectId });
+      if (!card) {
+        throw new HttpException(404, "not found", "Card not found.");
+      }
+
+      // Check if the requesting user is the owner
+      if (card.ownerId.toString() !== ownerId) {
+        throw new HttpException(
+          403,
+          "forbidden",
+          "You are not authorized to share this card."
+        );
+      }
+
+      if (ownerId === recipientId) {
+        throw new HttpException(
+          400,
+          "bad request",
+          "You cannot share a card with yourself."
+        );
+      }
+
+      // Check if recipient exists
+      const recipient = await userModel.findById(recipientObjectId);
+      if (!recipient) {
+        throw new HttpException(404, "not found", "Recipient user not found.");
+      }
+
+      // Prevent duplicate sharing
+      const alreadyShared = card.sharedWith.some((entry) =>
+        entry.userId.equals(recipientObjectId)
+      );
+      if (alreadyShared) {
+        throw new HttpException(
+          400,
+          "bad request",
+          "Card already shared with this user."
+        );
+      }
+
+      // Add recipient to the shared list
+      card.sharedWith.push({ userId: recipientObjectId, sharedAt: new Date() });
+      const updatedCard = await card.save();
+
+      return updatedCard;
+    } catch (error) {
+      throw new HttpException(500, "Internal server error", error.message);
+    }
+  }
+
   public async addCardCatelogue(
     cardId: string,
     uid: string,

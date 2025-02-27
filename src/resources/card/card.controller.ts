@@ -175,7 +175,10 @@ class CardController implements GlobalController {
 
     this.router.get(
       `${this.path}/share/:cardId`,
-      [authenticatedMiddleware],
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validator.deleteUserOrgCard),
+      ],
       this.shareCard
     );
 
@@ -712,26 +715,34 @@ class CardController implements GlobalController {
   ): Promise<Response | void> => {
     try {
       const { cardId } = req.params;
-      if (!cardId) {
-        throw new HttpException(400, "missing", "Please provide a card ID");
+      const { recipientId } = req.body;
+
+      if (!cardId || !recipientId) {
+        throw new HttpException(
+          400,
+          "missing",
+          "Card ID and Recipient ID are required"
+        );
       }
 
-      const uid = req.user.id;
-      const card = await this.cardService.getUserCardById(cardId, uid);
+      const uid = req.user.id; // Owner ID (assuming user is authenticated)
 
-      if (!card) {
-        return res.status(404).json({ message: "Card not found" });
-      }
+      // Call the shareCard service to update the database
+      const updatedCard = await this.cardService.shareCard(
+        cardId,
+        uid,
+        recipientId
+      );
 
-      // Generate the shareable URL
+      // Generate shareable link
       const baseUrl = process.env.APP_BASE_URL;
       const shareableLink = `${baseUrl}/cards/shared/${cardId}`;
 
       return res.status(200).json({
         statusCode: 200,
         status: "success",
-        message: "Shareable link generated successfully",
-        payload: { shareableLink },
+        message: "Card shared successfully",
+        payload: { updatedCard, shareableLink }, // Return updated card and link
       });
     } catch (error) {
       next(error);
@@ -765,11 +776,6 @@ class CardController implements GlobalController {
     next: NextFunction
   ): Promise<Response | void> => {};
   private acceptConnectionRequest = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<Response | void> => {};
-  private shareCard = async (
     req: Request,
     res: Response,
     next: NextFunction
