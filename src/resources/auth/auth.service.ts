@@ -14,6 +14,9 @@ import profileModel from "../profile/profile.model";
 import userModel from "../user/user.model";
 import { User } from "../user/user.protocol";
 
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Exists" : "Not Set");
+
 class AuthService {
   private user = userModel;
   private profile = profileModel;
@@ -97,13 +100,22 @@ class AuthService {
 
       const template = MailTemplates.welcomeTemplate;
 
-      await this.mailer.sendMail(
-        email,
-        "Welcome to Wond3r Card",
-        template,
-        "Welcome",
-        emailData
-      );
+      console.log("EMAIL_USER:", process.env.EMAIL_USER);
+      console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Exists" : "Not Set");
+
+      try {
+        console.log("Attempting to send welcome email...");
+        await this.mailer.sendMail(
+          email,
+          "Welcome to Wond3r Card",
+          template,
+          "Welcome",
+          emailData
+        );
+        console.log("Welcome email sent successfully!");
+      } catch (mailError) {
+        console.error("Error sending welcome email:", mailError);
+      }
 
       await this.sendVerificationOTP(user, firstName);
 

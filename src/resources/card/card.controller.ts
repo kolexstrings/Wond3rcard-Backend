@@ -173,7 +173,11 @@ class CardController implements GlobalController {
       this.acceptConnectionRequest
     );
 
-    this.router.get(`${this.path}/share-card`, this.shareCard);
+    this.router.get(
+      `${this.path}/share/:cardId`,
+      [authenticatedMiddleware],
+      this.shareCard
+    );
 
     this.router.get(`${this.path}/view-card/:cardId`, this.viewCard);
   }
@@ -696,6 +700,39 @@ class CardController implements GlobalController {
       return res
         .status(200)
         .json({ message: `Catelogue deleted`, payload: { card } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private shareCard = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    try {
+      const { cardId } = req.params;
+      if (!cardId) {
+        throw new HttpException(400, "missing", "Please provide a card ID");
+      }
+
+      const uid = req.user.id;
+      const card = await this.cardService.getUserCardById(cardId, uid);
+
+      if (!card) {
+        return res.status(404).json({ message: "Card not found" });
+      }
+
+      // Generate the shareable URL
+      const baseUrl = process.env.APP_BASE_URL;
+      const shareableLink = `${baseUrl}/cards/shared/${cardId}`;
+
+      return res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Shareable link generated successfully",
+        payload: { shareableLink },
+      });
     } catch (error) {
       next(error);
     }
