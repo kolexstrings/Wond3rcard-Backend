@@ -177,9 +177,18 @@ class CardController implements GlobalController {
       `${this.path}/share/:cardId`,
       [
         authenticatedMiddleware,
-        validationMiddleware(validator.deleteUserOrgCard),
+        validationMiddleware(validator.validateShareCard),
       ],
       this.shareCard
+    );
+
+    this.router.get(
+      `${this.path}/qr/:cardId`,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validator.validateShareCard),
+      ],
+      this.generateQrShareLink
     );
 
     this.router.get(`${this.path}/view-card/:cardId`, this.viewCard);
@@ -743,6 +752,39 @@ class CardController implements GlobalController {
         status: "success",
         message: "Card shared successfully",
         payload: { updatedCard, shareableLink }, // Return updated card and link
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private generateQrShareLink = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    try {
+      const { cardId } = req.params;
+
+      if (!cardId) {
+        throw new HttpException(400, "missing", "Card ID is required");
+      }
+
+      // Ensure the card exists
+      const card = await this.cardService.getCardById(cardId);
+      if (!card) {
+        throw new HttpException(404, "not_found", "Card not found");
+      }
+
+      // Generate public shareable link (no recipient required)
+      const baseUrl = process.env.APP_BASE_URL;
+      const qrShareableLink = `${baseUrl}/cards/qr/${cardId}`;
+
+      return res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "QR share link generated successfully",
+        payload: { qrShareableLink },
       });
     } catch (error) {
       next(error);

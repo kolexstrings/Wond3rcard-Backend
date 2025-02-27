@@ -99,6 +99,13 @@ const validateShareCard = Joi.object({
   }),
 });
 
+const validateGenerateQrShareLink = Joi.object({
+  cardId: JoiExtended.objectId().required().messages({
+    "any.required": "Card ID is required",
+    "any.invalid": "Invalid Card ID",
+  }),
+});
+
 const parseFormData = (req: Request, res: Response, next: NextFunction) => {
   if (req.body.socialMediaLinks) {
     req.body.socialMediaLinks = Array.isArray(req.body.socialMediaLinks)
@@ -116,5 +123,6 @@ export default {
   updateCard,
   deleteUserOrgCard,
   validateShareCard,
+  validateGenerateQrShareLink,
   parseFormData,
 };

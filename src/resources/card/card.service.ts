@@ -705,6 +705,35 @@ class CardService {
     }
   }
 
+  public async generateQrShareLink(
+    cardId: string,
+    ownerId: string
+  ): Promise<string> {
+    try {
+      const cardObjectId = new Types.ObjectId(cardId);
+
+      const card = await cardModel.findOne({ _id: cardObjectId });
+      if (!card) {
+        throw new HttpException(404, "not found", "Card not found.");
+      }
+
+      // Check if the requesting user is the owner
+      if (card.ownerId.toString() !== ownerId) {
+        throw new HttpException(
+          403,
+          "forbidden",
+          "You are not authorized to generate a QR share link for this card."
+        );
+      }
+
+      // Generate the QR shareable link
+      const baseUrl = process.env.APP_BASE_URL;
+      return `${baseUrl}/cards/qr/${cardId}`;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   public async addCardCatelogue(
     cardId: string,
     uid: string,
