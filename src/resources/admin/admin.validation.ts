@@ -57,6 +57,38 @@ export const validateSubscriptionTier = Joi.object({
   }),
 });
 
+export const validateSubscriptionTierUpdate = Joi.object({
+  name: Joi.string().min(3).max(50).messages({
+    "string.min": "Tier name must be at least 3 characters",
+    "string.max": "Tier name must not exceed 50 characters",
+  }),
+  billingCycle: Joi.object({
+    monthlyPrice: Joi.number().positive().messages({
+      "number.base": "Monthly price must be a number",
+      "number.positive": "Monthly price must be a positive number",
+    }),
+    yearlyPrice: Joi.number().positive().messages({
+      "number.base": "Yearly price must be a number",
+      "number.positive": "Yearly price must be a positive number",
+    }),
+  }).messages({
+    "object.base": "Billing cycle must be an object",
+  }),
+  description: Joi.string().max(500).messages({
+    "string.max": "Description must not exceed 500 characters",
+  }),
+  trialPeriod: Joi.number().integer().positive().messages({
+    "number.base": "Trial period must be a number",
+    "number.positive": "Trial period must be a positive number",
+  }),
+  autoRenew: Joi.boolean().messages({
+    "boolean.base": "Auto-renew must be a boolean",
+  }),
+  features: Joi.array().items(Joi.string()).messages({
+    "array.base": "Features must be an array",
+  }),
+});
+
 export const validateEnableGlobal2FA = Joi.object({
   enable: Joi.boolean().required(),
 });

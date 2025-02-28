@@ -184,22 +184,6 @@ class AdminService {
   }
 
   /**
-   * get all subscription tiers available
-   */
-  public async getSubscriptionTiers(): Promise<string[]> {
-    try {
-      const tiers = await this.tier.find();
-      return tiers.map((tier) => tier.name);
-    } catch (error) {
-      throw new HttpException(
-        500,
-        "get_subscription_tiers_failed",
-        `Failed to retrieve subscription tiers: ${error}`
-      );
-    }
-  }
-
-  /**
    * change role of a specific user
    */
   public async changeUserRole(
@@ -388,6 +372,42 @@ class AdminService {
       return await newTier.save();
     } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * get all subscription tiers available
+   */
+  public async getSubscriptionTiers(): Promise<string[]> {
+    try {
+      const tiers = await this.tier.find();
+      return tiers.map((tier) => tier.name);
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "get_subscription_tiers_failed",
+        `Failed to retrieve subscription tiers: ${error}`
+      );
+    }
+  }
+
+  public async updateSubscriptionTier(
+    id: string,
+    updateData: Partial<CreateSubscriptionTier>
+  ): Promise<ITier | null> {
+    try {
+      const updatedTier = await this.tier.findByIdAndUpdate(id, updateData, {
+        new: true, // Return the updated document
+        runValidators: true, // Ensure validation is applied
+      });
+
+      return updatedTier;
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "internal_server_error",
+        "Failed to update subscription tier."
+      );
     }
   }
 

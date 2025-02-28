@@ -10,6 +10,7 @@ import {
   validateChangeUserStatus,
   validateChangeUserTier,
   validateSubscriptionTier,
+  validateSubscriptionTierUpdate,
 } from "./admin.validation";
 import GlobalController from "../../protocols/global.controller";
 import { User, UserRole } from "../user/user.protocol";
@@ -79,12 +80,6 @@ class AdminController implements GlobalController {
       this.getStatuses
     );
 
-    this.router.get(
-      `${this.path}/subscription-tiers`,
-      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
-      this.getSubscriptionTiers
-    );
-
     this.router.patch(
       `${this.path}/users/:id/role`,
       [
@@ -130,6 +125,22 @@ class AdminController implements GlobalController {
         validationMiddleware(validateSubscriptionTier),
       ],
       this.createSubscriptionTier
+    );
+
+    this.router.get(
+      `${this.path}/subscription-tiers`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getSubscriptionTiers
+    );
+
+    this.router.patch(
+      `${this.path}/subscription-tiers/:id`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateSubscriptionTierUpdate),
+      ],
+      this.updateSubscriptionTier
     );
 
     this.router.put(
@@ -309,33 +320,6 @@ class AdminController implements GlobalController {
   };
 
   /**
-   * get all subscription tiers available
-   */
-  private getSubscriptionTiers = async (
-    _req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    try {
-      const tiers = await this.adminService.getSubscriptionTiers();
-      res.status(200).json({
-        status: "success",
-        message: "Subscription tiers retrieved successfully",
-        payload: tiers,
-      });
-    } catch (error) {
-      console.error(`ERROR: ${error}`);
-      next(
-        new HttpException(
-          400,
-          "Failed to retrieve subscription tiers",
-          error.message
-        )
-      );
-    }
-  };
-
-  /**
    * change role of a specific user
    */
   private changeUserRole = async (
@@ -440,6 +424,66 @@ class AdminController implements GlobalController {
         status: "success",
         message: "Subscription tier created successfully",
         payload: newTier,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * get all subscription tiers available
+   */
+  private getSubscriptionTiers = async (
+    _req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const tiers = await this.adminService.getSubscriptionTiers();
+      res.status(200).json({
+        status: "success",
+        message: "Subscription tiers retrieved successfully",
+        payload: tiers,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(
+        new HttpException(
+          400,
+          "Failed to retrieve subscription tiers",
+          error.message
+        )
+      );
+    }
+  };
+
+  private updateSubscriptionTier = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    try {
+      const { id } = req.params;
+      const updateData: Partial<CreateSubscriptionTier> = req.body;
+
+      const updatedTier = await this.adminService.updateSubscriptionTier(
+        id,
+        updateData
+      );
+
+      if (!updatedTier) {
+        return res.status(404).json({
+          statusCode: 404,
+          status: "error",
+          message: "Subscription tier not found",
+        });
+      }
+
+      return res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Subscription tier updated successfully",
+        payload: updatedTier,
       });
     } catch (error) {
       next(error);
