@@ -89,6 +89,13 @@ export const validateSubscriptionTierUpdate = Joi.object({
   }),
 });
 
+export const validateDeleteSubscriptionTier = Joi.object({
+  newTierId: Joi.string().required().messages({
+    "string.empty": "New subscription tier ID is required",
+    "string.base": "New subscription tier ID must be a string",
+  }),
+});
+
 export const validateEnableGlobal2FA = Joi.object({
   enable: Joi.boolean().required(),
 });

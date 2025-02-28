@@ -411,6 +411,74 @@ class AdminService {
     }
   }
 
+  public async getSubscriptionTierById(id: string): Promise<ITier | null> {
+    try {
+      const tier = await this.tier.findById(id);
+      return tier;
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "internal_server_error",
+        "Failed to fetch subscription tier"
+      );
+    }
+  }
+
+  public async getSubscriptionTierCount(): Promise<number> {
+    try {
+      return await this.tier.countDocuments({});
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "internal_server_error",
+        "Failed to count subscription tiers"
+      );
+    }
+  }
+
+  public async transferUsersToNewTier(
+    oldTierId: string,
+    newTierId: string
+  ): Promise<void> {
+    try {
+      const usersToUpdate = await this.user.find({
+        subscriptionTier: oldTierId,
+      });
+
+      if (usersToUpdate.length > 0) {
+        await this.user.updateMany(
+          { subscriptionTier: oldTierId },
+          { $set: { subscriptionTier: newTierId } }
+        );
+      }
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "internal_server_error",
+        "Failed to transfer users"
+      );
+    }
+  }
+
+  public async deleteSubscriptionTier(id: string): Promise<void> {
+    try {
+      const deletedTier = await this.tier.findByIdAndDelete(id);
+      if (!deletedTier) {
+        throw new HttpException(
+          404,
+          "not_found",
+          "Subscription tier not found"
+        );
+      }
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "internal_server_error",
+        "Failed to delete subscription tier"
+      );
+    }
+  }
+
   public async enable2FAGlobally(): Promise<any> {
     const users = await this.user
       .find({ is2FAEnabled: false })

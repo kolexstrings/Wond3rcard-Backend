@@ -11,6 +11,7 @@ import {
   validateChangeUserTier,
   validateSubscriptionTier,
   validateSubscriptionTierUpdate,
+  validateDeleteSubscriptionTier,
 } from "./admin.validation";
 import GlobalController from "../../protocols/global.controller";
 import { User, UserRole } from "../user/user.protocol";
@@ -141,6 +142,16 @@ class AdminController implements GlobalController {
         validationMiddleware(validateSubscriptionTierUpdate),
       ],
       this.updateSubscriptionTier
+    );
+
+    this.router.delete(
+      `${this.path}/subscription-tiers/:id`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateDeleteSubscriptionTier),
+      ],
+      this.deleteSubscriptionTier
     );
 
     this.router.put(
@@ -484,6 +495,62 @@ class AdminController implements GlobalController {
         status: "success",
         message: "Subscription tier updated successfully",
         payload: updatedTier,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private deleteSubscriptionTier = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    try {
+      const { id } = req.params; // Subscription tier to be deleted
+      const { newTierId } = req.body; // New tier for user transfer
+
+      const newTier = await this.adminService.getSubscriptionTierById(
+        newTierId
+      );
+      if (!newTier) {
+        return res.status(404).json({
+          statusCode: 404,
+          status: "error",
+          message: "New subscription tier not found",
+        });
+      }
+
+      // Ensure the tier to be deleted exists
+      const tierToDelete = await this.adminService.getSubscriptionTierById(id);
+      if (!tierToDelete) {
+        return res.status(404).json({
+          statusCode: 404,
+          status: "error",
+          message: "Subscription tier not found",
+        });
+      }
+
+      // Check if this is the last remaining subscription tier
+      const totalTiers = await this.adminService.getSubscriptionTierCount();
+      if (totalTiers <= 1) {
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: "Cannot delete the last remaining subscription tier",
+        });
+      }
+
+      // Transfer users to the new tier
+      await this.adminService.transferUsersToNewTier(id, newTierId);
+
+      // Now delete the tier
+      await this.adminService.deleteSubscriptionTier(id);
+
+      return res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Subscription tier deleted and users transferred successfully",
       });
     } catch (error) {
       next(error);
