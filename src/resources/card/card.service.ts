@@ -298,10 +298,6 @@ class CardService {
     }
   }
 
-  async getAllCards(): Promise<Card[]> {
-    return await cardModel.find();
-  }
-
   public async deleteAllUserCards(
     uid: string
   ): Promise<{ deletedCount: number }> {

@@ -116,6 +116,7 @@ class AdminController implements GlobalController {
     this.router.get(
       `${this.path}/get-all-cards`,
       [authenticatedMiddleware],
+      verifyRolesMiddleware([UserRole.Admin]),
       this.getAllCards
     );
 

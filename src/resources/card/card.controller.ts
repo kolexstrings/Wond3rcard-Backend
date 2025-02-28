@@ -452,20 +452,6 @@ class CardController implements GlobalController {
     }
   };
 
-  /// admin only
-  private getAllCards = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<Response | void> => {
-    try {
-      const cards = await this.cardService.getAllCards();
-      return res.json(cards);
-    } catch (error) {
-      next(error);
-    }
-  };
-
   private toggleCardStatus = async (
     req: Request,
     res: Response,
@@ -734,9 +720,8 @@ class CardController implements GlobalController {
         );
       }
 
-      const uid = req.user.id; // Owner ID (assuming user is authenticated)
+      const uid = req.user.id;
 
-      // Call the shareCard service to update the database
       const updatedCard = await this.cardService.shareCard(
         cardId,
         uid,
@@ -751,7 +736,7 @@ class CardController implements GlobalController {
         statusCode: 200,
         status: "success",
         message: "Card shared successfully",
-        payload: { updatedCard, shareableLink }, // Return updated card and link
+        payload: { updatedCard, shareableLink },
       });
     } catch (error) {
       next(error);
