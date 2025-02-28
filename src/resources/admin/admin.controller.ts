@@ -113,6 +113,12 @@ class AdminController implements GlobalController {
       this.changeUserStatus
     );
 
+    this.router.get(
+      `${this.path}/get-all-cards`,
+      [authenticatedMiddleware],
+      this.getAllCards
+    );
+
     this.router.put(
       `${this.path}/enable-2fa-globally`,
       [
@@ -390,6 +396,19 @@ class AdminController implements GlobalController {
     } catch (error) {
       console.error(`ERROR: ${error}`);
       next(new HttpException(400, "Failed to update user tier", error.message));
+    }
+  };
+
+  private getAllCards = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    try {
+      const cards = await this.adminService.getAllCards();
+      return res.json(cards);
+    } catch (error) {
+      next(error);
     }
   };
 

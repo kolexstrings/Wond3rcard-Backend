@@ -8,10 +8,12 @@ import HttpException from "../../exceptions/http.exception";
 import MailTemplates from "../mails/mail.templates";
 import NodeMailerService from "../mails/nodemailer.service";
 import userModel from "../user/user.model";
+import cardModel from "../card/card.model";
 import roleModel from "./role/role.model";
 import statusModel from "./status/status.model";
 import tierModel from "./subscriptionTier/tier.model";
 import { User, UserRole, UserStatus, UserTiers } from "../user/user.protocol";
+import { Card } from "../card/card.protocol";
 
 class AdminService {
   private user = userModel;
@@ -287,6 +289,10 @@ class AdminService {
         `Failed to update user subscription tier: ${error}`
       );
     }
+  }
+
+  async getAllCards(): Promise<Card[]> {
+    return await cardModel.find();
   }
 
   public async toggleMaintenanceMode(enabled: boolean): Promise<string> {
