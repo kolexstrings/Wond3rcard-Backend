@@ -19,7 +19,7 @@ export const validateUpdateUser = Joi.object({
   designation: Joi.string().allow(""),
 });
 
-const validateSubscriptionTier = Joi.object({
+export const validateSubscriptionTier = Joi.object({
   name: Joi.string().min(3).max(50).required().messages({
     "string.empty": "Subscription Tier name is required",
     "string.min": "Tier name must be at least 3 characters",

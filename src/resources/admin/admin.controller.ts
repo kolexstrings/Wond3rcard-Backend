@@ -13,7 +13,7 @@ import {
 } from "./admin.validation";
 import GlobalController from "../../protocols/global.controller";
 import { User, UserRole } from "../user/user.protocol";
-import { CreateSubscriptionTier } from "./subscriptionTier/admin.protocol";
+import { CreateSubscriptionTier } from "./admin.protocol";
 import AdminService from "./admin.service";
 import validationMiddleware from "../../middlewares/validation.middleware";
 

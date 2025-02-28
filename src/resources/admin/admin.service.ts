@@ -13,8 +13,9 @@ import roleModel from "./role/role.model";
 import statusModel from "./status/status.model";
 import tierModel from "./subscriptionTier/tier.model";
 import { User, UserRole, UserStatus, UserTiers } from "../user/user.protocol";
-import { CreateSubscriptionTier } from "./subscriptionTier/admin.protocol";
+import { CreateSubscriptionTier } from "./admin.protocol";
 import { Card } from "../card/card.protocol";
+import { ITier } from "./subscriptionTier/tier.model";
 
 class AdminService {
   private user = userModel;
@@ -342,7 +343,7 @@ class AdminService {
   }
   public async createSubscriptionTier(
     tierData: CreateSubscriptionTier
-  ): Promise<CreateSubscriptionTier> {
+  ): Promise<ITier> {
     try {
       const {
         name,
@@ -363,6 +364,15 @@ class AdminService {
           400,
           "bad_request",
           "Billing cycle with both monthly and yearly prices is required."
+        );
+      }
+
+      const existingTier = await this.tier.findOne({ name });
+      if (existingTier) {
+        throw new HttpException(
+          409,
+          "conflict",
+          "Subscription tier already exists."
         );
       }
 
