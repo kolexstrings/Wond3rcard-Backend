@@ -325,6 +325,7 @@ class AdminService {
       console.log(`Application restarted successfully: ${stdout}`);
     });
   }
+
   public async createSubscriptionTier(
     tierData: CreateSubscriptionTier
   ): Promise<ITier> {
@@ -338,7 +339,16 @@ class AdminService {
         features,
       } = tierData;
 
-      // Ensure billingCycle exists before checking its properties
+      // Validate if the tier name is in the allowed UserTiers enum
+      if (!Object.values(UserTiers).includes(name as UserTiers)) {
+        throw new HttpException(
+          400,
+          "bad_request",
+          `Invalid subscription tier. Allowed tiers: ${Object.values(
+            UserTiers
+          ).join(", ")}`
+        );
+      }
       if (
         !billingCycle ||
         !billingCycle.monthlyPrice ||
@@ -361,7 +371,7 @@ class AdminService {
       }
 
       const newTier = new this.tier({
-        name,
+        name: name as UserTiers,
         billingCycle,
         description,
         trialPeriod,
