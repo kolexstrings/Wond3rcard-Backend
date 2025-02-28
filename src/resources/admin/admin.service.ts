@@ -339,8 +339,11 @@ class AdminService {
         features,
       } = tierData;
 
+      // Normalize input to lowercase to match enum values
+      const normalizedTierName = name.toLowerCase();
+
       // Validate if the tier name is in the allowed UserTiers enum
-      if (!Object.values(UserTiers).includes(name as UserTiers)) {
+      if (!Object.values(UserTiers).includes(normalizedTierName as UserTiers)) {
         throw new HttpException(
           400,
           "bad_request",
@@ -349,6 +352,8 @@ class AdminService {
           ).join(", ")}`
         );
       }
+
+      // Ensuring billingCycle exists before checking its properties
       if (
         !billingCycle ||
         !billingCycle.monthlyPrice ||
@@ -361,7 +366,10 @@ class AdminService {
         );
       }
 
-      const existingTier = await this.tier.findOne({ name });
+      // Checking if a tier with the same normalized name already exists
+      const existingTier = await this.tier.findOne({
+        name: normalizedTierName,
+      });
       if (existingTier) {
         throw new HttpException(
           409,
@@ -370,8 +378,9 @@ class AdminService {
         );
       }
 
+      // Create and save the new subscription tier
       const newTier = new this.tier({
-        name: name as UserTiers,
+        name: normalizedTierName as UserTiers,
         billingCycle,
         description,
         trialPeriod,
