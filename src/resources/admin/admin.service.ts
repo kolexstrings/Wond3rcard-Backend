@@ -13,6 +13,7 @@ import roleModel from "./role/role.model";
 import statusModel from "./status/status.model";
 import tierModel from "./subscriptionTier/tier.model";
 import { User, UserRole, UserStatus, UserTiers } from "../user/user.protocol";
+import { CreateSubscriptionTier } from "./subscriptionTier/admin.protocol";
 import { Card } from "../card/card.protocol";
 
 class AdminService {
@@ -338,6 +339,46 @@ class AdminService {
       }
       console.log(`Application restarted successfully: ${stdout}`);
     });
+  }
+  public async createSubscriptionTier(
+    tierData: CreateSubscriptionTier
+  ): Promise<CreateSubscriptionTier> {
+    try {
+      const {
+        name,
+        billingCycle,
+        description,
+        trialPeriod,
+        autoRenew,
+        features,
+      } = tierData;
+
+      // Ensure billingCycle exists before checking its properties
+      if (
+        !billingCycle ||
+        !billingCycle.monthlyPrice ||
+        !billingCycle.yearlyPrice
+      ) {
+        throw new HttpException(
+          400,
+          "bad_request",
+          "Billing cycle with both monthly and yearly prices is required."
+        );
+      }
+
+      const newTier = new this.tier({
+        name,
+        billingCycle,
+        description,
+        trialPeriod,
+        autoRenew,
+        features,
+      });
+
+      return await newTier.save();
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async enable2FAGlobally(): Promise<any> {

@@ -9,9 +9,11 @@ import {
   validateChangeUserRole,
   validateChangeUserStatus,
   validateChangeUserTier,
+  validateSubscriptionTier,
 } from "./admin.validation";
 import GlobalController from "../../protocols/global.controller";
 import { User, UserRole } from "../user/user.protocol";
+import { CreateSubscriptionTier } from "./subscriptionTier/admin.protocol";
 import AdminService from "./admin.service";
 import validationMiddleware from "../../middlewares/validation.middleware";
 
@@ -118,6 +120,16 @@ class AdminController implements GlobalController {
       [authenticatedMiddleware],
       verifyRolesMiddleware([UserRole.Admin]),
       this.getAllCards
+    );
+
+    this.router.post(
+      `${this.path}/subscription-tiers`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validateSubscriptionTier),
+      ],
+      this.createSubscriptionTier
     );
 
     this.router.put(
@@ -408,6 +420,27 @@ class AdminController implements GlobalController {
     try {
       const cards = await this.adminService.getAllCards();
       return res.json(cards);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private createSubscriptionTier = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    try {
+      const tierData: CreateSubscriptionTier = req.body;
+
+      const newTier = await this.adminService.createSubscriptionTier(tierData);
+
+      return res.status(201).json({
+        statusCode: 201,
+        status: "success",
+        message: "Subscription tier created successfully",
+        payload: newTier,
+      });
     } catch (error) {
       next(error);
     }
