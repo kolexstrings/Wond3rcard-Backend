@@ -539,7 +539,7 @@ class CardService {
   public async deleteSocialMediaLink(
     cardId: string,
     userId: string,
-    socialMediaId: string
+    link: string
   ): Promise<Card> {
     const card = await cardModel.findOne({ _id: cardId, ownerId: userId });
     if (!card) {
@@ -551,7 +551,7 @@ class CardService {
     }
 
     card.socialMediaLinks = card.socialMediaLinks.filter(
-      (link) => !(link.media.name === socialMediaId)
+      (social) => !(social.media.link !== link)
     );
 
     const updatedCard = await card.save();

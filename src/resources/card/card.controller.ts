@@ -470,7 +470,7 @@ class CardController implements GlobalController {
     next: NextFunction
   ): Promise<Response | void> => {
     try {
-      const { cardId, iconUrl, type, name, username, link } = req.body;
+      const { cardId, iconUrl, type, name, link } = req.body;
       const socialMediaLink: SocialMediaLink = {
         iconUrl,
         type,
@@ -481,7 +481,6 @@ class CardController implements GlobalController {
       const card = await this.cardService.addSocialMediaLink(
         cardId,
         uid,
-        username,
         socialMediaLink
       );
       return res
@@ -498,10 +497,9 @@ class CardController implements GlobalController {
     next: NextFunction
   ): Promise<Response | void> => {
     try {
-      const { cardId, iconUrl, type, name, username, link, active } = req.body;
+      const { cardId, iconUrl, type, name, link, active } = req.body;
 
       const socialMediaLink: CardSocialMediaLink = {
-        username,
         active,
         media: {
           iconUrl,
@@ -531,12 +529,12 @@ class CardController implements GlobalController {
     next: NextFunction
   ): Promise<Response | void> => {
     try {
-      const { cardId, name } = req.body;
+      const { cardId, link } = req.body;
       const uid = req.user.id;
       const card = await this.cardService.deleteSocialMediaLink(
         cardId,
         uid,
-        name
+        link
       );
       return res
         .status(200)
