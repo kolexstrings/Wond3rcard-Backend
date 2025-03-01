@@ -101,12 +101,6 @@ class CardController implements GlobalController {
       this.deleteUserOrgCard
     );
 
-    this.router.get(
-      `${this.path}/get-all-cards`,
-      [authenticatedMiddleware],
-      this.getAllCards
-    );
-
     this.router.patch(
       `${this.path}/toggle-card-status/:cardId`,
       [authenticatedMiddleware],
@@ -807,5 +801,7 @@ class CardController implements GlobalController {
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {};
+
+  
 }
 export default CardController;

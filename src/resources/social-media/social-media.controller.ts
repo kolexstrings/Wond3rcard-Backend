@@ -69,7 +69,7 @@ class SocialMediaController implements GeneralController {
     next: NextFunction
   ): Promise<Response | void> => {
     try {
-      const { name, link, mediaType, description } = req.body;
+      const { name, mediaType } = req.body;
       const file = req.file;
 
       if (!file) {
@@ -79,9 +79,7 @@ class SocialMediaController implements GeneralController {
       const socialMedial = await this.socialMediaService.checkAndUpdateOrCreate(
         name,
         file.path,
-        link,
-        mediaType,
-        description
+        mediaType
       );
 
       return res.status(201).json({

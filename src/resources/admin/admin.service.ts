@@ -326,6 +326,67 @@ class AdminService {
     });
   }
 
+  public async createSocialMedia(
+    tierData: CreateSubscriptionTier
+  ): Promise<ITier> {
+    try {
+      const { name, iconUrl } = socialMediaData;
+
+      // Normalize input to lowercase to match enum values
+      const normalizedTierName = name.toLowerCase();
+
+      // Validate if the tier name is in the allowed UserTiers enum
+      if (!Object.values(UserTiers).includes(normalizedTierName as UserTiers)) {
+        throw new HttpException(
+          400,
+          "bad_request",
+          `Invalid subscription tier. Allowed tiers: ${Object.values(
+            UserTiers
+          ).join(", ")}`
+        );
+      }
+
+      // Ensuring billingCycle exists before checking its properties
+      if (
+        !billingCycle ||
+        !billingCycle.monthlyPrice ||
+        !billingCycle.yearlyPrice
+      ) {
+        throw new HttpException(
+          400,
+          "bad_request",
+          "Billing cycle with both monthly and yearly prices is required."
+        );
+      }
+
+      // Checking if a tier with the same normalized name already exists
+      const existingTier = await this.tier.findOne({
+        name: normalizedTierName,
+      });
+      if (existingTier) {
+        throw new HttpException(
+          409,
+          "conflict",
+          "Subscription tier already exists."
+        );
+      }
+
+      // Create and save the new subscription tier
+      const newTier = new this.tier({
+        name: normalizedTierName as UserTiers,
+        billingCycle,
+        description,
+        trialPeriod,
+        autoRenew,
+        features,
+      });
+
+      return await newTier.save();
+    } catch (error) {
+      throw error;
+    }
+  }
+
   public async createSubscriptionTier(
     tierData: CreateSubscriptionTier
   ): Promise<ITier> {
@@ -416,8 +477,8 @@ class AdminService {
   ): Promise<ITier | null> {
     try {
       const updatedTier = await this.tier.findByIdAndUpdate(id, updateData, {
-        new: true, // Return the updated document
-        runValidators: true, // Ensure validation is applied
+        new: true,
+        runValidators: true,
       });
 
       return updatedTier;

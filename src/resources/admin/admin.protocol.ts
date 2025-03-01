@@ -9,3 +9,8 @@ export interface CreateSubscriptionTier {
   autoRenew: boolean;
   features: string[];
 }
+
+export interface CreateSocialMedia {
+  name: string;
+  iconUrl: string;
+}

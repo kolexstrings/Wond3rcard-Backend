@@ -15,7 +15,7 @@ import {
 } from "./admin.validation";
 import GlobalController from "../../protocols/global.controller";
 import { User, UserRole } from "../user/user.protocol";
-import { CreateSubscriptionTier } from "./admin.protocol";
+import { CreateSubscriptionTier, CreateSocialMedia } from "./admin.protocol";
 import AdminService from "./admin.service";
 import validationMiddleware from "../../middlewares/validation.middleware";
 
@@ -28,6 +28,9 @@ class AdminController implements GlobalController {
     this.initializeRoute();
   }
 
+  /**
+   * Users
+   */
   initializeRoute(): void {
     this.router.get(
       `${this.path}/all-users`,
@@ -69,6 +72,9 @@ class AdminController implements GlobalController {
       this.unbanUser
     );
 
+    /**
+     * Privilledges and control
+     */
     this.router.get(
       `${this.path}/roles`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
@@ -111,6 +117,9 @@ class AdminController implements GlobalController {
       this.changeUserStatus
     );
 
+    /**
+     * Cards
+     */
     this.router.get(
       `${this.path}/get-all-cards`,
       [authenticatedMiddleware],
@@ -118,6 +127,19 @@ class AdminController implements GlobalController {
       this.getAllCards
     );
 
+    /**
+     * Social media
+     */
+    this.router.post(
+      `${this.path}/social-media`,
+      [authenticatedMiddleware],
+      verifyRolesMiddleware([UserRole.Admin]),
+      this.createSocialMedia
+    );
+
+    /**
+     * Subscription
+     */
     this.router.post(
       `${this.path}/subscription-tiers`,
       [
@@ -154,6 +176,9 @@ class AdminController implements GlobalController {
       this.deleteSubscriptionTier
     );
 
+    /**
+     * Security
+     */
     this.router.put(
       `${this.path}/enable-2fa-globally`,
       [
@@ -175,6 +200,9 @@ class AdminController implements GlobalController {
     );
   }
 
+  /**
+   * Fetch details of all users
+   */
   private getAllUsers = async (
     req: Request,
     res: Response,
@@ -407,6 +435,9 @@ class AdminController implements GlobalController {
     }
   };
 
+  /**
+   * Fetch all cards
+   */
   private getAllCards = async (
     req: Request,
     res: Response,
@@ -420,6 +451,35 @@ class AdminController implements GlobalController {
     }
   };
 
+  /**
+   * Create social media
+   */
+  private createSocialMedia = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    try {
+      const socialMediaData: CreateSocialMedia = req.body;
+
+      const newSocialMedia = await this.adminService.createSocialMedia(
+        socialMediaData
+      );
+
+      return res.status(201).json({
+        statusCode: 201,
+        status: "success",
+        message: "Social media created successfully",
+        payload: newSocialMedia,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Create subscription tier
+   */
   private createSubscriptionTier = async (
     req: Request,
     res: Response,
@@ -468,6 +528,9 @@ class AdminController implements GlobalController {
     }
   };
 
+  /**
+   * Update subscription tier
+   */
   private updateSubscriptionTier = async (
     req: Request,
     res: Response,
@@ -501,6 +564,9 @@ class AdminController implements GlobalController {
     }
   };
 
+  /**
+   * Delete subscription tier
+   */
   private deleteSubscriptionTier = async (
     req: Request,
     res: Response,
@@ -557,6 +623,9 @@ class AdminController implements GlobalController {
     }
   };
 
+  /**
+   * Turn on and off maintenance mode
+   */
   private toggleMaintenance = async (
     req: Request,
     res: Response,
@@ -571,6 +640,9 @@ class AdminController implements GlobalController {
     }
   };
 
+  /**
+   * Turn on 2fa authentication
+   */
   private assignGlobal2FA = async (
     req: Request,
     res: Response,
