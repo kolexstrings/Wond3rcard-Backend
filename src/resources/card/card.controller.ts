@@ -464,7 +464,6 @@ class CardController implements GlobalController {
       next(error);
     }
   };
-
   private addSocialMediaLink = async (
     req: Request,
     res: Response,
@@ -591,7 +590,7 @@ class CardController implements GlobalController {
       );
       return res
         .status(200)
-        .json({ message: `Testimony addedd`, payload: { card } });
+        .json({ message: `Testimony added`, payload: { card } });
     } catch (error) {
       next(error);
     }
@@ -801,7 +800,5 @@ class CardController implements GlobalController {
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {};
-
-  
 }
 export default CardController;
