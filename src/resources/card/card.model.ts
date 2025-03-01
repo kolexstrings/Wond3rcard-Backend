@@ -89,7 +89,6 @@ const cardSchema = new Schema<Card>(
         active: { type: Boolean, required: false, default: false },
       },
     ],
-
     cardName: { type: String, required: true },
     prefix: { type: String, default: "" },
     pronoun: { type: String, default: "" },
