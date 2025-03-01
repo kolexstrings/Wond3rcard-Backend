@@ -494,7 +494,6 @@ class CardService {
 
     card.socialMediaLinks.push({
       media: socialMediaLink,
-      username: username,
       active: true,
     });
 
@@ -528,7 +527,6 @@ class CardService {
     card.socialMediaLinks[socialMediaLinkIndex] = {
       ...socialMediaLink,
       media: { ...socialMediaLink.media, ...updatedLinkData.media },
-      username: updatedLinkData.username ?? socialMediaLink.username,
       active: updatedLinkData.active ?? socialMediaLink.active,
     };
 

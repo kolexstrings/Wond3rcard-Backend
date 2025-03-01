@@ -85,7 +85,6 @@ const cardSchema = new Schema<Card>(
           type: { type: String, required: true },
           link: { type: String, required: true },
         },
-        username: { type: String, required: false, default: "" },
         active: { type: Boolean, required: false, default: false },
       },
     ],

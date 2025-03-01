@@ -78,7 +78,6 @@ interface SharedWith {
 
 interface CardSocialMediaLink {
   media: SocialMediaLink;
-  username: string;
   active: boolean;
 }
 

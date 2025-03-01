@@ -500,13 +500,13 @@ class CardController implements GlobalController {
       const { cardId, iconUrl, type, name, link, active } = req.body;
 
       const socialMediaLink: CardSocialMediaLink = {
-        active,
         media: {
           iconUrl,
           type,
           name,
           link,
         },
+        active,
       };
       const uid = req.user.id;
       const card = await this.cardService.updateSocialMediaLink(
