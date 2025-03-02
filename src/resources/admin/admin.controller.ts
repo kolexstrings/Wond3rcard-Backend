@@ -452,32 +452,6 @@ class AdminController implements GlobalController {
   };
 
   /**
-   * Create social media
-   */
-  private createSocialMedia = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<Response | void> => {
-    try {
-      const socialMediaData: CreateSocialMedia = req.body;
-
-      const newSocialMedia = await this.adminService.createSocialMedia(
-        socialMediaData
-      );
-
-      return res.status(201).json({
-        statusCode: 201,
-        status: "success",
-        message: "Social media created successfully",
-        payload: newSocialMedia,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  /**
    * Create subscription tier
    */
   private createSubscriptionTier = async (
