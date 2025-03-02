@@ -4,7 +4,11 @@ import authenticatedMiddleware from "../../../middlewares/authenticated.middlewa
 import GeneralController from "../../../protocols/global.controller";
 import PaystackService from "./paystack.service";
 import userModel from "../../user/user.model";
-import tierModel from "../../admin/subscriptionTier/tier.model";
+import validationMiddleware from "../../../middlewares/validation.middleware";
+import {
+  validateInitializePayment,
+  validateWebhookPayload,
+} from "./paystack.validations";
 
 class PaystackController implements GeneralController {
   public path = "/paystack";
@@ -18,10 +22,20 @@ class PaystackController implements GeneralController {
   private initializeRoute(): void {
     this.router.post(
       `${this.path}/initialize-payment`,
-      authenticatedMiddleware,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validateInitializePayment),
+      ],
       this.initializePayment
     );
-    this.router.post(`${this.path}/webhook`, this.handleWebhook);
+
+    this.router.post(
+      `${this.path}/webhook`,
+      validationMiddleware(validateWebhookPayload),
+      this.handleWebhook
+    );
+
+    this.router.get(`${this.path}/verify/:reference`, this.verifyTransaction);
   }
 
   private initializePayment = async (
@@ -92,6 +106,33 @@ class PaystackController implements GeneralController {
       }
 
       res.status(400).json({ message: "Unhandled event" });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private verifyTransaction = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { reference } = req.params;
+      if (!reference) {
+        return next(
+          new HttpException(400, "error", "Transaction reference is required")
+        );
+      }
+
+      const verification = await this.paystackService.verifyTransaction(
+        reference
+      );
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: verification.data,
+      });
     } catch (error) {
       next(error);
     }

@@ -21,7 +21,7 @@ class PaystackService {
     const response = await axios.post(
       `${this.baseUrl}/transaction/initialize`,
       {
-        email: user.email, // Replace this with user email from DB
+        email: user.email,
         amount: price * 100, // Convert to kobo
         callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
         metadata: {
