@@ -480,7 +480,6 @@ class CardService {
   public async addSocialMediaLink(
     cardId: string,
     userId: string,
-    username: string,
     socialMediaLink: SocialMediaLink
   ): Promise<Card> {
     const card = await cardModel.findOne({ _id: cardId, ownerId: userId });

@@ -109,7 +109,10 @@ class CardController implements GlobalController {
 
     this.router.put(
       `${this.path}/add-social-media`,
-      [authenticatedMiddleware],
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validator.socialMediaLinksSchema),
+      ],
       this.addSocialMediaLink
     );
 
