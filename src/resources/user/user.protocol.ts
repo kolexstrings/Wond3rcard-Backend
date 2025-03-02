@@ -32,7 +32,12 @@ interface User extends Document {
   isSoftDeleted: boolean;
   isVerified: boolean;
   refreshToken: string;
-  userTiers: UserTiers;
+  userTier: {
+    plan: UserTiers;
+    status: "active" | "inactive";
+    transactionId: string | null;
+    expiresAt: Date | null;
+  };
   organizations: OrganizationMember[];
   paystackCustomerId: string;
   stripeCustomerId: string;
