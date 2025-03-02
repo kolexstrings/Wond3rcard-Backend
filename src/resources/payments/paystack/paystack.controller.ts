@@ -84,7 +84,7 @@ class PaystackController implements GeneralController {
 
       const { event, data } = req.body;
       if (event === "charge.success") {
-        const { userId, plan, billingCycle, durationInDays } = data.metadata;
+        const { userId, plan, durationInDays } = data.metadata;
         const transactionId = data.id;
 
         const user = await userModel.findById(userId);
