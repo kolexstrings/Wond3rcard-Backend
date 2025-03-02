@@ -37,7 +37,7 @@ class InteractionController implements GeneralController {
     try {
       const userId = req.user.id
       const analytics = await this.service.getAllUserCardsAnalytics(userId)
-      return res.status(201).json({ status: "success", message: "Analytics retrived successfully", payload: { analytics }, });
+      return res.status(201).json({ status: "success", message: "Analytics retrieved successfully", payload: { analytics }, });
     } catch (error) {
       next(error);
     }

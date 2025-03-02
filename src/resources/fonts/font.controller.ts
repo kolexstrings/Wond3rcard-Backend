@@ -5,7 +5,7 @@ import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
 import { uploadFontMiddleware } from "../../services/multers.config";
-import { UserType } from "../user/user.protocol";
+import { UserRole } from "../user/user.protocol";
 import FontsService from "./fonts.service";
 import validator from "./fonts.validation";
 
@@ -15,7 +15,6 @@ class FontsController implements GeneralController {
   private fontsService = new FontsService();
 
   constructor() {
-
     this.initializeRoute();
   }
 
@@ -26,19 +25,18 @@ class FontsController implements GeneralController {
       `${this.path}/`,
       [
         authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         uploadFontMiddleware,
       ],
       validationMiddleware(validator.upload),
       this.uploadFont
     );
 
-
     this.router.put(
       `${this.path}/`,
       [
         authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         uploadFontMiddleware,
         validationMiddleware(validator.update),
       ],
@@ -50,7 +48,7 @@ class FontsController implements GeneralController {
       `${this.path}/`,
       [
         authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         validationMiddleware(validator.deleteFont),
       ],
       this.deleteFont
@@ -64,13 +62,11 @@ class FontsController implements GeneralController {
   ): Promise<Response | void> => {
     try {
       const fonts = await this.fontsService.getAllFonts();
-      return res
-        .status(201)
-        .json({
-          status: "success",
-          message: "Fonts retrieved successfully",
-          payload: { fonts },
-        });
+      return res.status(201).json({
+        status: "success",
+        message: "Fonts retrieved successfully",
+        payload: { fonts },
+      });
     } catch (error) {
       next(
         new HttpException(500, "failed", `Failed to retrieve fonts:${error}`)
@@ -95,18 +91,15 @@ class FontsController implements GeneralController {
         style,
         path
       );
-      return res
-        .status(201)
-        .json({
-          status: "success",
-          message: "File uploaded successfully",
-          payload: { result },
-        });
+      return res.status(201).json({
+        status: "success",
+        message: "File uploaded successfully",
+        payload: { result },
+      });
     } catch (error) {
       next(new HttpException(500, "failed", `Failed to upload font:${error}`));
     }
   };
-
 
   private updateFont = async (
     req: Request,
@@ -120,7 +113,10 @@ class FontsController implements GeneralController {
       }
 
       const updatedSocialMedia = await this.fontsService.update(updates);
-      return res.status(200).json({ message: 'Font updated successfully', payload: updatedSocialMedia });
+      return res.status(200).json({
+        message: "Font updated successfully",
+        payload: updatedSocialMedia,
+      });
     } catch (error) {
       next(error);
     }
@@ -134,7 +130,7 @@ class FontsController implements GeneralController {
     try {
       const { id } = req.body;
       await this.fontsService.delete(id);
-      return res.status(200).json({ message: 'Font deleted successfully', });
+      return res.status(200).json({ message: "Font deleted successfully" });
     } catch (error) {
       next(error);
     }

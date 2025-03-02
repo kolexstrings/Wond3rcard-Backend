@@ -1,11 +1,15 @@
-import { generate } from 'otp-generator';
-import otpModel from './otp.model';
+import { generate } from "otp-generator";
+import otpModel from "./otp.model";
 
 class OTPService {
   private opt = otpModel;
 
   private async generateOtp(): Promise<String | Error> {
-    const otp = generate(6, { upperCaseAlphabets: false, lowerCaseAlphabets: true, specialChars: false });
+    const otp = generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: true,
+      specialChars: false,
+    });
     return otp;
   }
 
@@ -16,7 +20,6 @@ class OTPService {
 
     return otpDocument.otp;
   }
-
 
   public async verifyOtp(userId: string, otp: string): Promise<boolean> {
     const otpDoc = await this.opt.findOne({ userId: userId, otp: otp });

@@ -298,10 +298,6 @@ class CardService {
     }
   }
 
-  async getAllCards(): Promise<Card[]> {
-    return await cardModel.find();
-  }
-
   public async deleteAllUserCards(
     uid: string
   ): Promise<{ deletedCount: number }> {
@@ -484,7 +480,6 @@ class CardService {
   public async addSocialMediaLink(
     cardId: string,
     userId: string,
-    username: string,
     socialMediaLink: SocialMediaLink
   ): Promise<Card> {
     const card = await cardModel.findOne({ _id: cardId, ownerId: userId });
@@ -498,7 +493,6 @@ class CardService {
 
     card.socialMediaLinks.push({
       media: socialMediaLink,
-      username: username,
       active: true,
     });
 
@@ -532,7 +526,6 @@ class CardService {
     card.socialMediaLinks[socialMediaLinkIndex] = {
       ...socialMediaLink,
       media: { ...socialMediaLink.media, ...updatedLinkData.media },
-      username: updatedLinkData.username ?? socialMediaLink.username,
       active: updatedLinkData.active ?? socialMediaLink.active,
     };
 
@@ -543,7 +536,7 @@ class CardService {
   public async deleteSocialMediaLink(
     cardId: string,
     userId: string,
-    socialMediaId: string
+    link: string
   ): Promise<Card> {
     const card = await cardModel.findOne({ _id: cardId, ownerId: userId });
     if (!card) {
@@ -555,7 +548,7 @@ class CardService {
     }
 
     card.socialMediaLinks = card.socialMediaLinks.filter(
-      (link) => !(link.media.name === socialMediaId)
+      (social) => !(social.media.link !== link)
     );
 
     const updatedCard = await card.save();
@@ -644,6 +637,94 @@ class CardService {
   }
   #isOwner(ownerId: string | mongoose.Types.ObjectId, uid: string): boolean {
     return ownerId.toString() === uid;
+  }
+
+  public async shareCard(
+    cardId: string,
+    ownerId: string,
+    recipientId: string
+  ): Promise<Card> {
+    try {
+      const cardObjectId = new Types.ObjectId(cardId);
+      const recipientObjectId = new Types.ObjectId(recipientId);
+
+      const card = await cardModel.findOne({ _id: cardObjectId });
+      if (!card) {
+        throw new HttpException(404, "not found", "Card not found.");
+      }
+
+      // Check if the requesting user is the owner
+      if (card.ownerId.toString() !== ownerId) {
+        throw new HttpException(
+          403,
+          "forbidden",
+          "You are not authorized to share this card."
+        );
+      }
+
+      if (ownerId === recipientId) {
+        throw new HttpException(
+          400,
+          "bad request",
+          "You cannot share a card with yourself."
+        );
+      }
+
+      // Check if recipient exists
+      const recipient = await userModel.findById(recipientObjectId);
+      if (!recipient) {
+        throw new HttpException(404, "not found", "Recipient user not found.");
+      }
+
+      // Prevent duplicate sharing
+      const alreadyShared = card.sharedWith.some((entry) =>
+        entry.userId.equals(recipientObjectId)
+      );
+      if (alreadyShared) {
+        throw new HttpException(
+          400,
+          "bad request",
+          "Card already shared with this user."
+        );
+      }
+
+      // Add recipient to the shared list
+      card.sharedWith.push({ userId: recipientObjectId, sharedAt: new Date() });
+      const updatedCard = await card.save();
+
+      return updatedCard;
+    } catch (error) {
+      throw new HttpException(500, "Internal server error", error.message);
+    }
+  }
+
+  public async generateQrShareLink(
+    cardId: string,
+    ownerId: string
+  ): Promise<string> {
+    try {
+      const cardObjectId = new Types.ObjectId(cardId);
+
+      const card = await cardModel.findOne({ _id: cardObjectId });
+      if (!card) {
+        throw new HttpException(404, "not found", "Card not found.");
+      }
+
+      // Check if the requesting user is the owner
+      if (card.ownerId.toString() !== ownerId) {
+        throw new HttpException(
+          403,
+          "forbidden",
+          "You are not authorized to generate a QR share link for this card."
+        );
+      }
+
+      // Generate the QR shareable link
+      const baseUrl = process.env.APP_BASE_URL;
+      return `${baseUrl}/cards/qr/${cardId}`;
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async addCardCatelogue(

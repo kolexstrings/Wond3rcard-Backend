@@ -14,40 +14,64 @@ import profileModel from "../profile/profile.model";
 import userModel from "../user/user.model";
 import { User } from "../user/user.protocol";
 
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Exists" : "Not Set");
 
 class AuthService {
-
   private user = userModel;
   private profile = profileModel;
   private otpService = new OTPService();
   private mailer = new NodeMailerService();
 
-  public async signUp(firstName, lastName, otherName, email, mobileNumber, password, fcmToken, companyName, designation, profilePhoto?: Express.Multer.File,
-    coverPhoto?: Express.Multer.File): Promise<{ accessToken: string; refreshToken: string }> {
+  public async signUp(
+    firstName,
+    lastName,
+    otherName,
+    email,
+    mobileNumber,
+    password,
+    fcmToken,
+    companyName,
+    designation,
+    profilePhoto?: Express.Multer.File,
+    coverPhoto?: Express.Multer.File
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      const username = email.split('@')[0]
+      const username = email.split("@")[0];
 
-      const user = await this.user.create({ username, email, password, fcmToken });
+      const user = await this.user.create({
+        username,
+        email,
+        password,
+        fcmToken,
+      });
 
-      let profileUrl = '';
+      let profileUrl = "";
       if (profilePhoto != null && profilePhoto.destination != null) {
-        const profilePhotoDestination = profilePhoto.destination
-        const profilePhotoFileame = profilePhoto.filename
+        const profilePhotoDestination = profilePhoto.destination;
+        const profilePhotoFileame = profilePhoto.filename;
         const profileFileExt = path.extname(profilePhoto.originalname);
         const newProfilePhotoFileame = `profilePhoto_${user.id}${profileFileExt}`;
-        await renameUploadedFile(profilePhotoFileame, newProfilePhotoFileame, profilePhotoDestination);
-        profileUrl = `${profilePhotoDestination}/${newProfilePhotoFileame}`
+        await renameUploadedFile(
+          profilePhotoFileame,
+          newProfilePhotoFileame,
+          profilePhotoDestination
+        );
+        profileUrl = `${profilePhotoDestination}/${newProfilePhotoFileame}`;
       }
 
-      let coverUrl = '';
+      let coverUrl = "";
       if (coverPhoto != null && coverPhoto.destination != null) {
-        const coverPhotoDestination = coverPhoto.destination
-        const coverPhotoFileame = coverPhoto.filename
+        const coverPhotoDestination = coverPhoto.destination;
+        const coverPhotoFileame = coverPhoto.filename;
         const coverFileExt = path.extname(profilePhoto.originalname);
         const newCoverPhotoFileame = `coverPhoto_${user.id}${coverFileExt}`;
-        await renameUploadedFile(coverPhotoFileame, newCoverPhotoFileame, coverPhotoDestination);
-        coverUrl = `${coverPhotoDestination}/${newCoverPhotoFileame}`
-
+        await renameUploadedFile(
+          coverPhotoFileame,
+          newCoverPhotoFileame,
+          coverPhotoDestination
+        );
+        coverUrl = `${coverPhotoDestination}/${newCoverPhotoFileame}`;
       }
 
       const tokenSession = token.generateSessionId();
@@ -67,31 +91,44 @@ class AuthService {
         email: email,
         designation: designation,
         profileUrl: profileUrl,
-        coverUrl: coverUrl
-      })
+        coverUrl: coverUrl,
+      });
 
       const emailData = {
         userName: firstName,
       };
 
-      const template = MailTemplates.welcomeTemplate
+      const template = MailTemplates.welcomeTemplate;
 
-      await this.mailer.sendMail(
-        email,
-        "Welcome to Wond3r Card",
-        template,
-        "Welcome",
-        emailData
-      );
+      console.log("EMAIL_USER:", process.env.EMAIL_USER);
+      console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Exists" : "Not Set");
 
-      await this.sendVerificationOTP(user, firstName)
+      try {
+        console.log("Attempting to send welcome email...");
+        await this.mailer.sendMail(
+          email,
+          "Welcome to Wond3r Card",
+          template,
+          "Welcome",
+          emailData
+        );
+        console.log("Welcome email sent successfully!");
+      } catch (mailError) {
+        console.error("Error sending welcome email:", mailError);
+      }
+
+      await this.sendVerificationOTP(user, firstName);
 
       return { accessToken, refreshToken };
     } catch (error) {
       if (error.code === 11000) {
         const duplicateField = Object.keys(error.keyPattern)[0];
         const duplicateValue = error.keyValue[duplicateField];
-        throw new HttpException(409, "error", `Duplicate ${duplicateField}: ${duplicateValue} is already existed.`);
+        throw new HttpException(
+          409,
+          "error",
+          `Duplicate ${duplicateField}: ${duplicateValue} is already existed.`
+        );
       } else {
         throw new HttpException(440, "error", `Unable to sign up ${error}`);
       }
@@ -99,27 +136,28 @@ class AuthService {
   }
 
   public async deleteAccount(u: User): Promise<void | Error> {
-
-    const uid = u.id
+    const uid = u.id;
     try {
-      const user = await this.user.findOne({ uid })
+      const user = await this.user.findOne({ uid });
 
       if (!user) {
-        throw new HttpException(400, 'error', 'User could not be found');
+        throw new HttpException(400, "error", "User could not be found");
       }
 
-      await Promise.all([
-        this.profile.findOneAndDelete({ uid: user.id })
+      await Promise.all([this.profile.findOneAndDelete({ uid: user.id })]);
 
-      ]);
+      await user.deleteOne();
 
-      await user.deleteOne()
-
-      logger.info(`User with email ${user.email} and all related data were deleted.`);
-
+      logger.info(
+        `User with email ${user.email} and all related data were deleted.`
+      );
     } catch (error) {
       console.error(`Failed to delete user: ${error}`);
-      throw new HttpException(400, 'error', 'Failed to delete account and related data');
+      throw new HttpException(
+        400,
+        "error",
+        "Failed to delete account and related data"
+      );
     }
   }
 
@@ -135,15 +173,14 @@ class AuthService {
       if (!user) {
         throw new HttpException(404, "not_found", "User not found credentials");
       }
-      const uid = user.id
-      const is2FAEnabled = user.is2FAEnabled
-      const mfaEnabled = user.mfaEnabled
+      const uid = user.id;
+      const is2FAEnabled = user.is2FAEnabled;
+      const mfaEnabled = user.mfaEnabled;
       if (await user.isValidPassword(password)) {
         if (is2FAEnabled && mfaEnabled) {
           if (!optCode) {
             const otp = await this.otpService.saveOtp(uid);
-            const profile = await this.profile.findOne({ uid: uid })
-
+            const profile = await this.profile.findOne({ uid: uid });
 
             const emailData = {
               userName: profile.firstname,
@@ -151,7 +188,7 @@ class AuthService {
               verifyLink: `https://wond3rcard.com/verify?token=${otp}`,
             };
 
-            const template = MailTemplates.otpCode
+            const template = MailTemplates.otpCode;
 
             await this.mailer.sendMail(
               profile.email,
@@ -161,24 +198,35 @@ class AuthService {
               emailData
             );
 
-            throw new HttpException(400, '2fa_enabled', 'Please provide OTP and Authenticator Code');
+            throw new HttpException(
+              400,
+              "2fa_enabled",
+              "Please provide OTP and Authenticator Code"
+            );
           }
 
-          const verified = await this.otpService.verifyOtp(uid, optCode)
+          const verified = await this.otpService.verifyOtp(uid, optCode);
           if (verified === false) {
-            throw new HttpException(400, 'otp_expired', 'OTP Code expired or invalid');
+            throw new HttpException(
+              400,
+              "otp_expired",
+              "OTP Code expired or invalid"
+            );
           }
 
-          await this.#hasEnabledMFA(user, mfaCode)
+          await this.#hasEnabledMFA(user, mfaCode);
         } else if (is2FAEnabled) {
-          await this.#hasEnabled2FA(uid, optCode)
-          if (mfaEnabled) await this.#hasEnabledMFA(user, mfaCode)
+          await this.#hasEnabled2FA(uid, optCode);
+          if (mfaEnabled) await this.#hasEnabledMFA(user, mfaCode);
         }
 
         const tokenSession = token.generateSessionId();
         const refreshSession = token.generateSessionId();
         const accessToken = await token.createToken(user, tokenSession);
-        const refreshToken = await token.createRefreshToken(user, refreshSession);
+        const refreshToken = await token.createRefreshToken(
+          user,
+          refreshSession
+        );
         return { accessToken, refreshToken };
       } else {
         throw new HttpException(400, "error", "Invalid login credentials");
@@ -198,7 +246,10 @@ class AuthService {
       const tokenSession = token.generateSessionId();
       const refreshSession = token.generateSessionId();
       const newAccessToken = await token.createToken(user, tokenSession);
-      const newRefreshToken = await token.createRefreshToken(user, refreshSession);
+      const newRefreshToken = await token.createRefreshToken(
+        user,
+        refreshSession
+      );
 
       return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     } catch (error) {
@@ -207,12 +258,14 @@ class AuthService {
     }
   }
 
-  public async sendVerificationOTP(user: User, firstName: string): Promise<void | Error> {
+  public async sendVerificationOTP(
+    user: User,
+    firstName: string
+  ): Promise<void | Error> {
     try {
       //
-      const uid = user.id
+      const uid = user.id;
       const otp = await this.otpService.saveOtp(uid);
-
 
       const emailData = {
         userName: firstName,
@@ -220,7 +273,7 @@ class AuthService {
         verifyLink: `https://yourapp.com/verify?token=${otp}`,
       };
 
-      const template = MailTemplates.otpVerification
+      const template = MailTemplates.otpVerification;
 
       await this.mailer.sendMail(
         user.email,
@@ -230,28 +283,34 @@ class AuthService {
         emailData
       );
     } catch (error) {
-      throw new HttpException(401, "sendVerificationOTP", `sendVerificationOTP: ${error}`);
+      throw new HttpException(
+        401,
+        "sendVerificationOTP",
+        `sendVerificationOTP: ${error}`
+      );
     }
   }
 
-  public async sendAccountVerificationOTP(email: string): Promise<String | Error> {
+  public async sendAccountVerificationOTP(
+    email: string
+  ): Promise<String | Error> {
     try {
-      let error = ''
-      const user = await userModel.findOne({ email })
-      const uid = user.id
-      const profile = await profileModel.findOne({ uid })
+      let error = "";
+      const user = await userModel.findOne({ email });
+      const uid = user.id;
+      const profile = await profileModel.findOne({ uid });
 
       if (!user) {
-        error = 'User could not be found'
-        return error
+        error = "User could not be found";
+        return error;
       }
       if (!user) {
-        logger.error(`Profile not found ${email}`)
-        error = 'Server error'
-        return error
+        logger.error(`Profile not found ${email}`);
+        error = "Server error";
+        return error;
       }
       //
-      const otp = await this.otpService.saveOtp(uid)
+      const otp = await this.otpService.saveOtp(uid);
 
       const emailData = {
         userName: profile.firstname,
@@ -259,7 +318,7 @@ class AuthService {
         verifyLink: `https://yourapp.com/verify?token=${otp}`,
       };
 
-      const template = MailTemplates.otpVerification
+      const template = MailTemplates.otpVerification;
 
       await this.mailer.sendMail(
         email,
@@ -269,32 +328,36 @@ class AuthService {
         emailData
       );
     } catch (error) {
-      throw new HttpException(401, "sendVerificationOTP", `sendAccountVerificationOTP: ${error}`);
+      throw new HttpException(
+        401,
+        "sendVerificationOTP",
+        `sendAccountVerificationOTP: ${error}`
+      );
     }
   }
 
   public async forgotPassword(email: string): Promise<void> {
     try {
-      const user = await this.user.findOne({ email: email })
+      const user = await this.user.findOne({ email: email });
 
       if (!user) {
-        throw new HttpException(404, 'not_found', `User not found`);
+        throw new HttpException(404, "not_found", `User not found`);
       }
 
-      const uid = user.id
-      const profile = await this.profile.findOne({ uid })
+      const uid = user.id;
+      const profile = await this.profile.findOne({ uid });
 
       if (!profile) {
-        throw new HttpException(404, 'not_found', `profile not found`);
+        throw new HttpException(404, "not_found", `profile not found`);
       }
 
-      const otp = await this.otpService.saveOtp(uid)
+      const otp = await this.otpService.saveOtp(uid);
 
-      const NODE_ENV = process.env.NODE_ENV
-      const liveUrl = 'https://wond3rd-card-apis-q7hk5.ondigitalocean.app/api/'
-      const live = `${liveUrl}/auth/verify-otp?code=${otp}`
-      const local = `http://localhost:3000/api/auth/verify-otp?code=${otp}`
-      const resetLink = NODE_ENV === 'production' ? live : local
+      const NODE_ENV = process.env.NODE_ENV;
+      const liveUrl = "https://wond3rd-card-apis-q7hk5.ondigitalocean.app/api/";
+      const live = `${liveUrl}/auth/verify-otp?code=${otp}`;
+      const local = `http://localhost:3000/api/auth/verify-otp?code=${otp}`;
+      const resetLink = NODE_ENV === "production" ? live : local;
 
       const emailData = {
         userName: profile.firstname,
@@ -302,7 +365,7 @@ class AuthService {
         resetPasswordLink: resetLink,
       };
 
-      const template = MailTemplates.passwordResetRequest
+      const template = MailTemplates.passwordResetRequest;
 
       await this.mailer.sendMail(
         email,
@@ -311,30 +374,43 @@ class AuthService {
         "Verification",
         emailData
       );
-
     } catch (error) {
-      throw new HttpException(401, "error", `Could not send verification OTP ${error}`);
+      throw new HttpException(
+        401,
+        "error",
+        `Could not send verification OTP ${error}`
+      );
     }
   }
 
-  public async verifyAccountOTP(email: string, otpCode: string): Promise<string | Error> {
+  public async verifyAccountOTP(
+    email: string,
+    otpCode: string
+  ): Promise<string | Error> {
     try {
       const user = await userModel.findOne({ email: email });
       if (!user) {
-        throw new HttpException(400, 'not found', 'User account could not be found');
+        throw new HttpException(
+          400,
+          "not found",
+          "User account could not be found"
+        );
       }
 
       const uid = user.id;
 
-      const verified = await this.otpService.verifyOtp(uid, otpCode)
+      const verified = await this.otpService.verifyOtp(uid, otpCode);
       const profile = await profileModel.findOne({ uid: uid });
 
       if (!verified) {
-        throw new HttpException(400, 'otp_expired', 'OTP Code expired or invalid');
+        throw new HttpException(
+          400,
+          "otp_expired",
+          "OTP Code expired or invalid"
+        );
       }
 
       if (user.isVerified) {
-
         const emailData = {
           userName: profile.firstname,
           companyName: `Wond3r Card`,
@@ -351,7 +427,11 @@ class AuthService {
           emailData
         );
 
-        throw new HttpException(400, 'already_verified', 'Account Already Verified');
+        throw new HttpException(
+          400,
+          "already_verified",
+          "Account Already Verified"
+        );
       } else {
         console.log(`User account verified: ${user.isVerified}`);
 
@@ -374,27 +454,40 @@ class AuthService {
           emailData
         );
 
-        return 'Account successfully verified';
+        return "Account successfully verified";
       }
     } catch (error: any) {
-      throw new HttpException(401, "error", error.message || "Could not verify OTP");
+      throw new HttpException(
+        401,
+        "error",
+        error.message || "Could not verify OTP"
+      );
     }
   }
 
-  public async verifyOTP(email: string, otpCode: string): Promise<{ accessToken: string; refreshToken: string }> {
+  public async verifyOTP(
+    email: string,
+    otpCode: string
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-
       const user = await this.user.findOne({ email: email });
       if (!user) {
-        throw new HttpException(419, '419', '419: please check your credentials');
+        throw new HttpException(
+          419,
+          "419",
+          "419: please check your credentials"
+        );
       }
-      const uid = user.id
+      const uid = user.id;
 
       const verified = await this.otpService.verifyOtp(uid, otpCode);
       if (verified === false) {
-        throw new HttpException(400, 'otp_expired', 'OTP Code expired or invalid');
+        throw new HttpException(
+          400,
+          "otp_expired",
+          "OTP Code expired or invalid"
+        );
       }
-
 
       const tokenSession = token.generateSessionId();
       const refreshSession = token.generateSessionId();
@@ -402,37 +495,37 @@ class AuthService {
       const refreshToken = await token.createRefreshToken(user, refreshSession);
 
       return { accessToken, refreshToken };
-
-
     } catch (error) {
       throw new HttpException(401, "error", `Could not verify OTP: ${error}`);
     }
   }
 
-  public async changePassword(email: string, password: string): Promise<{ accessToken: string; refreshToken: string } | Error> {
+  public async changePassword(
+    email: string,
+    password: string
+  ): Promise<{ accessToken: string; refreshToken: string } | Error> {
     try {
-
       const user = await this.user.findOne({ email });
       if (!user) {
         return new Error("User not found");
       }
 
-      const hash = await bcrypt.hash(password, 10)
+      const hash = await bcrypt.hash(password, 10);
 
-      const newPassword = hash
+      const newPassword = hash;
 
       const tokenSession = token.generateSessionId();
       const refreshSession = token.generateSessionId();
       const accessToken = await token.createToken(user, tokenSession);
       const refreshToken = await token.createRefreshToken(user, refreshSession);
 
-      user.password = newPassword
-      user.refreshToken = refreshToken
+      user.password = newPassword;
+      user.refreshToken = refreshToken;
 
-      await user.save()
-      const uid = user.id
+      await user.save();
+      const uid = user.id;
 
-      const profile = await profileModel.findOne({ uid })
+      const profile = await profileModel.findOne({ uid });
 
       const emailData = {
         userName: profile.firstname,
@@ -440,7 +533,7 @@ class AuthService {
         supportLink: "wond3rcard.com/support",
       };
 
-      const template = MailTemplates.passwordChangedSuccessfully
+      const template = MailTemplates.passwordChangedSuccessfully;
 
       await this.mailer.sendMail(
         email,
@@ -452,16 +545,15 @@ class AuthService {
       return { accessToken, refreshToken };
     } catch (error) {
       throw new HttpException(401, "error", "Could not change password");
-
     }
   }
 
   public async request2FA(user: User): Promise<void> {
     try {
-      const uid = user.id
-      const profile = await profileModel.findOne({ uid })
+      const uid = user.id;
+      const profile = await profileModel.findOne({ uid });
 
-      const otp = await this.otpService.saveOtp(uid)
+      const otp = await this.otpService.saveOtp(uid);
 
       const emailData = {
         name: profile.firstname,
@@ -470,7 +562,7 @@ class AuthService {
         supportLink: "wond3rcard.com/support",
       };
 
-      const template = MailTemplates.request2FA
+      const template = MailTemplates.request2FA;
 
       await this.mailer.sendMail(
         user.email,
@@ -479,24 +571,27 @@ class AuthService {
         "security",
         emailData
       );
-
     } catch (error) {
-      throw new HttpException(400, '2fa failed', 'unable to setup 2fa')
+      throw new HttpException(400, "2fa failed", "unable to setup 2fa");
     }
   }
 
   public async enable2FA(user: User, optCode: string): Promise<void> {
     try {
-      const uid = user.id
-      const verified = await this.otpService.verifyOtp(uid, optCode)
+      const uid = user.id;
+      const verified = await this.otpService.verifyOtp(uid, optCode);
       if (verified === false) {
-        throw new HttpException(400, 'otp_expired', 'OTP Code expired or invalid');
+        throw new HttpException(
+          400,
+          "otp_expired",
+          "OTP Code expired or invalid"
+        );
       }
 
       user.is2FAEnabled = true;
       await user.save();
 
-      const profile = await this.profile.findOne({ uid: uid })
+      const profile = await this.profile.findOne({ uid: uid });
 
       const emailData = {
         name: profile.firstname,
@@ -504,7 +599,7 @@ class AuthService {
         supportLink: "wond3rcard.com/support",
       };
 
-      const template = MailTemplates.enable2FA
+      const template = MailTemplates.enable2FA;
 
       await this.mailer.sendMail(
         user.email,
@@ -513,9 +608,12 @@ class AuthService {
         "security",
         emailData
       );
-
     } catch (error) {
-      throw new HttpException(400, '2fa failed', `unable to setup 2fa ${error}`)
+      throw new HttpException(
+        400,
+        "2fa failed",
+        `unable to setup 2fa ${error}`
+      );
     }
   }
 
@@ -540,7 +638,11 @@ class AuthService {
     }
 
     if (!user.mfaSecret) {
-      throw new HttpException(401, "error", "Multi-Factor Authentication is not enable for this user");
+      throw new HttpException(
+        401,
+        "error",
+        "Multi-Factor Authentication is not enable for this user"
+      );
     }
 
     try {
@@ -566,10 +668,9 @@ class AuthService {
       });
 
       return jwtToken;
-
     } catch (error) {
-      console.error('Error during 2FA verification:', error);
-      throw new HttpException(500, "error", 'Error during 2FA verification');
+      console.error("Error during 2FA verification:", error);
+      throw new HttpException(500, "error", "Error during 2FA verification");
     }
   }
 
@@ -593,8 +694,7 @@ class AuthService {
   async #hasEnabled2FA(uid: string, optCode: string) {
     if (!optCode) {
       const otp = await this.otpService.saveOtp(uid);
-      const profile = await this.profile.findOne({ uid: uid })
-
+      const profile = await this.profile.findOne({ uid: uid });
 
       const emailData = {
         userName: profile.firstname,
@@ -602,7 +702,7 @@ class AuthService {
         verifyLink: `https://yourapp.com/verify?token=${otp}`,
       };
 
-      const template = MailTemplates.otpCode
+      const template = MailTemplates.otpCode;
 
       await this.mailer.sendMail(
         profile.email,
@@ -612,18 +712,30 @@ class AuthService {
         emailData
       );
 
-      throw new HttpException(400, '2fa_enabled', 'Two Factor Authentication Enabled. Please provide OTP');
+      throw new HttpException(
+        400,
+        "2fa_enabled",
+        "Two Factor Authentication Enabled. Please provide OTP"
+      );
     }
 
-    const verified = await this.otpService.verifyOtp(uid, optCode)
+    const verified = await this.otpService.verifyOtp(uid, optCode);
     if (verified === false) {
-      throw new HttpException(400, 'otp_expired', 'OTP Code expired or invalid');
+      throw new HttpException(
+        400,
+        "otp_expired",
+        "OTP Code expired or invalid"
+      );
     }
   }
 
   #hasEnabledMFA(user: User, mfaCode: string) {
     if (!mfaCode) {
-      throw new HttpException(400, "hasEnabledMFA", "Multi-Factor Authentication Enabled. Invalid Multi Factor Authentication (MFA) code");
+      throw new HttpException(
+        400,
+        "hasEnabledMFA",
+        "Multi-Factor Authentication Enabled. Invalid Multi Factor Authentication (MFA) code"
+      );
     }
     const verified = speakeasy.totp.verify({
       secret: user.mfaSecret,
@@ -632,11 +744,13 @@ class AuthService {
     });
 
     if (!verified) {
-      throw new HttpException(400, "hasEnabledMFA", "Invalid Multi Factor Authentication (MFA) code");
+      throw new HttpException(
+        400,
+        "hasEnabledMFA",
+        "Invalid Multi Factor Authentication (MFA) code"
+      );
     }
-
   }
-
 }
 
 export default AuthService;

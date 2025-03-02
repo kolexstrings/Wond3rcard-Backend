@@ -15,14 +15,10 @@ enum MediaType {
   Finance = "finance",
 }
 
-
 interface SocialMedia extends Document {
   name: string;
   imageUrl: string;
-  link: string;
   mediaType: MediaType;
-  description: string;
 }
 
 export { MediaType, SocialMedia };
-

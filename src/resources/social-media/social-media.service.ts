@@ -11,7 +11,11 @@ class SocialMediaService {
       const socialMedias = await this.model.find();
       return socialMedias;
     } catch (error) {
-      throw new HttpException(500, "error", "Unable to retrieve social media links");
+      throw new HttpException(
+        500,
+        "error",
+        "Unable to retrieve social media links"
+      );
     }
   }
 
@@ -19,7 +23,11 @@ class SocialMediaService {
     try {
       const socialMedia = await this.model.findById(id);
       if (!socialMedia) {
-        throw new HttpException(404, "not_found", "Social media link not found");
+        throw new HttpException(
+          404,
+          "not_found",
+          "Social media link not found"
+        );
       }
       return socialMedia;
     } catch (error) {
@@ -27,51 +35,57 @@ class SocialMediaService {
     }
   }
 
-  private async create(name: string, imageUrl: string, link: string, mediaType: string,
-    description: string): Promise<SocialMedia> {
+  private async create(
+    name: string,
+    imageUrl: string,
+    mediaType: string
+  ): Promise<SocialMedia> {
     try {
-      const socialMedia = await this.model.create({ name, imageUrl, link, mediaType, description });
+      const socialMedia = await this.model.create({
+        name,
+        imageUrl,
+        mediaType,
+      });
       return socialMedia;
     } catch (error) {
       if (error.code === 11000 && error.keyValue?.name) {
-        throw new HttpException(400, "failed", `Media already existed with the same name: ${error.keyValue?.name}`);
+        throw new HttpException(
+          400,
+          "failed",
+          `Media already existed with the same name: ${error.keyValue?.name}`
+        );
       }
       throw new HttpException(500, "failed", `${error.message || error}`);
-
     }
   }
 
   public async checkAndUpdateOrCreate(
     name: string,
-    link: string,
     imageUrl: string,
-    mediaType: string,
-    description: string
+    mediaType: string
   ): Promise<SocialMedia> {
     try {
-      const existingSocialMedia = await this.model.findOne({
-        name,
-        link,
-        mediaType,
-        description,
-      });
-
-      if (existingSocialMedia) {
-        existingSocialMedia.imageUrl = imageUrl;
-        await existingSocialMedia.save();
-        return existingSocialMedia;
-      } else {
-        return await this.create(name, imageUrl, link, mediaType, description);
-      }
+      return await this.model.findOneAndUpdate(
+        { name, mediaType },
+        { imageUrl },
+        { new: true, upsert: true, runValidators: true }
+      );
     } catch (error) {
       if (error.code === 11000 && error.keyValue?.name) {
-        throw new HttpException(400, "failed", `Media already existed with the same name: ${error.keyValue?.name}`);
+        throw new HttpException(
+          400,
+          "failed",
+          `Media already existed with the same name: ${error.keyValue?.name}`
+        );
       }
       throw new HttpException(500, "failed", `${error.message || error}`);
     }
   }
 
-  public async update(id: string, updates: Partial<SocialMedia>): Promise<SocialMedia> {
+  public async update(
+    id: string,
+    updates: Partial<SocialMedia>
+  ): Promise<SocialMedia> {
     try {
       const socialMedia = await this.model.findByIdAndUpdate(id, updates, {
         new: true,
@@ -79,28 +93,42 @@ class SocialMediaService {
       });
 
       if (!socialMedia) {
-        throw new HttpException(404, "not_found", "Social media link not found");
+        throw new HttpException(
+          404,
+          "not_found",
+          "Social media link not found"
+        );
       }
 
       return socialMedia;
     } catch (error) {
-      throw new HttpException(500, "error", "Unable to update social media link");
+      throw new HttpException(
+        500,
+        "error",
+        "Unable to update social media link"
+      );
     }
   }
 
   public async delete(id: string): Promise<void> {
     try {
       const socialMedia = await this.model.findByIdAndDelete(id);
-      await deleteFileIfExists(socialMedia.link)
+      await deleteFileIfExists(socialMedia.name);
       if (!socialMedia) {
-        throw new HttpException(404, "not_found", "Social media link not found");
+        throw new HttpException(
+          404,
+          "not_found",
+          "Social media link not found"
+        );
       }
     } catch (error) {
-      throw new HttpException(500, "error", "Unable to delete social media link");
+      throw new HttpException(
+        500,
+        "error",
+        "Unable to delete social media link"
+      );
     }
   }
-
-
 }
 
 export default SocialMediaService;

@@ -7,7 +7,7 @@ import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
 import userModel from "../user/user.model";
-import { UserType } from "../user/user.protocol";
+import { UserRole } from "../user/user.protocol";
 import OrganizationService from "./organization.service";
 import validator from "./organization.validations";
 
@@ -17,17 +17,13 @@ class OrganizationController implements GeneralController {
   private orgService = new OrganizationService();
 
   constructor() {
-
     this.initializeRoute();
   }
 
   initializeRoute(): void {
     this.router.get(
       `${this.path}/`,
-      [
-        authenticatedMiddleware,
-        verifyRolesMiddleware([UserType.Admin]),
-      ],
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getAllOrganizations
     );
 
@@ -97,9 +93,14 @@ class OrganizationController implements GeneralController {
     next: NextFunction
   ): Promise<Response | void> => {
     try {
-      const { name, members } = req.body; const creatorId = req.user.id;
+      const { name, members } = req.body;
+      const creatorId = req.user.id;
 
-      const org = await this.orgService.createOrganization(creatorId, name, members);
+      const org = await this.orgService.createOrganization(
+        creatorId,
+        name,
+        members
+      );
 
       res.status(201).json({
         statusCode: 201,
@@ -121,7 +122,11 @@ class OrganizationController implements GeneralController {
       const { memberId, organizationId, role } = req.body;
 
       if (!memberId || !organizationId || !role) {
-        throw new HttpException(400, "Bad Request", "Missing required fields: memberId, organizationId, or role");
+        throw new HttpException(
+          400,
+          "Bad Request",
+          "Missing required fields: memberId, organizationId, or role"
+        );
       }
 
       const updatedOrganization = await this.orgService.addMemberToOrganization(
@@ -132,7 +137,11 @@ class OrganizationController implements GeneralController {
 
       const user = await userModel.findById(memberId);
       if (!user) {
-        throw new HttpException(404, "User not found", "The specified user does not exist");
+        throw new HttpException(
+          404,
+          "User not found",
+          "The specified user does not exist"
+        );
       }
 
       if (!user.organizations.includes(organizationId)) {
@@ -143,14 +152,14 @@ class OrganizationController implements GeneralController {
       return res.status(200).json({
         statusCode: 200,
         status: "success",
-        message: "Member added successfully and user's organizations list updated",
+        message:
+          "Member added successfully and user's organizations list updated",
         payload: updatedOrganization,
       });
     } catch (error) {
       next(new HttpException(500, "failed", error.message));
     }
   };
-
 
   private getOrganizationMembers = async (
     req: Request,
@@ -304,8 +313,7 @@ class OrganizationController implements GeneralController {
     } catch (err) {
       next(new HttpException(500, "failed", err.message));
     }
-  }
-
+  };
 }
 
 export default OrganizationController;

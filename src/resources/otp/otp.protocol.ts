@@ -6,7 +6,6 @@ interface OTP {
   isVerified?: boolean;
 }
 
-
 interface OTPOptions {
   digits?: boolean;
   lowerCaseAlphabets?: boolean;
@@ -15,4 +14,3 @@ interface OTPOptions {
 }
 
 export { OTP, OTPOptions };
-
