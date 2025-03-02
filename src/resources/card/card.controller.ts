@@ -723,7 +723,7 @@ class CardController implements GlobalController {
       );
 
       // Generate shareable link
-      const baseUrl = process.env.BASE_URL;
+      const baseUrl = process.env.FRONTEND_BASE_URL;
       const shareableLink = `${baseUrl}/cards/shared/${cardId}`;
 
       return res.status(200).json({
@@ -756,7 +756,7 @@ class CardController implements GlobalController {
       }
 
       // Generate public shareable link (no recipient required)
-      const baseUrl = process.env.BASE_URL;
+      const baseUrl = process.env.FRONTEND_BASE_URL;
       const qrShareableLink = `${baseUrl}/cards/qr/${cardId}`;
 
       return res.status(200).json({

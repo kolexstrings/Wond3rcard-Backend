@@ -10,7 +10,7 @@ class PaystackService {
       {
         email,
         amount: amount * 100, // Convert amount to kobo
-        callback_url: `${process.env.BASE_URL}/payment-success`,
+        callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
         metadata,
       },
       {
