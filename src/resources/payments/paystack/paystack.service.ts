@@ -1,17 +1,32 @@
 import axios from "axios";
+import tierModel from "../../admin/subscriptionTier/tier.model";
 
 class PaystackService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY!;
   private baseUrl = "https://api.paystack.co";
 
-  async initializePayment(email: string, amount: number, metadata: any) {
+  async initializePayment(
+    userId: string,
+    plan: string,
+    billingCycle: "monthly" | "yearly"
+  ) {
+    const tier = await tierModel.findOne({ name: plan.toLowerCase() });
+    if (!tier) throw new Error("Invalid subscription tier");
+
+    const { price, durationInDays } = tier.billingCycle[billingCycle];
+
     const response = await axios.post(
       `${this.baseUrl}/transaction/initialize`,
       {
-        email,
-        amount: amount * 100, // Convert amount to kobo
+        email: "user_email_placeholder", // Replace this with user email from DB
+        amount: price * 100, // Convert to kobo
         callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
-        metadata,
+        metadata: {
+          userId,
+          plan,
+          billingCycle,
+          durationInDays,
+        },
       },
       {
         headers: { Authorization: `Bearer ${this.secretKey}` },

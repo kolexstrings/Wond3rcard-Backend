@@ -25,10 +25,19 @@ const UserSchema = new Schema(
     isSoftDeleted: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     userTier: {
-      type: String,
-      enum: Object.values(UserTiers),
-      required: true,
-      default: UserTiers.Basic,
+      plan: {
+        type: String,
+        enum: Object.values(UserTiers),
+        required: true,
+        default: UserTiers.Basic,
+      },
+      status: {
+        type: String,
+        enum: ["active", "inactive"],
+        default: "inactive",
+      },
+      transactionId: { type: String, default: null },
+      expiresAt: { type: Date, default: null },
     },
     refreshToken: { type: String, default: "" },
     organizations: { type: [], required: false },
