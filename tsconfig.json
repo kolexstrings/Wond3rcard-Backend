@@ -9,12 +9,12 @@
     "strict": false,
     "target": "es2017",
     "resolveJsonModule": true,
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "lib": ["es5", "es6", "dom", "dom.iterable"],
     "typeRoots": ["./node_modules/@types", "./@types"]
   },
   "compileOnSave": true,
-  "include": ["src", "types"],
+  "include": ["src", "src/types/express.d.ts"],
   "exclude": ["node_modules"],
   "files": ["./src/utils/definitions/custom.d.ts"]
 }
