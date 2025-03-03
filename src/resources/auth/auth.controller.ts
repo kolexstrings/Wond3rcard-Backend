@@ -51,15 +51,13 @@ class AuthController implements GeneralController {
 
     this.router.post(`${this.path}/refresh-token`, this.refreshToken);
 
-    this.router.post(`${this.path}/logout`, [passportMiddleware], this.logout);
+    // this.router.post(`${this.path}/logout`, [passportMiddleware], this.logout);
 
     this.router.post(
       `${this.path}/forgot-password`,
       validationMiddleware(validate.validateDeleteAccount),
       this.forgotPassword
     );
-
-
 
     this.router.post(
       `${this.path}/verify-otp`,
@@ -76,7 +74,7 @@ class AuthController implements GeneralController {
       this.changePassword
     );
 
-    this.router.post(`${this.path}/logout`, [passportMiddleware], this.logout);
+    // this.router.post(`${this.path}/logout`, [passportMiddleware], this.logout);
 
     this.router.post(
       `${this.path}/setup-mfa`,
@@ -108,16 +106,14 @@ class AuthController implements GeneralController {
       [authenticatedMiddleware],
       this.enable2FA
     );
-
   }
 
   private signUp = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
-
       const {
         firstName,
         lastName,
@@ -129,9 +125,9 @@ class AuthController implements GeneralController {
         companyName,
         designation,
       } = req.body;
-      const f = req.files
-      const profilePhoto = req.files?.['profilePhoto']?.[0];
-      const coverPhoto = req.files?.['coverPhoto']?.[0];
+      const f = req.files;
+      const profilePhoto = req.files?.["profilePhoto"]?.[0];
+      const coverPhoto = req.files?.["coverPhoto"]?.[0];
 
       const { accessToken, refreshToken } = await this.authService.signUp(
         firstName,
@@ -142,12 +138,15 @@ class AuthController implements GeneralController {
         password,
         fcmToken,
         companyName,
-        designation, profilePhoto, coverPhoto
+        designation,
+        profilePhoto,
+        coverPhoto
       );
 
       res.status(201).json({
         status: "success",
-        message: "signed up successfully. Please check your email for verification",
+        message:
+          "signed up successfully. Please check your email for verification",
         payload: { accessToken, refreshToken },
       });
     } catch (error: any) {
@@ -160,18 +159,15 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { email, otp } = req.body;
       await this.authService.verifyAccountOTP(email, otp);
 
-      return res
-        .status(201)
-        .json({
-          status: "success",
-          message: "Account verified successfully",
-        });
-
+      res.status(201).json({
+        status: "success",
+        message: "Account verified successfully",
+      });
     } catch (error: any) {
       next(error);
     }
@@ -181,22 +177,20 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { email } = req.body;
       const error = await this.authService.sendAccountVerificationOTP(email);
 
       if (error && error !== "" && error === undefined) {
-        return res
+        res
           .status(201)
           .json({ statusCode: 400, status: "error", message: error });
       } else {
-        return res
-          .status(201)
-          .json({
-            status: "success",
-            message: "Account verification instructions successfully",
-          });
+        res.status(201).json({
+          status: "success",
+          message: "Account verification instructions successfully",
+        });
       }
     } catch (error: any) {
       console.log(`requestAccountVerification### ${error}`);
@@ -208,12 +202,12 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const user = req.user;
       await this.authService.deleteAccount(user);
 
-      return res
+      res
         .status(201)
         .json({ status: "success", message: "Account deleted successfully" });
     } catch (error: any) {
@@ -226,12 +220,14 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { email, password, otpCode, mfaCode } = req.body;
       const { accessToken, refreshToken } = await this.authService.signIn(
         email,
-        password, otpCode, mfaCode
+        password,
+        otpCode,
+        mfaCode
       );
       res.status(200).json({
         status: "success",
@@ -247,13 +243,15 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { email } = req.body;
       await this.authService.forgotPassword(email);
 
-      return res.status(201).json({ status: "success", message: "OTP for resetting password sent successfully" });
-
+      res.status(201).json({
+        status: "success",
+        message: "OTP for resetting password sent successfully",
+      });
     } catch (error) {
       next(error);
     }
@@ -263,14 +261,15 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { email, code } = req.body;
-      const { accessToken, refreshToken } = await this.authService.verifyOTP(email, code);
+      const { accessToken, refreshToken } = await this.authService.verifyOTP(
+        email,
+        code
+      );
 
-
-
-      return res.status(201).json({
+      res.status(201).json({
         status: "success",
         message: "Password OTP verified successfully",
         payload: {
@@ -288,19 +287,19 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { email, newPassword } = req.body;
       const result = await this.authService.changePassword(email, newPassword);
       if (result instanceof Error) {
-        return res.status(400).json({
+        res.status(400).json({
           statusCode: 400,
           status: "error",
           message: result.message,
         });
       } else {
         const { accessToken, refreshToken } = result;
-        return res.status(201).json({
+        res.status(201).json({
           status: "success",
           message: "password changed",
           payload: { accessToken, refreshToken },
@@ -316,7 +315,7 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { refreshToken } = req.body;
       if (!refreshToken) {
@@ -339,20 +338,18 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Response | void => {
-
-  };
+  ): Response | void => {};
 
   private request2FA = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const user = req.user;
       await this.authService.request2FA(user);
 
-      return res.status(201).json({
+      res.status(201).json({
         status: "success",
         message: "2FA instructions sent for verification",
       });
@@ -365,13 +362,13 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const user = req.user;
-      const { otpCode } = req.body
+      const { otpCode } = req.body;
       await this.authService.enable2FA(user, otpCode);
 
-      return res.status(201).json({
+      res.status(201).json({
         status: "success",
         message: "Two Factor Authentication (2FA) Enabled",
       });
@@ -384,14 +381,14 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const user = req.user;
-      if (!user) return res.status(301).json({ message: "user not found" });
+      if (!user) res.status(301).json({ message: "user not found" });
       const data = await this.authService.createMFA(user);
       const secret = data[0];
       const qrImageUrl = data[1];
-      return res.status(200).json({ secret: secret.base32, qrUrl: qrImageUrl });
+      res.status(200).json({ secret: secret.base32, qrUrl: qrImageUrl });
     } catch (error) {
       next(error);
     }
@@ -401,7 +398,7 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { code } = req.body;
       const user = req.user;
@@ -411,7 +408,7 @@ class AuthController implements GeneralController {
       }
 
       const token = await this.authService.verifyMFA(user, code);
-      return res
+      res
         .status(200)
         .json({ message: "2FA verified successfully", token: token });
     } catch (error) {
@@ -423,7 +420,7 @@ class AuthController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const user = req.user;
       if (!user) {
@@ -443,7 +440,6 @@ class AuthController implements GeneralController {
       next(error);
     }
   };
-
 }
 
 export default AuthController;

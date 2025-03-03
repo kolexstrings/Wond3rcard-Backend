@@ -15,7 +15,7 @@ import {
 } from "./admin.validation";
 import GlobalController from "../../protocols/global.controller";
 import { User, UserRole } from "../user/user.protocol";
-import { CreateSubscriptionTier, CreateSocialMedia } from "./admin.protocol";
+import { CreateSubscriptionTier } from "./admin.protocol";
 import AdminService from "./admin.service";
 import validationMiddleware from "../../middlewares/validation.middleware";
 
@@ -128,16 +128,6 @@ class AdminController implements GlobalController {
     );
 
     /**
-     * Social media
-     */
-    this.router.post(
-      `${this.path}/social-media`,
-      [authenticatedMiddleware],
-      verifyRolesMiddleware([UserRole.Admin]),
-      this.createSocialMedia
-    );
-
-    /**
      * Subscription
      */
     this.router.post(
@@ -207,7 +197,7 @@ class AdminController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<User[] | void> => {
+  ): Promise<void> => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
 
@@ -442,12 +432,24 @@ class AdminController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const cards = await this.adminService.getAllCards();
-      return res.json(cards);
+      res.status(200).json({
+        status: "success",
+        message: "Cards retrieved successfully",
+        payload: cards,
+      });
     } catch (error) {
-      next(error);
+      console.error(`ERROR: ${error}`);
+
+      next(
+        new HttpException(
+          500,
+          "error",
+          error instanceof Error ? error.message : "An unknown error occurred"
+        )
+      );
     }
   };
 
@@ -458,13 +460,13 @@ class AdminController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const tierData: CreateSubscriptionTier = req.body;
 
       const newTier = await this.adminService.createSubscriptionTier(tierData);
 
-      return res.status(201).json({
+      res.status(201).json({
         statusCode: 201,
         status: "success",
         message: "Subscription tier created successfully",
@@ -509,7 +511,7 @@ class AdminController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       const updateData: Partial<CreateSubscriptionTier> = req.body;
@@ -520,14 +522,14 @@ class AdminController implements GlobalController {
       );
 
       if (!updatedTier) {
-        return res.status(404).json({
+        res.status(404).json({
           statusCode: 404,
           status: "error",
           message: "Subscription tier not found",
         });
       }
 
-      return res.status(200).json({
+      res.status(200).json({
         statusCode: 200,
         status: "success",
         message: "Subscription tier updated successfully",
@@ -545,7 +547,7 @@ class AdminController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.params; // Subscription tier to be deleted
       const { newTierId } = req.body; // New tier for user transfer
@@ -554,7 +556,7 @@ class AdminController implements GlobalController {
         newTierId
       );
       if (!newTier) {
-        return res.status(404).json({
+        res.status(404).json({
           statusCode: 404,
           status: "error",
           message: "New subscription tier not found",
@@ -564,7 +566,7 @@ class AdminController implements GlobalController {
       // Ensure the tier to be deleted exists
       const tierToDelete = await this.adminService.getSubscriptionTierById(id);
       if (!tierToDelete) {
-        return res.status(404).json({
+        res.status(404).json({
           statusCode: 404,
           status: "error",
           message: "Subscription tier not found",
@@ -574,7 +576,7 @@ class AdminController implements GlobalController {
       // Check if this is the last remaining subscription tier
       const totalTiers = await this.adminService.getSubscriptionTierCount();
       if (totalTiers <= 1) {
-        return res.status(400).json({
+        res.status(400).json({
           statusCode: 400,
           status: "error",
           message: "Cannot delete the last remaining subscription tier",
@@ -587,7 +589,7 @@ class AdminController implements GlobalController {
       // Now delete the tier
       await this.adminService.deleteSubscriptionTier(id);
 
-      return res.status(200).json({
+      res.status(200).json({
         statusCode: 200,
         status: "success",
         message: "Subscription tier deleted and users transferred successfully",
@@ -604,11 +606,11 @@ class AdminController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { enabled } = req.body;
       const response = await this.adminService.toggleMaintenanceMode(enabled);
-      return res.status(201).json({ message: response });
+      res.status(201).json({ message: response });
     } catch (error) {
       next(error);
     }
@@ -621,10 +623,10 @@ class AdminController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const response = await this.adminService.enable2FAGlobally();
-      return res.status(201).json({ message: "Global 2FA enabled", response });
+      res.status(201).json({ message: "Global 2FA enabled", response });
     } catch (error) {
       next(new HttpException(500, "Internal Server Error", error.message));
     }
