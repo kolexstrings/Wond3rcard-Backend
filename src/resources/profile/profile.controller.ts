@@ -71,10 +71,10 @@ class ProfileController {
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const contacts = await this.profileService.getContacts(req.params.id);
-      return res
+      res
         .status(200)
         .json({ message: "Contacts retrieved", payload: contacts });
     } catch (error) {
@@ -86,7 +86,7 @@ class ProfileController {
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const { error } = validator.idValidator.validate(req.params.id);
       if (error) {
@@ -110,7 +110,11 @@ class ProfileController {
     }
   };
 
-  private connect = async (req: Request, res: Response, next: NextFunction) => {
+  private connect = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const uid = req.user.id;
       const { userId } = req.body;
@@ -125,7 +129,7 @@ class ProfileController {
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const uid = req.user.id;
       const connections = await this.profileService.getConnections(uid);
@@ -141,7 +145,7 @@ class ProfileController {
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const uid = req.user.id;
 
@@ -158,7 +162,7 @@ class ProfileController {
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const uid = req.user.id;
       const { userId } = req.body;
@@ -174,7 +178,7 @@ class ProfileController {
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const uid = req.user.id;
       const { userId } = req.body;
