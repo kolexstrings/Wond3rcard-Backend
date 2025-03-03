@@ -46,11 +46,11 @@ class FAQController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { category } = req.query;
       const faqs = await this.service.getAllFAQs(category as string);
-      return res
+      res
         .status(200)
         .json({ message: "FAQs retrieved successfully", payload: faqs });
     } catch (error) {
@@ -62,11 +62,11 @@ class FAQController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const data = req.body;
       const newFAQ = await this.service.createFAQ(data);
-      return res
+      res
         .status(201)
         .json({ message: "FAQ created successfully", payload: newFAQ });
     } catch (error) {
@@ -78,15 +78,15 @@ class FAQController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       const data = req.body;
       const updatedFAQ = await this.service.updateFAQ(id, data);
       if (!updatedFAQ) {
-        return res.status(404).json({ message: "FAQ not found" });
+        res.status(404).json({ message: "FAQ not found" });
       }
-      return res
+      res
         .status(200)
         .json({ message: "FAQ updated successfully", payload: updatedFAQ });
     } catch (error) {
@@ -98,14 +98,14 @@ class FAQController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       const deletedFAQ = await this.service.deleteFAQ(id);
       if (!deletedFAQ) {
-        return res.status(404).json({ message: "FAQ not found" });
+        res.status(404).json({ message: "FAQ not found" });
       }
-      return res
+      res
         .status(200)
         .json({ message: "FAQ deleted successfully", payload: deletedFAQ });
     } catch (error) {
