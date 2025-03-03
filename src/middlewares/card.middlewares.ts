@@ -14,7 +14,7 @@ export const canCreateCardMiddleware = async (
       return next(new HttpException(401, "failed", "Unauthorized"));
     }
 
-    if (user.userTiers === UserTiers.Basic) {
+    if (user.userTier.plan === UserTiers.Basic) {
       const userCards = await cardModel.find({ createdBy: user.id });
 
       if (userCards.length >= 1) {

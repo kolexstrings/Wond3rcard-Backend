@@ -3,8 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ITier extends Document {
   name: string;
   billingCycle: {
-    monthlyPrice: number;
-    yearlyPrice: number;
+    monthly: { price: number; durationInDays: number };
+    yearly: { price: number; durationInDays: number };
   };
   description: string;
   trialPeriod: number;
@@ -16,8 +16,14 @@ const TierSchema = new Schema<ITier>(
   {
     name: { type: String, required: true, unique: true },
     billingCycle: {
-      monthlyPrice: { type: Number, required: true },
-      yearlyPrice: { type: Number, required: true },
+      monthly: {
+        price: { type: Number, required: true },
+        durationInDays: { type: Number, required: true, default: 30 },
+      },
+      yearly: {
+        price: { type: Number, required: true },
+        durationInDays: { type: Number, required: true, default: 365 },
+      },
     },
     description: { type: String, required: true },
     trialPeriod: { type: Number, required: true },

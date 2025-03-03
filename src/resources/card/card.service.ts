@@ -720,7 +720,7 @@ class CardService {
       }
 
       // Generate the QR shareable link
-      const baseUrl = process.env.APP_BASE_URL;
+      const baseUrl = process.env.FRONTEND_BASE_URL;
       return `${baseUrl}/cards/qr/${cardId}`;
     } catch (error) {
       throw error;

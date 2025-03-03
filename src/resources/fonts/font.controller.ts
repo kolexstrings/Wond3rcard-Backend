@@ -59,10 +59,10 @@ class FontsController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const fonts = await this.fontsService.getAllFonts();
-      return res.status(201).json({
+      res.status(201).json({
         status: "success",
         message: "Fonts retrieved successfully",
         payload: { fonts },
@@ -78,7 +78,7 @@ class FontsController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       if (!req.file) {
         throw new HttpException(400, "failed", "Font file missing");
@@ -91,7 +91,7 @@ class FontsController implements GeneralController {
         style,
         path
       );
-      return res.status(201).json({
+      res.status(201).json({
         status: "success",
         message: "File uploaded successfully",
         payload: { result },
@@ -105,7 +105,7 @@ class FontsController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const updates = { ...req.body };
       if (req.file) {
@@ -113,7 +113,7 @@ class FontsController implements GeneralController {
       }
 
       const updatedSocialMedia = await this.fontsService.update(updates);
-      return res.status(200).json({
+      res.status(200).json({
         message: "Font updated successfully",
         payload: updatedSocialMedia,
       });
@@ -126,11 +126,11 @@ class FontsController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.body;
       await this.fontsService.delete(id);
-      return res.status(200).json({ message: "Font deleted successfully" });
+      res.status(200).json({ message: "Font deleted successfully" });
     } catch (error) {
       next(error);
     }

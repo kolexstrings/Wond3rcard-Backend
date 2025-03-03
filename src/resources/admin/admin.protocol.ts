@@ -1,8 +1,8 @@
 export interface CreateSubscriptionTier {
   name: string;
   billingCycle: {
-    monthlyPrice: number;
-    yearlyPrice: number;
+    monthly: { price: number; durationInDays?: number };
+    yearly: { price: number; durationInDays?: number };
   };
   description: string;
   trialPeriod: number;

@@ -52,12 +52,10 @@ class SocialMediaController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const links = await this.socialMediaService.getAll();
-      return res
-        .status(200)
-        .json({ message: "Social Media links", payload: links });
+      res.status(200).json({ message: "Social Media links", payload: links });
     } catch (error) {
       next(error);
     }
@@ -67,13 +65,13 @@ class SocialMediaController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { name, mediaType } = req.body;
       const file = req.file;
 
       if (!file) {
-        return res.status(400).json({ error: "Image upload failed" });
+        res.status(400).json({ error: "Image upload failed" });
       }
 
       const socialMedial = await this.socialMediaService.checkAndUpdateOrCreate(
@@ -82,7 +80,7 @@ class SocialMediaController implements GeneralController {
         mediaType
       );
 
-      return res.status(201).json({
+      res.status(201).json({
         message: "social media created successfully",
         payload: { socialMedial },
       });
@@ -95,7 +93,7 @@ class SocialMediaController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       const updates = { ...req.body };
@@ -107,7 +105,7 @@ class SocialMediaController implements GeneralController {
         id,
         updates
       );
-      return res.status(200).json({
+      res.status(200).json({
         message: "Social media updated successfully",
         payload: updatedSocialMedia,
       });
@@ -120,13 +118,11 @@ class SocialMediaController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       await this.socialMediaService.delete(id);
-      return res
-        .status(200)
-        .json({ message: "Social media deleted successfully" });
+      res.status(200).json({ message: "Social media deleted successfully" });
     } catch (error) {
       next(error);
     }

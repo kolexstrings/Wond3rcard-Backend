@@ -50,10 +50,10 @@ class AppInfoController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const appInfo = await this.service.getAppInfo();
-      return res.status(200).json({ message: "App Info", payload: appInfo });
+      res.status(200).json({ message: "App Info", payload: appInfo });
     } catch (error) {
       next(error);
     }
@@ -63,11 +63,11 @@ class AppInfoController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const data = req.body;
       const updatedAppInfo = await this.service.upsertAppInfo(data);
-      return res.status(200).json({
+      res.status(200).json({
         message: "App Info updated successfully",
         payload: updatedAppInfo,
       });
@@ -80,7 +80,7 @@ class AppInfoController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       const data = req.body;
@@ -88,7 +88,7 @@ class AppInfoController implements GeneralController {
         ...data,
         _id: id,
       });
-      return res.status(200).json({
+      res.status(200).json({
         message: "App Info updated successfully",
         payload: updatedAppInfo,
       });
@@ -101,11 +101,11 @@ class AppInfoController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       await this.service.deleteAppInfo();
-      return res.status(204).send();
+      res.status(204).send();
     } catch (error) {
       next(error);
     }
