@@ -274,7 +274,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const creator = req.user;
       const { ownerId, organizationInfo } = req.body;
