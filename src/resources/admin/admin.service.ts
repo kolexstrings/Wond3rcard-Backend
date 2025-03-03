@@ -265,7 +265,7 @@ class AdminService {
         );
       }
 
-      user.userTiers = newTier;
+      user.userTier.plan = newTier;
       await user.save();
       return "User subscription tier updated successfully.";
     } catch (error) {
