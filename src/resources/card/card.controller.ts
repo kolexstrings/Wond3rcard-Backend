@@ -262,7 +262,7 @@ class CardController implements GlobalController {
         cardCoverPhoto,
         cardVideo
       );
-      return res
+      res
         .status(201)
         .json({ message: "card created successfully", payload: { card } });
     } catch (error) {
