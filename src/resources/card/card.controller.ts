@@ -195,7 +195,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const user = req.user;
 
@@ -284,7 +284,7 @@ class CardController implements GlobalController {
         ownerId,
         req.body
       );
-      return res
+      res
         .status(201)
         .json({ message: "Card created successfully", payload: { card } });
     } catch (error) {
@@ -296,18 +296,18 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const uid = req.user.id;
       const cards = await this.cardService.getAllUserCards(uid);
       if (cards.length === 0) {
-        return res.status(404).json({
+        res.status(404).json({
           statusCode: 404,
           status: "failed",
           message: "You don't have any cards",
         });
       }
-      return res.status(200).json({
+      res.status(200).json({
         statusCode: 200,
         status: "success",
         message: "Cards retrieved successfully",
@@ -322,7 +322,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId } = req.params;
       if (!cardId) {
@@ -331,9 +331,9 @@ class CardController implements GlobalController {
       const uid = req.user.id;
       const card = await this.cardService.getUserCardById(cardId, uid);
       if (!card) {
-        return res.status(404).json({ message: "Card not found" });
+        res.status(404).json({ message: "Card not found" });
       }
-      return res.json(card);
+      res.json(card);
     } catch (error) {
       next(error);
     }
@@ -343,14 +343,14 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId } = req.body;
       const card = await this.cardService.updateCard(cardId, req.body);
       if (!card) {
-        return res.status(404).json({ message: "Card not found" });
+        res.status(404).json({ message: "Card not found" });
       }
-      return res.json(card);
+      res.json(card);
     } catch (error) {
       next(error);
     }
@@ -360,15 +360,15 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId } = req.body;
       const user = req.user;
       const card = await this.cardService.updateOrgCard(user, cardId, req.body);
       if (!card) {
-        return res.status(404).json({ message: "Card not found" });
+        res.status(404).json({ message: "Card not found" });
       }
-      return res.json(card);
+      res.json(card);
     } catch (error) {
       next(error);
     }
@@ -378,7 +378,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const user = req.user;
       const { cardId } = req.body;
@@ -388,7 +388,7 @@ class CardController implements GlobalController {
         req.body
       );
 
-      return res.json(card);
+      res.json(card);
     } catch (error) {
       next(error);
     }
@@ -398,15 +398,13 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId } = req.params;
 
       const uid = req.user.id;
       const card = await this.cardService.deleteCard(cardId, uid);
-      return res
-        .status(200)
-        .json({ message: "Card deleted", payload: { card } });
+      res.status(200).json({ message: "Card deleted", payload: { card } });
     } catch (error) {
       next(error);
     }
@@ -416,7 +414,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, organizationId } = req.body;
       const user = req.user;
@@ -425,9 +423,7 @@ class CardController implements GlobalController {
         cardId,
         organizationId
       );
-      return res
-        .status(200)
-        .json({ message: "Card deleted", payload: { card } });
+      res.status(200).json({ message: "Card deleted", payload: { card } });
     } catch (error) {
       next(error);
     }
@@ -437,11 +433,11 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const ownerId = req.user.id;
       const response = await this.cardService.deleteAllUserCards(ownerId);
-      return res
+      res
         .status(204)
         .json({ message: "All Cards deleted", payload: { response } });
     } catch (error) {
@@ -453,13 +449,13 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId } = req.params;
 
       const uid = req.user.id;
       const card = await this.cardService.toggleCardStatus(cardId, uid);
-      return res.status(200).json({
+      res.status(200).json({
         message: `Card ${card.active ? `activated` : `deactivated`}`,
         payload: { card },
       });
@@ -471,7 +467,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, iconUrl, type, name, link } = req.body;
       const socialMediaLink: SocialMediaLink = {
@@ -486,7 +482,7 @@ class CardController implements GlobalController {
         uid,
         socialMediaLink
       );
-      return res
+      res
         .status(200)
         .json({ message: ` social media added`, payload: { card } });
     } catch (error) {
@@ -498,7 +494,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, iconUrl, type, name, link, active } = req.body;
 
@@ -518,7 +514,7 @@ class CardController implements GlobalController {
         name,
         socialMediaLink
       );
-      return res
+      res
         .status(200)
         .json({ message: `Social media updated`, payload: { card } });
     } catch (error) {
@@ -530,7 +526,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, link } = req.body;
       const uid = req.user.id;
@@ -539,7 +535,7 @@ class CardController implements GlobalController {
         uid,
         link
       );
-      return res
+      res
         .status(200)
         .json({ message: `Social media deleted`, payload: { card } });
     } catch (error) {
@@ -551,7 +547,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, name } = req.body;
       const uid = req.user.id;
@@ -560,7 +556,7 @@ class CardController implements GlobalController {
         uid,
         name
       );
-      return res
+      res
         .status(200)
         .json({ message: `Social media status toggled`, payload: { card } });
     } catch (error) {
@@ -572,7 +568,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, name, designation, company, testimony } = req.body;
 
@@ -589,9 +585,7 @@ class CardController implements GlobalController {
         uid,
         cardTestimony
       );
-      return res
-        .status(200)
-        .json({ message: `Testimony added`, payload: { card } });
+      res.status(200).json({ message: `Testimony added`, payload: { card } });
     } catch (error) {
       next(error);
     }
@@ -601,7 +595,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, testimonyId } = req.body;
       const uid = req.user.id;
@@ -611,9 +605,7 @@ class CardController implements GlobalController {
         uid,
         testimonyId
       );
-      return res
-        .status(200)
-        .json({ message: `Testimony deleted`, payload: { card } });
+      res.status(200).json({ message: `Testimony deleted`, payload: { card } });
     } catch (error) {
       next(error);
     }
@@ -623,7 +615,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, title, imageUrl, description } = req.body;
       const cateloguePhoto = req.file;
@@ -641,9 +633,7 @@ class CardController implements GlobalController {
         catelogue,
         cateloguePhoto
       );
-      return res
-        .status(200)
-        .json({ message: `Catelogue added`, payload: { card } });
+      res.status(200).json({ message: `Catelogue added`, payload: { card } });
     } catch (error) {
       next(error);
     }
@@ -653,7 +643,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, catelogId, title, imageUrl, description } = req.body;
       const uid = req.user.id;
@@ -668,9 +658,7 @@ class CardController implements GlobalController {
         catelogId,
         catelogue
       );
-      return res
-        .status(200)
-        .json({ message: `Catelogue updated`, payload: { card } });
+      res.status(200).json({ message: `Catelogue updated`, payload: { card } });
     } catch (error) {
       next(error);
     }
@@ -680,7 +668,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId, catelogueId } = req.body;
       const uid = req.user.id;
@@ -689,9 +677,7 @@ class CardController implements GlobalController {
         cardId,
         catelogueId
       );
-      return res
-        .status(200)
-        .json({ message: `Catelogue deleted`, payload: { card } });
+      res.status(200).json({ message: `Catelogue deleted`, payload: { card } });
     } catch (error) {
       next(error);
     }
@@ -701,7 +687,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId } = req.params;
       const { recipientId } = req.body;
@@ -726,7 +712,7 @@ class CardController implements GlobalController {
       const baseUrl = process.env.FRONTEND_BASE_URL;
       const shareableLink = `${baseUrl}/cards/shared/${cardId}`;
 
-      return res.status(200).json({
+      res.status(200).json({
         statusCode: 200,
         status: "success",
         message: "Card shared successfully",
@@ -741,7 +727,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId } = req.params;
 
@@ -759,7 +745,7 @@ class CardController implements GlobalController {
       const baseUrl = process.env.FRONTEND_BASE_URL;
       const qrShareableLink = `${baseUrl}/cards/qr/${cardId}`;
 
-      return res.status(200).json({
+      res.status(200).json({
         statusCode: 200,
         status: "success",
         message: "QR share link generated successfully",
@@ -774,7 +760,7 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { cardId } = req.params;
       if (!cardId) {
@@ -783,9 +769,9 @@ class CardController implements GlobalController {
 
       const card = await this.cardService.getCardById(cardId);
       if (!card) {
-        return res.status(404).json({ message: "Card not found" });
+        res.status(404).json({ message: "Card not found" });
       }
-      return res.json({ card });
+      res.json({ card });
     } catch (error) {
       next(error);
     }
@@ -795,11 +781,11 @@ class CardController implements GlobalController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {};
+  ): Promise<void> => {};
   private acceptConnectionRequest = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {};
+  ): Promise<void> => {};
 }
 export default CardController;
