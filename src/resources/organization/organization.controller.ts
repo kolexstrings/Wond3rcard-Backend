@@ -91,7 +91,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { name, members } = req.body;
       const creatorId = req.user.id;
@@ -117,7 +117,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { memberId, organizationId, role } = req.body;
 
@@ -149,7 +149,7 @@ class OrganizationController implements GeneralController {
         await user.save();
       }
 
-      return res.status(200).json({
+      res.status(200).json({
         statusCode: 200,
         status: "success",
         message:
@@ -165,7 +165,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { orgId } = req.params;
       const members = await this.orgService.getMembersOfOrganization(orgId);
@@ -185,7 +185,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const userId = req.user.id;
       const organizations = await this.orgService.getUserOrganizations(userId);
@@ -205,7 +205,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { orgId } = req.params;
       const { memberId, newRole } = req.body;
@@ -231,7 +231,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { orgId } = req.params;
       const { memberId } = req.body;
@@ -256,7 +256,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { orgId } = req.params;
 
@@ -276,7 +276,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const { orgId } = req.params;
       const updates = req.body;
@@ -301,7 +301,7 @@ class OrganizationController implements GeneralController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<Response | void> => {
+  ): Promise<void> => {
     try {
       const oragizations = await this.orgService.getAllOrganizations();
       res.status(200).json({
