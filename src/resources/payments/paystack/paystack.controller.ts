@@ -9,6 +9,7 @@ import {
   validateInitializePayment,
   validateWebhookPayload,
 } from "./paystack.validations";
+import TransactionModel from "../transactions.model";
 
 class PaystackController implements GeneralController {
   public path = "/paystack";
@@ -84,8 +85,12 @@ class PaystackController implements GeneralController {
 
       const { event, data } = req.body;
       if (event === "charge.success") {
-        const { userId, plan, durationInDays } = data.metadata;
+        const { userId, plan, billingCycle, durationInDays } = data.metadata;
         const transactionId = data.id;
+        const referenceId = data.reference;
+        const amount = data.amount / 100; // Convert from kobo to currency
+        const paymentMethod = data.channel;
+        const paidAt = data.paid_at;
 
         const user = await userModel.findById(userId);
         if (!user)
@@ -101,6 +106,23 @@ class PaystackController implements GeneralController {
         };
 
         await user.save();
+
+        // Save transaction log
+        await TransactionModel.create({
+          userId,
+          userName: user.username,
+          email: user.email,
+          plan,
+          amount,
+          transactionId,
+          referenceId,
+          status: "success",
+          paymentProvider: "paystack",
+          paymentMethod,
+          paidAt,
+          expiresAt: user.userTier.expiresAt,
+        });
+
         res.status(200).json({ message: "Subscription activated" });
         return;
       }
@@ -133,6 +155,21 @@ class PaystackController implements GeneralController {
         status: "success",
         payload: verification.data,
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private getTransactions = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const transactions = await TransactionModel.find().sort({
+        createdAt: -1,
+      });
+      res.status(200).json({ status: "success", transactions });
     } catch (error) {
       next(error);
     }
