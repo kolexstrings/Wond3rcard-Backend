@@ -1,5 +1,5 @@
 import axios from "axios";
-import { config } from "../config/env";
+import { config } from "../../config/cloud-meeting";
 
 class ZoomService {
   static getAuthUrl(): string {

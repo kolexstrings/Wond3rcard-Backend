@@ -1,6 +1,6 @@
 import { Request, Response, Router } from "express";
 import GeneralController from "../../protocols/global.controller";
-import GoogleMeetService from "./googleMeet.service";
+import GoogleMeetService from "./meet.service";
 import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
 
 class GoogleMeetController implements GeneralController {

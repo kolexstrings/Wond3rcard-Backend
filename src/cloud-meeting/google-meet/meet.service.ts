@@ -1,13 +1,13 @@
 import axios from "axios";
 import { google } from "googleapis";
-import { config } from "../config/env";
+import { config } from "../../config/cloud-meeting";
 
 class GoogleMeetService {
   static getAuthUrl(): string {
     const oauth2Client = new google.auth.OAuth2(
-      config.google.clientId,
-      config.google.clientSecret,
-      config.google.redirectUri
+      config.meet.clientId,
+      config.meet.clientSecret,
+      config.meet.redirectUri
     );
 
     const scopes = ["https://www.googleapis.com/auth/calendar.events"];
@@ -19,9 +19,9 @@ class GoogleMeetService {
 
   public async getAccessToken(code: string): Promise<string> {
     const oauth2Client = new google.auth.OAuth2(
-      config.google.clientId,
-      config.google.clientSecret,
-      config.google.redirectUri
+      config.meet.clientId,
+      config.meet.clientSecret,
+      config.meet.redirectUri
     );
 
     const { tokens } = await oauth2Client.getToken(code);
