@@ -1,5 +1,7 @@
 import stripe from "../../../config/stripe";
 import tierModel from "../../admin/subscriptionTier/tier.model";
+import userModel from "../../user/user.model";
+import TransactionModel from "../transactions.model";
 
 class StripeService {
   async createCheckoutSession(
@@ -32,6 +34,51 @@ class StripeService {
       success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/payment-failed`,
     });
+  }
+
+  generateTransactionId = (provider: "paystack" | "stripe" | "manual") => {
+    const uniquePart = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+    return `${provider}-${uniquePart}`;
+  };
+
+  public async handleSuccessfulPayment(session: any) {
+    const { userId, plan, billingCycle, expiresAt } = session.metadata;
+
+    const user = await userModel.findById(userId);
+    if (!user) throw new Error("User not found");
+
+    const transactionId = session.id; // Stripe’s unique ID
+    const referenceId = this.generateTransactionId("stripe"); // Custom transaction ID
+    const paymentMethod = session.payment_method_types?.[0] || "unknown";
+    const paidAt = new Date(session.created * 1000); // Stripe timestamps in seconds
+
+    // Update user subscription
+    user.userTier = {
+      plan,
+      status: "active",
+      transactionId,
+      expiresAt: new Date(expiresAt),
+    };
+    await user.save();
+
+    // Store transaction details
+    await TransactionModel.create({
+      userId,
+      userName: user.username,
+      email: user.email,
+      plan,
+      billingCycle,
+      amount: session.amount_total / 100,
+      referenceId, // Custom transaction ID
+      transactionId, // Stripe's ID
+      paymentProvider: "stripe",
+      status: "success",
+      paymentMethod,
+      paidAt,
+      expiresAt: new Date(expiresAt),
+    });
+
+    return { received: true };
   }
 }
 

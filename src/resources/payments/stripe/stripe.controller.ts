@@ -61,46 +61,13 @@ class StripeController {
     }
 
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as any;
-
-      const { userId, plan, billingCycle, expiresAt } = session.metadata;
-
-      const user = await userModel.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      try {
+        const session = event.data.object as any;
+        await stripeService.handleSuccessfulPayment(session);
+        return res.json({ received: true });
+      } catch (error) {
+        return res.status(500).json({ message: error.message });
       }
-
-      const transactionId = session.id;
-      const referenceId = session.payment_intent || transactionId;
-      const paymentMethod = session.payment_method_types?.[0] || "unknown";
-      const paidAt = new Date(session.created * 1000); // Stripe timestamps are in seconds
-
-      user.userTier = {
-        plan,
-        status: "active",
-        transactionId,
-        expiresAt: new Date(expiresAt), // Convert metadata string to Date object
-      };
-      await user.save();
-
-      // Store transaction details
-      await TransactionModel.create({
-        userId,
-        userName: user.username,
-        email: user.email,
-        plan,
-        billingCycle,
-        amount: session.amount_total / 100,
-        referenceId,
-        transactionId,
-        paymentProvider: "stripe",
-        status: "success",
-        paymentMethod,
-        paidAt,
-        expiresAt: new Date(expiresAt),
-      });
-
-      return res.json({ received: true });
     }
 
     res.status(400).json({ message: "Unhandled event type" });
