@@ -82,47 +82,8 @@ class PaystackController implements GeneralController {
 
       const { event, data } = req.body;
       if (event === "charge.success") {
-        const { userId, plan, billingCycle, durationInDays } = data.metadata;
-        const transactionId = data.id;
-        const referenceId = data.reference;
-        const amount = data.amount / 100; // Convert from kobo to currency
-        const paymentMethod = data.channel;
-        const paidAt = data.paid_at;
-
-        const user = await userModel.findById(userId);
-        if (!user)
-          return next(new HttpException(404, "error", "User not found"));
-
-        user.userTier = {
-          plan,
-          status: "active",
-          transactionId,
-          expiresAt: new Date(
-            Date.now() + durationInDays * 24 * 60 * 60 * 1000
-          ),
-        };
-
-        await user.save();
-
-        // Save transaction log
-        await TransactionModel.create({
-          userId,
-          userName: user.username,
-          email: user.email,
-          plan,
-          billingCycle,
-          amount,
-          transactionId,
-          referenceId,
-          status: "success",
-          paymentProvider: "paystack",
-          paymentMethod,
-          paidAt,
-          expiresAt: user.userTier.expiresAt,
-        });
-
-        res.status(200).json({ message: "Subscription activated" });
-        return;
+        const result = await this.paystackService.handleSuccessfulPayment(data);
+        res.status(200).json(result);
       }
 
       res.status(400).json({ message: "Unhandled event" });
