@@ -1,6 +1,8 @@
 import axios from "axios";
+import HttpException from "../../../exceptions/http.exception";
 import tierModel from "../../admin/subscriptionTier/tier.model";
 import userModel from "../../user/user.model";
+import TransactionModel from "../transactions.model";
 
 class PaystackService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY!;
@@ -48,6 +50,56 @@ class PaystackService {
     );
 
     return response.data;
+  }
+
+  generateTransactionId = (provider: "paystack" | "stripe" | "manual") => {
+    const uniquePart = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+    return `${provider}-${uniquePart}`;
+  };
+
+  public async handleSuccessfulPayment(data: any) {
+    const { userId, plan, billingCycle, durationInDays } = data.metadata;
+
+    const user = await userModel.findById(userId);
+    if (!user) throw new HttpException(404, "error", "User not found");
+
+    const transactionId = data.id; // Paystack's transaction ID
+    const referenceId = this.generateTransactionId("paystack"); // Custom Reference ID
+    const amount = data.amount / 100; // Convert from kobo to currency
+    const paymentMethod = data.channel;
+    const paidAt = new Date(data.paid_at); // Convert to Date object
+    const expiresAt = new Date(
+      Date.now() + durationInDays * 24 * 60 * 60 * 1000
+    );
+
+    // Update user subscription
+    user.userTier = {
+      plan,
+      status: "active",
+      transactionId,
+      expiresAt,
+    };
+
+    await user.save();
+
+    // Save transaction log
+    await TransactionModel.create({
+      userId,
+      userName: user.username,
+      email: user.email,
+      plan,
+      billingCycle,
+      amount,
+      transactionId,
+      referenceId,
+      status: "success",
+      paymentProvider: "paystack",
+      paymentMethod,
+      paidAt,
+      expiresAt,
+    });
+
+    return { message: "Subscription activated" };
   }
 }
 

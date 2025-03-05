@@ -6,7 +6,7 @@ import PaystackService from "./paystack.service";
 import userModel from "../../user/user.model";
 import validationMiddleware from "../../../middlewares/validation.middleware";
 import {
-  validateInitializePayment,
+  validatePaystackPayment,
   validateWebhookPayload,
 } from "./paystack.validations";
 
@@ -22,10 +22,7 @@ class PaystackController implements GeneralController {
   private initializeRoute(): void {
     this.router.post(
       `${this.path}/initialize-payment`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validateInitializePayment),
-      ],
+      [authenticatedMiddleware, validationMiddleware(validatePaystackPayment)],
       this.initializePayment
     );
 
@@ -84,25 +81,8 @@ class PaystackController implements GeneralController {
 
       const { event, data } = req.body;
       if (event === "charge.success") {
-        const { userId, plan, durationInDays } = data.metadata;
-        const transactionId = data.id;
-
-        const user = await userModel.findById(userId);
-        if (!user)
-          return next(new HttpException(404, "error", "User not found"));
-
-        user.userTier = {
-          plan,
-          status: "active",
-          transactionId,
-          expiresAt: new Date(
-            Date.now() + durationInDays * 24 * 60 * 60 * 1000
-          ),
-        };
-
-        await user.save();
-        res.status(200).json({ message: "Subscription activated" });
-        return;
+        const result = await this.paystackService.handleSuccessfulPayment(data);
+        res.status(200).json(result);
       }
 
       res.status(400).json({ message: "Unhandled event" });
