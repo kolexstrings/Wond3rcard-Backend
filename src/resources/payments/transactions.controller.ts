@@ -2,9 +2,11 @@ import { NextFunction, Request, Response, Router } from "express";
 import GeneralController from "../../protocols/global.controller";
 import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
 import TransactionModel from "./transactions.model";
+import verifyRolesMiddleware from "../../middlewares/roles.middleware";
+import { UserRole } from "../user/user.protocol";
 
 class TransactionsController implements GeneralController {
-  public path = "/transactions";
+  public path = "/payments";
   public router = Router();
 
   constructor() {
@@ -13,8 +15,8 @@ class TransactionsController implements GeneralController {
 
   private initializeRoute() {
     this.router.get(
-      `${this.path}`,
-      authenticatedMiddleware,
+      `${this.path}/transactions`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getTransactions
     );
   }

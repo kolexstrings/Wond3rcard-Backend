@@ -113,6 +113,7 @@ class PaystackController implements GeneralController {
           userName: user.username,
           email: user.email,
           plan,
+          billingCycle,
           amount,
           transactionId,
           referenceId,
@@ -155,21 +156,6 @@ class PaystackController implements GeneralController {
         status: "success",
         payload: verification.data,
       });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  private getTransactions = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    try {
-      const transactions = await TransactionModel.find().sort({
-        createdAt: -1,
-      });
-      res.status(200).json({ status: "success", transactions });
     } catch (error) {
       next(error);
     }

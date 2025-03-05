@@ -10,6 +10,11 @@ const TransactionSchema = new mongoose.Schema(
     userName: { type: String, required: true },
     email: { type: String, required: true },
     plan: { type: String, required: true },
+    billingCycle: {
+      type: String,
+      enum: ["yearly, monthly"],
+      required: true,
+    },
     amount: { type: Number, required: true },
     transactionId: { type: String, required: true, unique: true },
     referenceId: { type: String, required: true },
