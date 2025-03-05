@@ -6,7 +6,9 @@ class ZoomService {
     return `https://zoom.us/oauth/authorize?response_type=code&client_id=${config.zoom.clientId}&redirect_uri=${config.zoom.redirectUri}`;
   }
 
-  public async getAccessToken(code: string): Promise<string> {
+  public async getAccessToken(
+    code: string
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const response = await axios.post("https://zoom.us/oauth/token", null, {
       params: {
         grant_type: "authorization_code",
@@ -18,6 +20,25 @@ class ZoomService {
         password: config.zoom.clientSecret,
       },
     });
+
+    return {
+      accessToken: response.data.access_token,
+      refreshToken: response.data.refresh_token, // Store refresh token too
+    };
+  }
+
+  public async refreshAccessToken(refreshToken: string): Promise<string> {
+    const response = await axios.post("https://zoom.us/oauth/token", null, {
+      params: {
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      },
+      auth: {
+        username: config.zoom.clientId,
+        password: config.zoom.clientSecret,
+      },
+    });
+
     return response.data.access_token;
   }
 
