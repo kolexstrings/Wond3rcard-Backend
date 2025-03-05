@@ -5,7 +5,7 @@ import TransactionModel from "../transactions.model";
 import userModel from "../../user/user.model";
 import stripeService from "./stripe.service";
 import validationMiddleware from "../../../middlewares/validation.middleware";
-import { validateStripePayment } from "./stripe.vaidation";
+import { validateStripePayment } from "./stripe.vaidations";
 
 class StripeController {
   public path = "/stripe";

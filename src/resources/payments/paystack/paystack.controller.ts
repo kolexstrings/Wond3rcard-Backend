@@ -9,7 +9,6 @@ import {
   validatePaystackPayment,
   validateWebhookPayload,
 } from "./paystack.validations";
-import TransactionModel from "../transactions.model";
 
 class PaystackController implements GeneralController {
   public path = "/paystack";
