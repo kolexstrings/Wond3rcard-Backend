@@ -6,7 +6,7 @@ import PaystackService from "./paystack.service";
 import userModel from "../../user/user.model";
 import validationMiddleware from "../../../middlewares/validation.middleware";
 import {
-  validateInitializePayment,
+  validatePaystackPayment,
   validateWebhookPayload,
 } from "./paystack.validations";
 import TransactionModel from "../transactions.model";
@@ -23,10 +23,7 @@ class PaystackController implements GeneralController {
   private initializeRoute(): void {
     this.router.post(
       `${this.path}/initialize-payment`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validateInitializePayment),
-      ],
+      [authenticatedMiddleware, validationMiddleware(validatePaystackPayment)],
       this.initializePayment
     );
 

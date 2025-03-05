@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-export const validateInitializePayment = Joi.object({
+export const validatePaystackPayment = Joi.object({
   userId: Joi.string().required().messages({
     "any.required": "User ID is required",
     "string.base": "User ID must be a string",

@@ -4,6 +4,9 @@ import authenticatedMiddleware from "../../../middlewares/authenticated.middlewa
 import TransactionModel from "../transactions.model";
 import tierModel from "../../admin/subscriptionTier/tier.model";
 import userModel from "../../user/user.model";
+import stripeService from "./stripe.service";
+import validationMiddleware from "../../../middlewares/validation.middleware";
+import { validateStripePayment } from "./stripe.vaidation";
 
 class StripeController {
   public path = "/stripe";
@@ -16,61 +19,20 @@ class StripeController {
   private initializeRoutes() {
     this.router.post(
       `${this.path}/create-checkout-session`,
-      authenticatedMiddleware,
+      [authenticatedMiddleware, validationMiddleware(validateStripePayment)],
       this.createCheckoutSession
     );
     this.router.post(`${this.path}/webhook`, this.handleWebhook);
   }
 
-  private createCheckoutSession = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  private createCheckoutSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { userId, plan, billingCycle } = req.body;
-      const tier = await tierModel.findOne({ name: plan }).lean();
-      if (!tier) {
-        return res.status(400).json({ message: "Invalid plan selected" });
-      }
-
-      const selectedBilling =
-        billingCycle === "yearly"
-          ? tier.billingCycle.yearly
-          : tier.billingCycle.monthly;
-
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: plan,
-              },
-              unit_amount: selectedBilling.price * 100, // Convert to cents
-            },
-            quantity: 1,
-          },
-        ],
-        mode: "subscription",
-        metadata: {
-          userId,
-          plan,
-          billingCycle,
-          expiresAt: new Date(
-            Date.now() + selectedBilling.durationInDays * 24 * 60 * 60 * 1000
-          ).toISOString(), // Expiry Date
-        },
-        success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.FRONTEND_URL}/payment-failed`,
-      });
-
+      const session = await stripeService.createCheckoutSession(userId, plan, billingCycle);
       res.status(200).json({ url: session.url });
     } catch (error) {
       next(error);
-    }
-  };
+    };
 
   private handleWebhook = async (
     req: Request,
