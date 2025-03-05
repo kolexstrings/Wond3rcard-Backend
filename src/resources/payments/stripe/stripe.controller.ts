@@ -2,7 +2,6 @@ import { Request, Response, NextFunction, Router } from "express";
 import stripe from "../../../config/stripe";
 import authenticatedMiddleware from "../../../middlewares/authenticated.middleware";
 import TransactionModel from "../transactions.model";
-import tierModel from "../../admin/subscriptionTier/tier.model";
 import userModel from "../../user/user.model";
 import stripeService from "./stripe.service";
 import validationMiddleware from "../../../middlewares/validation.middleware";
@@ -18,21 +17,30 @@ class StripeController {
 
   private initializeRoutes() {
     this.router.post(
-      `${this.path}/create-checkout-session`,
+      `${this.path}/initialize-payment`,
       [authenticatedMiddleware, validationMiddleware(validateStripePayment)],
       this.createCheckoutSession
     );
     this.router.post(`${this.path}/webhook`, this.handleWebhook);
   }
 
-  private createCheckoutSession = async (req: Request, res: Response, next: NextFunction) => {
+  private createCheckoutSession = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     try {
       const { userId, plan, billingCycle } = req.body;
-      const session = await stripeService.createCheckoutSession(userId, plan, billingCycle);
+      const session = await stripeService.createCheckoutSession(
+        userId,
+        plan,
+        billingCycle
+      );
       res.status(200).json({ url: session.url });
     } catch (error) {
       next(error);
-    };
+    }
+  };
 
   private handleWebhook = async (
     req: Request,
