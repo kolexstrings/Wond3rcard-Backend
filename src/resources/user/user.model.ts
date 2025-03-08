@@ -48,7 +48,14 @@ const UserSchema = new Schema(
       subscriptionId: { type: String, default: null },
       expiryDate: { type: Date, default: null },
     },
+
+    // OAuth Tokens
+    zoomAccessToken: { type: String, default: null },
+    googleMeetAccessToken: { type: String, default: null },
+    microsoftTeamsAccessToken: { type: String, default: null },
+    tokenExpiry: { type: Date, default: null },
   },
+
   {
     timestamps: true,
   }

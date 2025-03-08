@@ -42,6 +42,12 @@ interface User extends Document {
   paystackCustomerId: string;
   stripeCustomerId: string;
 
+  // OAuth Tokens for Integrations
+  zoomAccessToken?: string;
+  googleMeetAccessToken?: string;
+  microsoftTeamsAccessToken?: string;
+  tokenExpiry?: Date;
+
   isValidPassword(password: string): Promise<Error | boolean>;
 }
 
