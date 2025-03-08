@@ -15,26 +15,30 @@ class GoogleMeetController implements GeneralController {
   initializeRoute(): void {
     this.router.get(
       `${this.path}/authorize`,
-      [authenticatedMiddleware],
+      authenticatedMiddleware,
       this.authorize
     );
-
-    this.router.get(`${this.path}/callback`, this.callback);
-
+    this.router.get(
+      `${this.path}/callback`,
+      authenticatedMiddleware,
+      this.callback
+    );
     this.router.post(
       `${this.path}/createMeeting`,
-      [authenticatedMiddleware],
+      authenticatedMiddleware,
       this.createMeeting
     );
   }
 
   private authorize = async (req: Request, res: Response) => {
-    res.redirect(GoogleMeetService.getAuthUrl());
+    res.redirect(await this.googleMeetService.getAuthUrl());
   };
 
   private callback = async (req: Request, res: Response) => {
     try {
+      const userId = req.user.id; // Assuming `req.user` is populated via authentication middleware
       const accessToken = await this.googleMeetService.getAccessToken(
+        userId,
         req.query.code as string
       );
       res.json({ message: "Google Meet authenticated", accessToken });
@@ -45,9 +49,10 @@ class GoogleMeetController implements GeneralController {
 
   private createMeeting = async (req: Request, res: Response) => {
     try {
-      const { accessToken, topic, startTime, duration } = req.body;
+      const userId = req.user.id;
+      const { topic, startTime, duration } = req.body;
       const meetingLink = await this.googleMeetService.createMeeting(
-        accessToken,
+        userId,
         topic,
         startTime,
         duration

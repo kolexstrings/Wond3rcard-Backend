@@ -35,6 +35,29 @@ class TokenService {
     }
   }
 
+  // Update only access token and expiry
+  public async updateToken(
+    userId: string,
+    service: string,
+    accessToken: string,
+    expiresIn: number
+  ) {
+    try {
+      const tokenExpiry = new Date(Date.now() + expiresIn * 1000);
+
+      const token = await tokenModel.findOneAndUpdate(
+        { userId, service },
+        { accessToken, tokenExpiry },
+        { new: true }
+      );
+
+      return token;
+    } catch (error) {
+      console.error("Error updating token:", error);
+      throw error;
+    }
+  }
+
   // Delete a token
   public async deleteToken(userId: string, service: string) {
     try {
