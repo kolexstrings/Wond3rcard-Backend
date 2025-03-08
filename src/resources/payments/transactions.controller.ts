@@ -134,6 +134,12 @@ class TransactionsController implements GeneralController {
         { $limit: 1 },
       ]);
 
+      //Users by subscription tier
+      const usersByTier = await TransactionModel.aggregate([
+        { $match: { status: "success" } }, // Count only successful transactions
+        { $group: { _id: "$plan", count: { $sum: 1 } } },
+      ]);
+
       res.status(200).json({
         totalRevenue: totalRevenue[0]?.total || 0,
         failedTransactions,
@@ -143,6 +149,7 @@ class TransactionsController implements GeneralController {
         revenueByMonth,
         failureRate: `${failureRate}%`,
         mostCommonPaymentMethod: commonPaymentMethod[0]?._id || "N/A",
+        usersByTier,
       });
     } catch (error) {
       next(error);
