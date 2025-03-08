@@ -1,5 +1,5 @@
 import axios from "axios";
-import { config } from "../../config/cloud-meeting";
+import { config } from "../../../config/cloud-meeting";
 
 class TeamsService {
   static getAuthUrl(): string {

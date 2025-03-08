@@ -1,14 +1,16 @@
 import axios from "axios";
-import { config } from "../../config/cloud-meeting";
+import { config } from "../../../config/cloud-meeting";
 
 class ZoomService {
   static getAuthUrl(): string {
     return `https://zoom.us/oauth/authorize?response_type=code&client_id=${config.zoom.clientId}&redirect_uri=${config.zoom.redirectUri}`;
   }
 
-  public async getAccessToken(
-    code: string
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  public async getAccessToken(code: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expires_in: number;
+  }> {
     const response = await axios.post("https://zoom.us/oauth/token", null, {
       params: {
         grant_type: "authorization_code",
@@ -23,7 +25,8 @@ class ZoomService {
 
     return {
       accessToken: response.data.access_token,
-      refreshToken: response.data.refresh_token, // Store refresh token too
+      refreshToken: response.data.refresh_token,
+      expires_in: response.data.expires_in,
     };
   }
 

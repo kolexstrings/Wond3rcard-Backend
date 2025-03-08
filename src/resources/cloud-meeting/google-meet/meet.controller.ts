@@ -1,12 +1,12 @@
 import { Request, Response, Router } from "express";
-import GeneralController from "../../protocols/global.controller";
-import TeamsService from "./teams.service";
-import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
+import GeneralController from "../../../protocols/global.controller";
+import GoogleMeetService from "./meet.service";
+import authenticatedMiddleware from "../../../middlewares/authenticated.middleware";
 
-class TeamsController implements GeneralController {
-  public path = "/teams";
+class GoogleMeetController implements GeneralController {
+  public path = "/google-meet";
   public router = Router();
-  private teamsService = new TeamsService();
+  private googleMeetService = new GoogleMeetService();
 
   constructor() {
     this.initializeRoute();
@@ -29,15 +29,15 @@ class TeamsController implements GeneralController {
   }
 
   private authorize = async (req: Request, res: Response) => {
-    res.redirect(TeamsService.getAuthUrl());
+    res.redirect(GoogleMeetService.getAuthUrl());
   };
 
   private callback = async (req: Request, res: Response) => {
     try {
-      const accessToken = await this.teamsService.getAccessToken(
+      const accessToken = await this.googleMeetService.getAccessToken(
         req.query.code as string
       );
-      res.json({ message: "Teams authenticated", accessToken });
+      res.json({ message: "Google Meet authenticated", accessToken });
     } catch (error) {
       res.status(400).json({ error: "OAuth Error" });
     }
@@ -46,7 +46,7 @@ class TeamsController implements GeneralController {
   private createMeeting = async (req: Request, res: Response) => {
     try {
       const { accessToken, topic, startTime, duration } = req.body;
-      const meetingLink = await this.teamsService.createMeeting(
+      const meetingLink = await this.googleMeetService.createMeeting(
         accessToken,
         topic,
         startTime,
@@ -59,4 +59,4 @@ class TeamsController implements GeneralController {
   };
 }
 
-export default TeamsController;
+export default GoogleMeetController;

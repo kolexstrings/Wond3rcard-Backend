@@ -1,12 +1,12 @@
 import { Request, Response, Router } from "express";
-import GeneralController from "../../protocols/global.controller";
-import GoogleMeetService from "./meet.service";
-import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
+import GeneralController from "../../../protocols/global.controller";
+import TeamsService from "./teams.service";
+import authenticatedMiddleware from "../../../middlewares/authenticated.middleware";
 
-class GoogleMeetController implements GeneralController {
-  public path = "/google-meet";
+class TeamsController implements GeneralController {
+  public path = "/teams";
   public router = Router();
-  private googleMeetService = new GoogleMeetService();
+  private teamsService = new TeamsService();
 
   constructor() {
     this.initializeRoute();
@@ -29,15 +29,15 @@ class GoogleMeetController implements GeneralController {
   }
 
   private authorize = async (req: Request, res: Response) => {
-    res.redirect(GoogleMeetService.getAuthUrl());
+    res.redirect(TeamsService.getAuthUrl());
   };
 
   private callback = async (req: Request, res: Response) => {
     try {
-      const accessToken = await this.googleMeetService.getAccessToken(
+      const accessToken = await this.teamsService.getAccessToken(
         req.query.code as string
       );
-      res.json({ message: "Google Meet authenticated", accessToken });
+      res.json({ message: "Teams authenticated", accessToken });
     } catch (error) {
       res.status(400).json({ error: "OAuth Error" });
     }
@@ -46,7 +46,7 @@ class GoogleMeetController implements GeneralController {
   private createMeeting = async (req: Request, res: Response) => {
     try {
       const { accessToken, topic, startTime, duration } = req.body;
-      const meetingLink = await this.googleMeetService.createMeeting(
+      const meetingLink = await this.teamsService.createMeeting(
         accessToken,
         topic,
         startTime,
@@ -59,4 +59,4 @@ class GoogleMeetController implements GeneralController {
   };
 }
 
-export default GoogleMeetController;
+export default TeamsController;

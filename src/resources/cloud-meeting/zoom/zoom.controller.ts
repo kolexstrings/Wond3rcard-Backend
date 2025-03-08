@@ -1,8 +1,8 @@
 import { Request, Response, Router } from "express";
-import GeneralController from "../../protocols/global.controller";
+import GeneralController from "../../../protocols/global.controller";
 import ZoomService from "./zoom.service";
-import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
-import TokenService from "../../services/token.service";
+import authenticatedMiddleware from "../../../middlewares/authenticated.middleware";
+import TokenService from "../token.service";
 
 class ZoomController implements GeneralController {
   public path = "/zoom";
@@ -40,16 +40,24 @@ class ZoomController implements GeneralController {
 
   private callback = async (req: Request, res: Response) => {
     try {
-      const { accessToken, refreshToken } =
-        await this.zoomService.getAccessToken(req.query.code as string);
+      const tokenResponse = await this.zoomService.getAccessToken(
+        req.query.code as string
+      );
+      console.log("Zoom Token Response:", tokenResponse); // Debugging log
 
-      await this.tokenService.storeToken(req.user.id, "zoom", {
+      const { accessToken, refreshToken, expires_in } = tokenResponse;
+
+      await this.tokenService.saveToken(
+        req.user.id,
+        "zoom",
         accessToken,
         refreshToken,
-      });
+        expires_in || 3600 // Default to 1 hour if missing
+      );
 
       res.json({ message: "Zoom authenticated", accessToken });
     } catch (error) {
+      console.error("OAuth Error:", error);
       res.status(400).json({ error: "OAuth Error" });
     }
   };
@@ -61,40 +69,43 @@ class ZoomController implements GeneralController {
         return res.status(401).json({ error: "No Zoom token found" });
       }
 
-      // Check if access token is expired and refresh if needed
+      let accessToken = storedToken.accessToken;
+      let meetingLink;
+
       try {
-        await this.zoomService.createMeeting(
-          storedToken.accessToken,
+        meetingLink = await this.zoomService.createMeeting(
+          accessToken,
           req.body.topic,
           req.body.duration
         );
       } catch (error) {
         if (error.response?.status === 401) {
-          // Token expired, refresh it
+          // Refresh token if expired
           const newAccessToken = await this.zoomService.refreshAccessToken(
             storedToken.refreshToken
           );
 
-          // Update token in the database
-          await this.tokenService.storeToken(req.user.id, "zoom", {
-            accessToken: newAccessToken,
-            refreshToken: storedToken.refreshToken, // Keep the same refresh token
-          });
+          await this.tokenService.saveToken(
+            req.user.id,
+            "zoom",
+            newAccessToken,
+            storedToken.refreshToken,
+            3600 // Default expiration or fetch actual expires_in
+          );
 
-          // Retry creating the meeting
-          const meetingLink = await this.zoomService.createMeeting(
+          meetingLink = await this.zoomService.createMeeting(
             newAccessToken,
             req.body.topic,
             req.body.duration
           );
-          return res.json({ meetingLink });
+        } else {
+          throw error;
         }
-        throw error;
       }
 
-      res.json({ message: "Meeting created successfully" });
+      res.json({ meetingLink });
     } catch (error) {
-      res.status(400).json({ error: "Failed to create meeting" });
+      res.status(500).json({ error: "Error creating meeting" });
     }
   };
 }

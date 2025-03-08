@@ -1,6 +1,6 @@
 import axios from "axios";
 import { google } from "googleapis";
-import { config } from "../../config/cloud-meeting";
+import { config } from "../../../config/cloud-meeting";
 
 class GoogleMeetService {
   static getAuthUrl(): string {
