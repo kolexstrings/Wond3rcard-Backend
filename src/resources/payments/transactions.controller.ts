@@ -19,6 +19,12 @@ class TransactionsController implements GeneralController {
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getTransactions
     );
+
+    this.router.get(
+      `${this.path}/analytics`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getTransactionAnalytics
+    );
   }
 
   private getTransactions = async (
@@ -60,6 +66,83 @@ class TransactionsController implements GeneralController {
         totalTransactions,
         totalPages: Math.ceil(totalTransactions / +limit),
         currentPage: +page,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private getTransactionAnalytics = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      // Get total revenue
+      const totalRevenue = await TransactionModel.aggregate([
+        { $match: { status: "success" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]);
+
+      // Count failed transactions
+      const failedTransactions = await TransactionModel.countDocuments({
+        status: "failed",
+      });
+
+      // Count successful transactions
+      const successfulTransactions = await TransactionModel.countDocuments({
+        status: "success",
+      });
+
+      // Count pending transactions
+      const pendingTransactions = await TransactionModel.countDocuments({
+        status: "pending",
+      });
+
+      // Revenue breakdown by provider
+      const revenueByProvider = await TransactionModel.aggregate([
+        { $match: { status: "success" } },
+        { $group: { _id: "$paymentProvider", total: { $sum: "$amount" } } },
+      ]);
+
+      // Revenue over time (grouped by month)
+      const revenueByMonth = await TransactionModel.aggregate([
+        { $match: { status: "success" } },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+            },
+            total: { $sum: "$amount" },
+          },
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1 } },
+      ]);
+
+      // Failure rate percentage
+      const totalTransactions =
+        successfulTransactions + failedTransactions + pendingTransactions;
+      const failureRate = totalTransactions
+        ? ((failedTransactions / totalTransactions) * 100).toFixed(2)
+        : "0";
+
+      // Most common payment method
+      const commonPaymentMethod = await TransactionModel.aggregate([
+        { $group: { _id: "$paymentMethod", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 1 },
+      ]);
+
+      res.status(200).json({
+        totalRevenue: totalRevenue[0]?.total || 0,
+        failedTransactions,
+        successfulTransactions,
+        pendingTransactions,
+        revenueByProvider,
+        revenueByMonth,
+        failureRate: `${failureRate}%`,
+        mostCommonPaymentMethod: commonPaymentMethod[0]?._id || "N/A",
       });
     } catch (error) {
       next(error);
