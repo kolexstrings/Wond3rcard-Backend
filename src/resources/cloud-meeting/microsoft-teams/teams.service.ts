@@ -32,16 +32,23 @@ class TeamsService {
     startTime: string,
     duration: number
   ) {
+    const endTime = new Date(
+      new Date(startTime).getTime() + duration * 60000
+    ).toISOString();
+
     const response = await axios.post(
       "https://graph.microsoft.com/v1.0/me/onlineMeetings",
       {
         subject: topic,
         startDateTime: startTime,
-        endDateTime: new Date(
-          new Date(startTime).getTime() + duration * 60000
-        ).toISOString(),
+        endDateTime: endTime,
       },
-      { headers: { Authorization: `Bearer ${accessToken}` } }
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
     );
 
     return response.data.joinUrl;

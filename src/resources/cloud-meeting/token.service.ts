@@ -1,4 +1,6 @@
+import axios from "axios";
 import tokenModel from "./token.model";
+import { config } from "../../config/cloud-meeting";
 
 class TokenService {
   // Save or update a token
@@ -10,7 +12,7 @@ class TokenService {
     expiresIn: number
   ) {
     try {
-      const tokenExpiry = new Date(Date.now() + expiresIn * 1000); // Convert seconds to milliseconds
+      const tokenExpiry = new Date(Date.now() + expiresIn * 1000);
 
       const token = await tokenModel.findOneAndUpdate(
         { userId, service },
@@ -66,6 +68,43 @@ class TokenService {
       console.error("Error deleting token:", error);
       throw error;
     }
+  }
+
+  // Retrieve or refresh Microsoft Teams token
+  public async getMicrosoftTeamsToken(userId: string): Promise<string> {
+    const tokenData = await this.getToken(userId, "microsoft_teams");
+    if (tokenData && new Date() < new Date(tokenData.tokenExpiry)) {
+      return tokenData.accessToken;
+    }
+
+    if (!tokenData?.refreshToken) {
+      throw new Error("No refresh token available for Microsoft Teams.");
+    }
+
+    const response = await axios.post(
+      "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      null,
+      {
+        params: {
+          grant_type: "refresh_token",
+          refresh_token: tokenData.refreshToken,
+          client_id: config.teams.clientId,
+          client_secret: config.teams.clientSecret,
+          scope:
+            "https://graph.microsoft.com/OnlineMeetings.ReadWrite offline_access",
+        },
+      }
+    );
+
+    await this.saveToken(
+      userId,
+      "microsoft_teams",
+      response.data.access_token,
+      response.data.refresh_token,
+      response.data.expires_in
+    );
+
+    return response.data.access_token;
   }
 }
 
