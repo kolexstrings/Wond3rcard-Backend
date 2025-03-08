@@ -98,7 +98,10 @@ class GoogleMeetService {
         summary: topic,
         start: { dateTime: startTime },
         end: { dateTime: endTime },
-        conferenceData: { createRequest: { requestId: "meet-" + Date.now() } },
+        conferenceData: {
+          createRequest: { requestId: "meet-" + Date.now() },
+        },
+        conferenceDataVersion: 1,
       },
       {
         headers: {
