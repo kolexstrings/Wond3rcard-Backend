@@ -222,16 +222,17 @@ class AuthController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { email, password, otpCode, mfaCode } = req.body;
+      const { email, password } = req.body;
+
+      // Call the authService with just email & password
       const { accessToken, refreshToken } = await this.authService.signIn(
         email,
-        password,
-        otpCode,
-        mfaCode
+        password
       );
+
       res.status(200).json({
         status: "success",
-        message: "sign in successfully",
+        message: "Sign-in successful",
         payload: { accessToken, refreshToken },
       });
     } catch (error: any) {
