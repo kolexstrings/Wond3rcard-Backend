@@ -1,10 +1,6 @@
 import { Request, Response, Router } from "express";
 import GeneralController from "../../protocols/global.controller";
 import AnalyticService from "./analytics.service";
-import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
-import { validateChangeUserRole } from "../admin/admin.validation";
-import verifyRolesMiddleware from "../../middlewares/roles.middleware";
-import { UserRole } from "../user/user.protocol";
 
 class AnalyticsController implements GeneralController {
   public path = "analytics";
@@ -16,24 +12,35 @@ class AnalyticsController implements GeneralController {
   }
 
   initializeRoute(): void {
-    this.router.post(
-      `${this.path}/log`,
-      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
-      this.logAnalytics
-    );
+    this.router.post(`${this.path}/log`, this.logAnalytics.bind(this));
   }
 
   public async logAnalytics(req: Request, res: Response): Promise<Response> {
     try {
-      const analyticsData = await this.analyticsService.logAnalytic(req);
+      // Extract backend-detectable data
+      const analyticsData = {
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        referer: req.headers["referer"] || "Direct",
+        language: req.headers["accept-language"],
+        timestamp: new Date().toISOString(),
 
-      if (!analyticsData) {
+        // Include any additional data sent by the frontend
+        ...req.body,
+      };
+
+      // Log or save this data
+      const savedAnalytics = await this.analyticsService.logAnalytic(
+        analyticsData
+      );
+
+      if (!savedAnalytics) {
         return res.status(500).json({ message: "Failed to log analytics" });
       }
 
       return res.status(200).json({
         message: "Analytics logged successfully",
-        data: analyticsData,
+        data: savedAnalytics,
       });
     } catch (error) {
       console.error("Error logging analytics:", error);
