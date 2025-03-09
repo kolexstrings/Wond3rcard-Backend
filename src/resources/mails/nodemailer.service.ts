@@ -12,28 +12,24 @@ class NodeMailerService {
     receiverEmails: string | string[],
     subject: string,
     template: string,
-    mailCategory: string,
     data: Record<string, string>
   ) {
     try {
       const user = process.env.EMAIL_USER;
       const pass = process.env.EMAIL_PASS;
 
-      const gmailTransporter = nodemailer.createTransport({
-        // secure: true,
-        host: "smtp.gmail.com",
-        port: 465,
-        type: "login",
-        auth: {
-          user: user,
-          pass: pass,
-        },
-      });
+      if (!user || !pass) {
+        throw new Error(
+          "Missing EMAIL_USER or EMAIL_PASS in environment variables."
+        );
+      }
 
-      const sender = {
-        address: user,
-        name: "Wond3r Card",
-      };
+      const gmailTransporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465, // Port 465 for secure SSL/TLS connection
+        secure: true, // Required for port 465
+        auth: { user, pass },
+      });
 
       const recipients = Array.isArray(receiverEmails)
         ? receiverEmails
@@ -41,19 +37,17 @@ class NodeMailerService {
       const htmlContent = this.parseTemplate(template, data);
 
       const info = await gmailTransporter.sendMail({
-        from: sender,
-        to: recipients,
-        subject: subject,
+        from: `"Wond3r Card" <${user}>`, // Correct format
+        to: recipients.join(","), // Convert array to comma-separated string
+        subject,
         html: htmlContent,
-        category: mailCategory || "General",
-        sandbox: true,
       });
 
-      console.log(`Email sent: ${info.messageId}`);
-
+      console.log(`✅ Email sent: ${info.messageId}`);
       return info;
     } catch (error) {
-      console.error(`Error sending email: ${error}`);
+      console.error(`❌ Error sending email: ${error}`);
+      throw error;
     }
   }
 }
