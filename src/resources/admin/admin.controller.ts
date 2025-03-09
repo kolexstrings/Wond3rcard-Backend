@@ -146,6 +146,12 @@ class AdminController implements GlobalController {
       this.getSubscriptionTiers
     );
 
+    this.router.get(
+      `${this.path}/subscription-tiers/:id`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getSubscriptionTierById
+    );
+
     this.router.patch(
       `${this.path}/subscription-tiers/:id`,
       [
@@ -498,6 +504,31 @@ class AdminController implements GlobalController {
         new HttpException(
           400,
           "Failed to retrieve subscription tiers",
+          error.message
+        )
+      );
+    }
+  };
+
+  private getSubscriptionTierById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const tier = await this.adminService.getSubscriptionTierById(id);
+      res.status(200).json({
+        status: "success",
+        message: "Subscription tier retrieved successfully",
+        payload: tier,
+      });
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+      next(
+        new HttpException(
+          400,
+          "Failed to retrieve subscription tier",
           error.message
         )
       );

@@ -163,76 +163,33 @@ class AuthService {
 
   public async signIn(
     email: string,
-    password: string,
-    optCode?: string,
-    mfaCode?: string
+    password: string
   ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      const user = await this.user.findOne({ email: email });
+      const user = await this.user.findOne({ email });
 
       if (!user) {
-        throw new HttpException(404, "not_found", "User not found credentials");
+        throw new HttpException(404, "not_found", "User not found");
       }
-      const uid = user.id;
-      const is2FAEnabled = user.is2FAEnabled;
-      const mfaEnabled = user.mfaEnabled;
-      if (await user.isValidPassword(password)) {
-        if (is2FAEnabled && mfaEnabled) {
-          if (!optCode) {
-            const otp = await this.otpService.saveOtp(uid);
-            const profile = await this.profile.findOne({ uid: uid });
 
-            const emailData = {
-              userName: profile.firstname,
-              otpCode: otp,
-              verifyLink: `https://wond3rcard.com/verify?token=${otp}`,
-            };
-
-            const template = MailTemplates.otpCode;
-
-            await this.mailer.sendMail(
-              profile.email,
-              "2FA OTP Code",
-              template,
-              "Verification",
-              emailData
-            );
-
-            throw new HttpException(
-              400,
-              "2fa_enabled",
-              "Please provide OTP and Authenticator Code"
-            );
-          }
-
-          const verified = await this.otpService.verifyOtp(uid, optCode);
-          if (verified === false) {
-            throw new HttpException(
-              400,
-              "otp_expired",
-              "OTP Code expired or invalid"
-            );
-          }
-
-          await this.#hasEnabledMFA(user, mfaCode);
-        } else if (is2FAEnabled) {
-          await this.#hasEnabled2FA(uid, optCode);
-          if (mfaEnabled) await this.#hasEnabledMFA(user, mfaCode);
-        }
-
-        const tokenSession = token.generateSessionId();
-        const refreshSession = token.generateSessionId();
-        const accessToken = await token.createToken(user, tokenSession);
-        const refreshToken = await token.createRefreshToken(
-          user,
-          refreshSession
-        );
-        return { accessToken, refreshToken };
-      } else {
+      // Validate password
+      if (!(await user.isValidPassword(password))) {
         throw new HttpException(400, "error", "Invalid login credentials");
       }
+
+      // Generate access & refresh tokens
+      const tokenSession = token.generateSessionId();
+      const refreshSession = token.generateSessionId();
+      const accessToken = token.createToken(user, tokenSession);
+      const refreshToken = token.createRefreshToken(user, refreshSession);
+
+      return { accessToken, refreshToken };
     } catch (error) {
-      throw new HttpException(400, "error", `Couldn't sign in: ${error}`);
+      throw new HttpException(
+        400,
+        "error",
+        `Couldn't sign in: ${error.message}`
+      );
     }
   }
 
