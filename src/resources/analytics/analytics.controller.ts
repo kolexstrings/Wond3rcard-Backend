@@ -13,23 +13,23 @@ class AnalyticsController implements GeneralController {
 
   initializeRoute(): void {
     this.router.post(`${this.path}/log`, this.logAnalytics.bind(this));
+    this.router.get(
+      `${this.path}/insights`,
+      this.getAnalyticsInsights.bind(this)
+    );
   }
 
   public async logAnalytics(req: Request, res: Response): Promise<Response> {
     try {
-      // Extract backend-detectable data
       const analyticsData = {
         ipAddress: req.ip,
         userAgent: req.headers["user-agent"],
         referer: req.headers["referer"] || "Direct",
         language: req.headers["accept-language"],
         timestamp: new Date().toISOString(),
-
-        // Include any additional data sent by the frontend
         ...req.body,
       };
 
-      // Log or save this data
       const savedAnalytics = await this.analyticsService.logAnalytic(
         analyticsData
       );
@@ -44,6 +44,22 @@ class AnalyticsController implements GeneralController {
       });
     } catch (error) {
       console.error("Error logging analytics:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  public async getAnalyticsInsights(
+    req: Request,
+    res: Response
+  ): Promise<Response> {
+    try {
+      const insights = await this.analyticsService.getAnalyticsSummary();
+      return res.status(200).json({
+        message: "Analytics insights retrieved successfully",
+        data: insights,
+      });
+    } catch (error) {
+      console.error("Error fetching analytics insights:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
   }
