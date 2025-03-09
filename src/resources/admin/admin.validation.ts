@@ -26,20 +26,33 @@ export const validateSubscriptionTier = Joi.object({
     "string.max": "Tier name must not exceed 50 characters",
   }),
   billingCycle: Joi.object({
-    monthlyPrice: Joi.number().positive().required().messages({
-      "any.required": "Monthly price is required",
-      "number.base": "Monthly price must be a number",
-      "number.positive": "Monthly price must be a positive number",
-    }),
-    yearlyPrice: Joi.number().positive().required().messages({
-      "any.required": "Yearly price is required",
-      "number.base": "Yearly price must be a number",
-      "number.positive": "Yearly price must be a positive number",
-    }),
+    monthly: Joi.object({
+      price: Joi.number().positive().required().messages({
+        "any.required": "Monthly price is required",
+        "number.base": "Monthly price must be a number",
+        "number.positive": "Monthly price must be a positive number",
+      }),
+      durationInDays: Joi.number().positive().default(30).messages({
+        "number.base": "Duration must be a number",
+        "number.positive": "Duration must be a positive number",
+      }),
+    }).required(),
+    yearly: Joi.object({
+      price: Joi.number().positive().required().messages({
+        "any.required": "Yearly price is required",
+        "number.base": "Yearly price must be a number",
+        "number.positive": "Yearly price must be a positive number",
+      }),
+      durationInDays: Joi.number().positive().default(365).messages({
+        "number.base": "Duration must be a number",
+        "number.positive": "Duration must be a positive number",
+      }),
+    }).required(),
   })
     .required()
     .messages({
-      "object.base": "Billing cycle must be provided",
+      "object.base":
+        "Billing cycle must be provided and follow the correct structure",
     }),
   description: Joi.string().max(500).required().messages({
     "string.empty": "Description is required",
@@ -53,7 +66,7 @@ export const validateSubscriptionTier = Joi.object({
     "boolean.base": "Auto-renew must be a boolean",
   }),
   features: Joi.array().items(Joi.string()).required().messages({
-    "array.base": "Features must be an array",
+    "array.base": "Features must be an array of strings",
   }),
 });
 
@@ -63,16 +76,26 @@ export const validateSubscriptionTierUpdate = Joi.object({
     "string.max": "Tier name must not exceed 50 characters",
   }),
   billingCycle: Joi.object({
-    monthlyPrice: Joi.number().positive().messages({
-      "number.base": "Monthly price must be a number",
-      "number.positive": "Monthly price must be a positive number",
+    monthly: Joi.object({
+      price: Joi.number().positive().messages({
+        "number.base": "Monthly price must be a number",
+        "number.positive": "Monthly price must be a positive number",
+      }),
+      durationInDays: Joi.number().integer().positive().messages({
+        "number.base": "Monthly duration must be a number",
+        "number.positive": "Monthly duration must be a positive number",
+      }),
     }),
-    yearlyPrice: Joi.number().positive().messages({
-      "number.base": "Yearly price must be a number",
-      "number.positive": "Yearly price must be a positive number",
+    yearly: Joi.object({
+      price: Joi.number().positive().messages({
+        "number.base": "Yearly price must be a number",
+        "number.positive": "Yearly price must be a positive number",
+      }),
+      durationInDays: Joi.number().integer().positive().messages({
+        "number.base": "Yearly duration must be a number",
+        "number.positive": "Yearly duration must be a positive number",
+      }),
     }),
-  }).messages({
-    "object.base": "Billing cycle must be an object",
   }),
   description: Joi.string().max(500).messages({
     "string.max": "Description must not exceed 500 characters",
