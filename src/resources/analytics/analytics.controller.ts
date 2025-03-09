@@ -12,11 +12,8 @@ class AnalyticsController implements GeneralController {
   }
 
   initializeRoute(): void {
-    this.router.post(`${this.path}/log`, this.logAnalytics.bind(this));
-    this.router.get(
-      `${this.path}/insights`,
-      this.getAnalyticsInsights.bind(this)
-    );
+    this.router.post(`${this.path}/log`, this.logAnalytics),
+      this.router.get(`${this.path}/insights`, this.getAnalyticsInsights);
   }
 
   public async logAnalytics(req: Request, res: Response): Promise<Response> {
