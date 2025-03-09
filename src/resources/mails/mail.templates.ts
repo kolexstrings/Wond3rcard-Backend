@@ -1,11 +1,68 @@
 const MailTemplates = {
-  welcomeTemplate:  /*html*/`
-  <h2>Welcome, {{userName}}!</h2>
-  <p>Thank you for signing up, {{userName}}! We're thrilled to have you on board.</p>
- <P>WOND3R CARD TEAM</P>
+  welcomeTemplate: /*html*/ `
+  <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to WOND3R CARD</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            color: #4b32d0;
+        }
+        p {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #4b32d0;
+            color: #ffffff;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome, {{userName}}!</h2>
+        <p>Thank you for signing up! We're thrilled to have you on board.</p>
+        <p>Start exploring all the benefits of WOND3R CARD and enjoy an amazing experience.</p>
+        <a href="{{dashboardLink}}" class="cta-button">Go to Dashboard</a>
+        <p class="footer">If you have any questions, feel free to <a href="mailto:support@wond3rcard.com">contact us</a>.</p>
+        <p class="footer">— The WOND3R CARD Team</p>
+    </div>
+</body>
+</html>
+
 `,
 
-  subscriptionConfirmation: /*html*/`<!DOCTYPE html>
+  subscriptionConfirmation: /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -20,7 +77,7 @@ const MailTemplates = {
 </html>
 `,
 
-  setup2faConfirmation:  /*html*/`<!DOCTYPE html>
+  setup2faConfirmation: /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -34,7 +91,7 @@ const MailTemplates = {
 </html>
 `,
 
-  setupmfaConfrimation:  /*html*/`<!DOCTYPE html>
+  setupmfaConfrimation: /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -47,7 +104,7 @@ const MailTemplates = {
 </body>
 </html>
 `,
-  passwordResetRequest:  /*html*/`<!DOCTYPE html>
+  passwordResetRequest: /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -64,7 +121,7 @@ const MailTemplates = {
 </html>
 `,
 
-  otpVerification:  /*html*/`<!DOCTYPE html>
+  otpVerification: /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -82,7 +139,7 @@ const MailTemplates = {
 </html>
 `,
 
-  signUpWelcome:  /*html*/`<!DOCTYPE html>
+  signUpWelcome: /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -96,7 +153,7 @@ const MailTemplates = {
 </body>
 </html>
 `,
-  signInNotification:  /*html*/`<!DOCTYPE html>
+  signInNotification: /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -111,7 +168,7 @@ const MailTemplates = {
 </html>
 `,
 
-  accountAlreadyVerified:  /*html*/`
+  accountAlreadyVerified: /*html*/ `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -222,8 +279,7 @@ const MailTemplates = {
   </p>
 </body>
 </html>
-`
-  ,
+`,
   githubMailMergeNotification: `
 <!DOCTYPE html>
 <html lang="en">
@@ -588,7 +644,7 @@ const MailTemplates = {
   </table>
 </body>
 </html>
-`
-}
+`,
+};
 
 export default MailTemplates;
