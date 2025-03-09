@@ -412,10 +412,14 @@ class AdminService {
   /**
    * get all subscription tiers available
    */
-  public async getSubscriptionTiers(): Promise<string[]> {
+
+  public async getSubscriptionTiers(): Promise<{ id: string; name: string }[]> {
     try {
-      const tiers = await this.tier.find();
-      return tiers.map((tier) => tier.name);
+      const tiers = await this.tier.find({}, "_id name"); // Only fetch `_id` and `name`
+      return tiers.map((tier) => ({
+        id: tier._id.toString(),
+        name: tier.name,
+      }));
     } catch (error) {
       throw new HttpException(
         500,
