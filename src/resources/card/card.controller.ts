@@ -170,7 +170,7 @@ class CardController implements GlobalController {
       this.acceptConnectionRequest
     );
 
-    this.router.get(
+    this.router.post(
       `${this.path}/share/:cardId`,
       [
         authenticatedMiddleware,
@@ -179,12 +179,9 @@ class CardController implements GlobalController {
       this.shareCard
     );
 
-    this.router.get(
+    this.router.post(
       `${this.path}/qr/:cardId`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validator.validateShareCard),
-      ],
+      authenticatedMiddleware,
       this.generateQrShareLink
     );
 
