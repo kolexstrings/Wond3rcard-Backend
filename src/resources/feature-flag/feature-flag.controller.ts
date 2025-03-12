@@ -6,6 +6,7 @@ import GlobalController from "../../protocols/global.controller";
 import validate from "../../resources/feature-flag/feature-flags.validation";
 import FeatureFlagService from "./feature-flag.service";
 import { UserRole } from "../user/user.protocol";
+import { UserTiers } from "../user/user.protocol";
 
 class FeatureFlagsController implements GlobalController {
   public path = "/feature-flags";
@@ -54,6 +55,12 @@ class FeatureFlagsController implements GlobalController {
         verifyRolesMiddleware([UserRole.Admin]),
       ],
       this.deleteFeatureFlag
+    );
+
+    this.router.get(
+      `${this.path}/by-tier/:tier`,
+      authenticatedMiddleware,
+      this.getFeatureFlagByTier
     );
   }
 
@@ -152,6 +159,33 @@ class FeatureFlagsController implements GlobalController {
       res
         .status(500)
         .json({ status: "error", message: "Failed to retrieve feature flags" });
+    }
+  };
+
+  private getFeatureFlagByTier = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const tier = req.params.tier.toLowerCase() as UserTiers;
+
+      if (!Object.values(UserTiers).includes(tier)) {
+        res.status(400).json({
+          status: "error",
+          message: "Invalid user tier",
+        });
+        return;
+      }
+
+      const featureFlags = await this.featureService.getFeatureFlagsByTier(
+        tier
+      );
+      res.status(200).json({ status: "success", featureFlags });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: "Failed to retrieve feature flags for the given tier",
+      });
     }
   };
 }

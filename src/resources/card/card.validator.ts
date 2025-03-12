@@ -89,20 +89,9 @@ const deleteUserOrgCard = Joi.object({
 });
 
 const validateShareCard = Joi.object({
-  cardId: JoiExtended.objectId().required().messages({
-    "any.required": "Card ID is required",
-    "any.invalid": "Invalid Card ID",
-  }),
   recipientId: JoiExtended.objectId().required().messages({
     "any.required": "Recipient ID is required",
     "any.invalid": "Invalid Recipient ID",
-  }),
-});
-
-const validateGenerateQrShareLink = Joi.object({
-  cardId: JoiExtended.objectId().required().messages({
-    "any.required": "Card ID is required",
-    "any.invalid": "Invalid Card ID",
   }),
 });
 
@@ -123,7 +112,6 @@ export default {
   updateCard,
   deleteUserOrgCard,
   validateShareCard,
-  validateGenerateQrShareLink,
   socialMediaLinksSchema,
   parseFormData,
 };
