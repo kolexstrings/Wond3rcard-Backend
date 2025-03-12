@@ -55,6 +55,12 @@ class FeatureFlagsController implements GlobalController {
       ],
       this.deleteFeatureFlag
     );
+
+    this.router.get(
+      `${this.path}/by-tier`,
+      [authenticatedMiddleware],
+      this.getFeatureFlagByTier
+    );
   }
 
   private createFeatureFlag = async (
@@ -160,7 +166,7 @@ class FeatureFlagsController implements GlobalController {
     res: Response
   ): Promise<void> => {
     try {
-      const userTier = req.user.tier; // Get user tier from authenticated middleware
+      const userTier = req.user.tier;
 
       const featureFlags = await this.featureService.getFeatureFlagsByTier(
         userTier
