@@ -154,6 +154,26 @@ class FeatureFlagsController implements GlobalController {
         .json({ status: "error", message: "Failed to retrieve feature flags" });
     }
   };
+
+  private getFeatureFlagByTier = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const userTier = req.user.tier; // Get user tier from authenticated middleware
+
+      const featureFlags = await this.featureService.getFeatureFlagsByTier(
+        userTier
+      );
+
+      res.status(200).json({ status: "success", featureFlags });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: "Failed to retrieve feature flags for user tier",
+      });
+    }
+  };
 }
 
 export default FeatureFlagsController;
