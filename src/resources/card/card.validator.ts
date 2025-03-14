@@ -30,19 +30,26 @@ const contactInfoSchema = Joi.object({
   address: Joi.string().allow("").default(""),
 }).default();
 
-const socialMediaLinksSchema = Joi.array().items(
-  Joi.object({
-    link: Joi.object({
-      iconUrl: Joi.string().uri().required(),
-      name: Joi.string().required(),
-      type: Joi.string().required(),
-      link: Joi.string().uri().required(),
-    }).required(),
-    handle: Joi.string().uri().required(),
-    active: Joi.boolean().default(true),
-    label: Joi.string().required(),
-  })
-);
+// const socialMediaLinksSchema = Joi.array().items(
+//   Joi.object({
+//     link: Joi.object({
+//       iconUrl: Joi.string().uri().required(),
+//       name: Joi.string().required(),
+//       type: Joi.string().required(),
+//       link: Joi.string().uri().required(),
+//     }).required(),
+//     handle: Joi.string().uri().required(),
+//     active: Joi.boolean().default(true),
+//     label: Joi.string().required(),
+//   })
+// );
+
+const socialMediaLinkSchema = Joi.object({
+  iconUrl: Joi.string().uri().required(),
+  name: Joi.string().required(),
+  type: Joi.string().required(),
+  link: Joi.string().uri().required(),
+});
 
 const organizationInfoSchema = Joi.object({
   organizationId: JoiExtended.objectId().allow("").default(""),
@@ -112,6 +119,6 @@ export default {
   updateCard,
   deleteUserOrgCard,
   validateShareCard,
-  socialMediaLinksSchema,
+  socialMediaLinkSchema,
   parseFormData,
 };
