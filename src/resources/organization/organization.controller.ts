@@ -10,6 +10,7 @@ import userModel from "../user/user.model";
 import { UserRole } from "../user/user.protocol";
 import OrganizationService from "./organization.service";
 import validator from "./organization.validations";
+import { Types } from "mongoose";
 
 class OrganizationController implements GeneralController {
   public path = "/organizations";
