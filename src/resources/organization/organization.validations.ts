@@ -13,7 +13,7 @@ const createOrgValidator = Joi.object({
     .required(),
   industry: Joi.string().min(3).max(100).required(),
   companyWebsite: Joi.string().uri().optional(),
-  creatorId: objectIdSchema,
+  memberId: objectIdSchema,
   members: Joi.array()
     .items(
       Joi.object({

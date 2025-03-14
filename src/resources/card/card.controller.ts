@@ -111,7 +111,7 @@ class CardController implements GlobalController {
       `${this.path}/add-social-media`,
       [
         authenticatedMiddleware,
-        validationMiddleware(validator.socialMediaLinksSchema),
+        validationMiddleware(validator.socialMediaLinkSchema),
       ],
       this.addSocialMediaLink
     );
