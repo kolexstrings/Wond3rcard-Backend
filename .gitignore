@@ -80,3 +80,4 @@ config/local.json
 prisma/migrations/
 prisma/dev.db
 prisma/dev.db-journal
+.qodo

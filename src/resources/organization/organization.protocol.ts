@@ -1,9 +1,10 @@
+import { Types } from "mongoose";
 
 enum TeamRole {
   None = "none",
   Member = "member",
   Lead = "lead",
-  Moderator = "moderator"
+  Moderator = "moderator",
 }
 
 interface OrganizationMember {
@@ -13,9 +14,12 @@ interface OrganizationMember {
 }
 
 interface Organization {
-  id: string;
-  creatorId: string;
+  id: Types.ObjectId;
+  creatorId: Types.ObjectId;
   name: string;
+  businessType: string;
+  industry: string;
+  companyWebsite?: string;
   members?: OrganizationMember[];
 }
 

@@ -1,11 +1,24 @@
 import { model, Schema } from "mongoose";
-import { Organization } from "./organization.protocol";
+import { Organization, TeamRole } from "./organization.protocol";
 
-const organizationSchema = new Schema(
+const organizationSchema = new Schema<Organization>(
   {
     creatorId: { type: Schema.Types.ObjectId, required: true, ref: "User" },
     name: { type: String, required: true },
-    members: { type: [], require: false, unique: false },
+    businessType: { type: String, required: true },
+    industry: { type: String, required: true },
+    companyWebsite: { type: String, required: false },
+    members: [
+      {
+        memberId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        organizationId: {
+          type: Schema.Types.ObjectId,
+          ref: "Organization",
+          required: true,
+        },
+        role: { type: String, enum: Object.values(TeamRole), required: true },
+      },
+    ],
   },
   {
     timestamps: true,
