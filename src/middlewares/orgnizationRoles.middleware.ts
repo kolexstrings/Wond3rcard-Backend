@@ -1,5 +1,6 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import HttpException from "../exceptions/http.exception";
+import { Types } from "mongoose";
 
 function verifyOrgRolesMiddleware(allowedRoles: string[]): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -12,7 +13,9 @@ function verifyOrgRolesMiddleware(allowedRoles: string[]): RequestHandler {
 
       // Extract the user's role in the requested organization
       const { orgId } = req.params || req.body;
-      const userOrg = userOrganizations.find((org) => org.orgId === orgId);
+      const userOrg = userOrganizations.find((org) =>
+        new Types.ObjectId(org.organizationId).equals(new Types.ObjectId(orgId))
+      );
 
       if (!userOrg) {
         throw new HttpException(
