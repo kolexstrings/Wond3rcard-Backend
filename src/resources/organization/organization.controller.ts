@@ -11,6 +11,8 @@ import { UserRole } from "../user/user.protocol";
 import OrganizationService from "./organization.service";
 import validator from "./organization.validations";
 import { Types } from "mongoose";
+import verifyOrgRolesMiddleware from "../../middlewares/orgnizationRoles.middleware";
+import { TeamRole } from "./organization.protocol";
 
 class OrganizationController implements GeneralController {
   public path = "/organizations";
@@ -44,6 +46,7 @@ class OrganizationController implements GeneralController {
     this.router.post(
       `${this.path}/add-member`,
       validationMiddleware(validator.addMemberValidator),
+      verifyOrgRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
       authenticatedMiddleware,
       this.addMemberToOrganization
     );
@@ -59,6 +62,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.changeRoleValidator),
+        verifyOrgRolesMiddleware([TeamRole.Lead]),
       ],
       this.changeMemberRole
     );
@@ -68,6 +72,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.removeMemberValidator),
+        verifyOrgRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
       ],
       this.removeMember
     );
