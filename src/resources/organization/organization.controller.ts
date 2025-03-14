@@ -1,8 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
-
 import HttpException from "../../exceptions/http.exception";
 import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
-
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
@@ -99,17 +97,25 @@ class OrganizationController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { name, businessType, industry, companyWebsite, members } =
+      const { name, businessType, industry, companyWebsite, memberId } =
         req.body;
       const creatorId = req.user.id;
 
+      if (memberId && memberId !== creatorId) {
+        throw new HttpException(
+          400,
+          "failed",
+          "Provided memberId does not match the authenticated user."
+        );
+      }
+
+      // Call createOrganization without passing extra members.
       const org = await this.orgService.createOrganization(
         creatorId,
         name,
         businessType,
         industry,
-        companyWebsite,
-        members
+        companyWebsite
       );
 
       res.status(201).json({

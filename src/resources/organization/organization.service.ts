@@ -18,30 +18,29 @@ class OrganizationService {
     name: string,
     businessType: string,
     industry: string,
-    companyWebsite?: string,
-    members: OrganizationMember[] = []
+    companyWebsite?: string
   ): Promise<Organization> {
     try {
       const creatorObjectId = new Types.ObjectId(creatorId);
 
-      // Default member as the creator
+      // Default member as the creator with a fixed role "Lead"
       const defaultMember: OrganizationMember = {
         memberId: creatorObjectId,
         organizationId: null as unknown as Types.ObjectId,
         role: TeamRole.Lead,
       };
 
-      // Create organization
+      // Create organization with only the default member
       const organization = await this.org.create({
         creatorId: creatorObjectId,
         name,
         businessType,
         industry,
         companyWebsite,
-        members: [defaultMember, ...members],
+        members: [defaultMember],
       });
 
-      // Assign correct organizationId to each member
+      // Update each member with the correct organizationId
       organization.members = organization.members.map((member) => ({
         ...member,
         organizationId: organization.id,
@@ -49,7 +48,7 @@ class OrganizationService {
 
       await organization.save();
 
-      // Link organization to creator's user profile
+      // Link the organization to the creator's user profile
       const creator = await userModel.findById(creatorId);
       if (!creator) {
         throw new HttpException(
