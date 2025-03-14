@@ -8,8 +8,8 @@ enum TeamRole {
 }
 
 interface OrganizationMember {
-  memberId: string;
-  organizationId: string;
+  memberId: Types.ObjectId;
+  organizationId: Types.ObjectId;
   role: TeamRole;
 }
 

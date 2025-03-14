@@ -93,12 +93,16 @@ class OrganizationController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { name, members } = req.body;
+      const { name, businessType, industry, companyWebsite, members } =
+        req.body;
       const creatorId = req.user.id;
 
       const org = await this.orgService.createOrganization(
         creatorId,
         name,
+        businessType,
+        industry,
+        companyWebsite,
         members
       );
 
