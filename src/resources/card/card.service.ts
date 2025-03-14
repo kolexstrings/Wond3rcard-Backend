@@ -883,7 +883,9 @@ class CardService {
       throw new Error("Invalid parameters: uid and members must be provided");
     }
 
-    const member = members.find((member) => member.memberId === uid);
+    const member = members.find((member) =>
+      new Types.ObjectId(member.memberId).equals(new Types.ObjectId(uid))
+    );
 
     if (!member) {
       throw new HttpException(
@@ -902,7 +904,10 @@ class CardService {
     role: TeamRole
   ): Promise<boolean> => {
     const userRole = organization.members.find(
-      (member) => member.memberId === user.memberId && member.role === role
+      (member) =>
+        new Types.ObjectId(member.memberId).equals(
+          new Types.ObjectId(user.memberId)
+        ) && member.role === role
     );
 
     return Boolean(userRole);

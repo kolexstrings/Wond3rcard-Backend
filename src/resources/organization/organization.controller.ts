@@ -1,8 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
-
 import HttpException from "../../exceptions/http.exception";
 import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
-
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
@@ -10,6 +8,9 @@ import userModel from "../user/user.model";
 import { UserRole } from "../user/user.protocol";
 import OrganizationService from "./organization.service";
 import validator from "./organization.validations";
+import { Types } from "mongoose";
+import verifyOrgRolesMiddleware from "../../middlewares/orgnizationRoles.middleware";
+import { TeamRole } from "./organization.protocol";
 
 class OrganizationController implements GeneralController {
   public path = "/organizations";
@@ -43,6 +44,7 @@ class OrganizationController implements GeneralController {
     this.router.post(
       `${this.path}/add-member`,
       validationMiddleware(validator.addMemberValidator),
+      verifyOrgRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
       authenticatedMiddleware,
       this.addMemberToOrganization
     );
@@ -58,6 +60,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.changeRoleValidator),
+        verifyOrgRolesMiddleware([TeamRole.Lead]),
       ],
       this.changeMemberRole
     );
@@ -67,6 +70,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.removeMemberValidator),
+        verifyOrgRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
       ],
       this.removeMember
     );
@@ -93,13 +97,25 @@ class OrganizationController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { name, members } = req.body;
+      const { name, businessType, industry, companyWebsite, memberId } =
+        req.body;
       const creatorId = req.user.id;
 
+      if (memberId && memberId !== creatorId) {
+        throw new HttpException(
+          400,
+          "failed",
+          "Provided memberId does not match the authenticated user."
+        );
+      }
+
+      // Call createOrganization without passing extra members.
       const org = await this.orgService.createOrganization(
         creatorId,
         name,
-        members
+        businessType,
+        industry,
+        companyWebsite
       );
 
       res.status(201).json({
@@ -281,6 +297,30 @@ class OrganizationController implements GeneralController {
       const { orgId } = req.params;
       const updates = req.body;
 
+      // Validate orgId
+      if (!Types.ObjectId.isValid(orgId)) {
+        throw new HttpException(400, "invalid_id", "Invalid organization ID");
+      }
+
+      // Validate and convert ObjectId fields in the request body
+      if (updates.creatorId && !Types.ObjectId.isValid(updates.creatorId)) {
+        throw new HttpException(400, "invalid_id", "Invalid creator ID");
+      }
+
+      if (updates.members) {
+        updates.members = updates.members.map((member: any) => {
+          if (!Types.ObjectId.isValid(member.memberId)) {
+            throw new HttpException(400, "invalid_id", "Invalid member ID");
+          }
+          return {
+            memberId: new Types.ObjectId(member.memberId),
+            organizationId: new Types.ObjectId(orgId),
+            role: member.role,
+          };
+        });
+      }
+
+      // Call service function
       const updatedOrganization = await this.orgService.updateOrganization(
         orgId,
         updates
