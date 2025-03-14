@@ -105,14 +105,22 @@ class OrganizationService {
         );
       }
 
-      const organization = await this.org.findById(orgId);
+      if (!mongoose.Types.ObjectId.isValid(memberId)) {
+        throw new HttpException(400, "Bad Request", "Invalid member ID format");
+      }
+
+      const orgObjectId = new mongoose.Types.ObjectId(orgId);
+      const memberObjectId = new mongoose.Types.ObjectId(memberId);
+
+      const organization = await this.org.findById(orgObjectId);
 
       if (!organization) {
         throw new HttpException(404, "Not Found", "Organization not found");
       }
 
+      // Convert ObjectId to string for comparison
       const isAlreadyMember = organization.members.some(
-        (member) => member.memberId === memberId
+        (member) => member.memberId.toString() === memberObjectId.toString()
       );
 
       if (isAlreadyMember) {
@@ -124,12 +132,12 @@ class OrganizationService {
       }
 
       const newMember: OrganizationMember = {
-        memberId,
-        organizationId: orgId,
+        memberId: memberObjectId,
+        organizationId: orgObjectId,
         role,
       };
-      organization.members.push(newMember);
 
+      organization.members.push(newMember);
       await organization.save();
 
       return organization;
@@ -168,13 +176,31 @@ class OrganizationService {
     newRole: TeamRole
   ): Promise<Organization> {
     try {
-      const organization = await this.org.findById(orgId);
+      if (!mongoose.Types.ObjectId.isValid(orgId)) {
+        throw new HttpException(
+          400,
+          "Bad Request",
+          "Invalid organization ID format"
+        );
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(memberId)) {
+        throw new HttpException(400, "Bad Request", "Invalid member ID format");
+      }
+
+      const orgObjectId = new mongoose.Types.ObjectId(orgId);
+      const memberObjectId = new mongoose.Types.ObjectId(memberId);
+
+      const organization = await this.org.findById(orgObjectId);
 
       if (!organization) {
         throw new HttpException(404, "not_found", "Organization not found");
       }
 
-      const member = organization.members?.find((m) => m.memberId === memberId);
+      // Convert ObjectId to string for comparison
+      const member = organization.members?.find(
+        (m) => m.memberId.toString() === memberObjectId.toString()
+      );
 
       if (!member) {
         throw new HttpException(
@@ -185,7 +211,6 @@ class OrganizationService {
       }
 
       member.role = newRole;
-
       await organization.save();
 
       return organization;
@@ -203,7 +228,22 @@ class OrganizationService {
     memberId: string
   ): Promise<Organization> {
     try {
-      const organization = await this.org.findById(orgId);
+      if (!mongoose.Types.ObjectId.isValid(orgId)) {
+        throw new HttpException(
+          400,
+          "Bad Request",
+          "Invalid organization ID format"
+        );
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(memberId)) {
+        throw new HttpException(400, "Bad Request", "Invalid member ID format");
+      }
+
+      const orgObjectId = new mongoose.Types.ObjectId(orgId);
+      const memberObjectId = new mongoose.Types.ObjectId(memberId);
+
+      const organization = await this.org.findById(orgObjectId);
 
       if (!organization) {
         throw new HttpException(404, "not_found", "Organization not found");
@@ -211,8 +251,9 @@ class OrganizationService {
 
       const initialMemberCount = organization.members?.length || 0;
 
+      // Convert ObjectId to string for proper comparison
       organization.members = organization.members?.filter(
-        (m) => m.memberId !== memberId
+        (m) => m.memberId.toString() !== memberObjectId.toString()
       );
 
       if (organization.members?.length === initialMemberCount) {
@@ -258,11 +299,39 @@ class OrganizationService {
     updates: Partial<Organization>
   ): Promise<Organization> {
     try {
-      const organization = await this.org.findById(orgId);
+      // Convert orgId to ObjectId
+      const orgObjectId = new Types.ObjectId(orgId);
+
+      const organization = await this.org.findById(orgObjectId);
 
       if (!organization) {
         throw new HttpException(404, "not_found", "Organization not found");
       }
+
+      if (updates.creatorId) {
+        updates.creatorId = new Types.ObjectId(updates.creatorId) as any;
+      }
+      if (updates.members) {
+        updates.members = updates.members.map((member) => ({
+          memberId: new Types.ObjectId(member.memberId),
+          organizationId: orgObjectId,
+          role: member.role,
+        }));
+      }
+
+      const allowedUpdates = [
+        "name",
+        "businessType",
+        "industry",
+        "companyWebsite",
+        "members",
+      ];
+
+      Object.keys(updates).forEach((key) => {
+        if (!allowedUpdates.includes(key)) {
+          delete (updates as any)[key];
+        }
+      });
 
       Object.assign(organization, updates);
       await organization.save();

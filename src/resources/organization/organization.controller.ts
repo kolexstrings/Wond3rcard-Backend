@@ -285,6 +285,30 @@ class OrganizationController implements GeneralController {
       const { orgId } = req.params;
       const updates = req.body;
 
+      // Validate orgId
+      if (!Types.ObjectId.isValid(orgId)) {
+        throw new HttpException(400, "invalid_id", "Invalid organization ID");
+      }
+
+      // Validate and convert ObjectId fields in the request body
+      if (updates.creatorId && !Types.ObjectId.isValid(updates.creatorId)) {
+        throw new HttpException(400, "invalid_id", "Invalid creator ID");
+      }
+
+      if (updates.members) {
+        updates.members = updates.members.map((member: any) => {
+          if (!Types.ObjectId.isValid(member.memberId)) {
+            throw new HttpException(400, "invalid_id", "Invalid member ID");
+          }
+          return {
+            memberId: new Types.ObjectId(member.memberId),
+            organizationId: new Types.ObjectId(orgId),
+            role: member.role,
+          };
+        });
+      }
+
+      // Call service function
       const updatedOrganization = await this.orgService.updateOrganization(
         orgId,
         updates
