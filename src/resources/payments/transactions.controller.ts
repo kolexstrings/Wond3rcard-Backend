@@ -26,14 +26,54 @@ class TransactionsController {
     );
   }
 
+  // private async getTransactions(
+  //   req: Request,
+  //   res: Response,
+  //   next: NextFunction
+  // ): Promise<void> {
+  //   try {
+  //     const { provider } = req.query;
+  //     const filter = provider ? { paymentProvider: provider } : {};
+  //     const transactions = await TransactionModel.find(filter).sort({
+  //       createdAt: -1,
+  //     });
+
+  //     res.status(200).json({ status: "success", transactions });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
+
   private async getTransactions(
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { provider } = req.query;
-      const filter = provider ? { paymentProvider: provider } : {};
+      const filter: any = {};
+
+      // Dynamically add filters if they exist in the query params
+      if (req.query.provider) filter.paymentProvider = req.query.provider;
+      if (req.query.status) filter.status = req.query.status;
+      if (req.query.userId) filter.userId = req.query.userId;
+      if (req.query.plan) filter.plan = req.query.plan;
+      if (req.query.billingCycle) filter.billingCycle = req.query.billingCycle;
+      if (req.query.paymentMethod)
+        filter.paymentMethod = req.query.paymentMethod;
+      if (req.query.transactionId)
+        filter.transactionId = req.query.transactionId;
+      if (req.query.referenceId) filter.referenceId = req.query.referenceId;
+
+      // Handle date range filtering dynamically
+      if (req.query.startDate || req.query.endDate) {
+        filter.createdAt = {};
+        if (req.query.startDate)
+          filter.createdAt.$gte = new Date(req.query.startDate as string);
+        if (req.query.endDate)
+          filter.createdAt.$lte = new Date(req.query.endDate as string);
+      }
+
+      // Fetch transactions with dynamic filters
       const transactions = await TransactionModel.find(filter).sort({
         createdAt: -1,
       });
