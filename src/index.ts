@@ -13,6 +13,10 @@ import ProfileController from "./resources/profile/profile.controller";
 import SocialMediaController from "./resources/social-media/social-media.controller";
 import UserController from "./resources/user/user.controller";
 import validateEnv from "./utils/validate-env";
+import PaystackController from "./resources/payments/paystack/paystack.controller";
+import StripeController from "./resources/payments/stripe/stripe.controller";
+import ManualPaymentController from "./resources/payments/manual/manual.controller";
+import TransactionsController from "./resources/payments/transactions.controller";
 
 validateEnv();
 
@@ -30,6 +34,10 @@ const app = new App(
     new ProfileController(),
     new SocialMediaController(),
     new UserController(),
+    new PaystackController(),
+    new StripeController(),
+    new ManualPaymentController(),
+    new TransactionsController(),
   ],
   Number(process.env.PORT)
 );

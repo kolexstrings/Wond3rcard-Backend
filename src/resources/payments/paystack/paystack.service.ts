@@ -5,7 +5,7 @@ import userModel from "../../user/user.model";
 import TransactionModel from "../transactions.model";
 
 class PaystackService {
-  private secretKey = process.env.PAYSTACK_SECRET_KEY!;
+  private secretKey = process.env.PAYSTACK_SECRET_KEY;
   private baseUrl = "https://api.paystack.co";
 
   public async initializePayment(
@@ -63,13 +63,21 @@ class PaystackService {
     const user = await userModel.findById(userId);
     if (!user) throw new HttpException(404, "error", "User not found");
 
-    const transactionId = data.id; // Paystack's transaction ID
-    const referenceId = this.generateTransactionId("paystack"); // Custom Reference ID
-    const amount = data.amount / 100; // Convert from kobo to currency
+    // Prevent duplicate transactions
+    const existingTransaction = await TransactionModel.findOne({
+      transactionId: data.id,
+    });
+    if (existingTransaction) {
+      return { message: "Transaction already processed" };
+    }
+
+    const transactionId = data.id;
+    const referenceId = this.generateTransactionId("paystack");
+    const amount = data.amount / 100;
     const paymentMethod = data.channel;
-    const paidAt = new Date(data.paid_at); // Convert to Date object
+    const paidAt = new Date(data.paid_at);
     const expiresAt = new Date(
-      Date.now() + durationInDays * 24 * 60 * 60 * 1000
+      paidAt.getTime() + durationInDays * 24 * 60 * 60 * 1000
     );
 
     // Update user subscription
