@@ -2,11 +2,15 @@ import axios from "axios";
 import HttpException from "../../../exceptions/http.exception";
 import tierModel from "../../admin/subscriptionTier/tier.model";
 import userModel from "../../user/user.model";
+import profileModel from "../../profile/profile.model";
 import TransactionModel from "../transactions.model";
+import MailTemplates from "../../mails/mail.templates";
+import NodeMailerService from "../../mails/nodemailer.service";
 
 class PaystackService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY;
   private baseUrl = "https://api.paystack.co";
+  private mailer = new NodeMailerService();
 
   public async initializePayment(
     userId: string,
@@ -14,6 +18,7 @@ class PaystackService {
     billingCycle: "monthly" | "yearly"
   ) {
     const user = await userModel.findById(userId);
+
     if (!user) throw new Error("User not found");
     const tier = await tierModel.findOne({ name: plan.toLowerCase() });
     if (!tier) throw new Error("Invalid subscription tier");
@@ -61,6 +66,8 @@ class PaystackService {
     const { userId, plan, billingCycle, durationInDays } = data.metadata;
 
     const user = await userModel.findById(userId);
+    const profile = await profileModel.findById(userId);
+
     if (!user) throw new HttpException(404, "error", "User not found");
 
     // Prevent duplicate transactions
@@ -106,6 +113,24 @@ class PaystackService {
       paidAt,
       expiresAt,
     });
+
+    const template = MailTemplates.subscriptionConfirmation;
+    const email = user.email;
+    const emailData = {
+      name: profile.firstname,
+      plan: plan,
+      expiresAt: new Date(
+        Date.now() + durationInDays * 24 * 60 * 60 * 1000
+      ).toDateString(),
+    };
+
+    await this.mailer.sendMail(
+      email,
+      "Subscription Successful",
+      template,
+      "Subscription",
+      emailData
+    );
 
     return { message: "Subscription activated" };
   }
