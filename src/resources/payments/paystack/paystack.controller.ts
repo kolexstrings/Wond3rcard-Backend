@@ -9,6 +9,7 @@ import {
   validatePaystackPayment,
   validateWebhookPayload,
 } from "./paystack.validations";
+import crypto from "crypto";
 
 class PaystackController implements GeneralController {
   public path = "/paystack";
@@ -61,6 +62,7 @@ class PaystackController implements GeneralController {
         status: "success",
         payload: {
           checkoutUrl: checkout.data.authorization_url,
+          reference: checkout.data.reference,
         },
       });
     } catch (error) {
@@ -79,15 +81,37 @@ class PaystackController implements GeneralController {
         return next(new HttpException(401, "error", "Unauthorized"));
       }
 
+      // Verify signature
+      const secret = process.env.PAYSTACK_SECRET as string;
+      const hash = crypto
+        .createHmac("sha512", secret)
+        .update(JSON.stringify(req.body))
+        .digest("hex");
+
+      if (hash !== paystackSignature) {
+        return next(new HttpException(403, "error", "Invalid signature"));
+      }
+
       const { event, data } = req.body;
+
       if (event === "charge.success") {
-        const result = await this.paystackService.handleSuccessfulPayment(data);
-        res.status(200).json(result);
+        try {
+          const result = await this.paystackService.handleSuccessfulPayment(
+            data
+          );
+          res.status(200).json(result);
+        } catch (error) {
+          console.error("Error processing webhook:", error);
+          res
+            .status(200)
+            .json({ message: "Webhook received but processing failed" });
+        }
       }
 
       res.status(400).json({ message: "Unhandled event" });
     } catch (error) {
-      next(error);
+      console.error("Webhook error:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   };
 

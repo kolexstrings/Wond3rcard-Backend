@@ -63,18 +63,67 @@ const MailTemplates = {
 `,
 
   subscriptionConfirmation: /*html*/ `<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Subscription Upgrade Confirmation</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Upgrade Successful!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            color: #4b32d0;
+        }
+        p {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #4b32d0;
+            color: #ffffff;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
 </head>
 <body>
-  <h2>Congratulations, {{userName}}!</h2>
-  <p>Your account has been successfully upgraded to the {{subscriptionLevel}} plan.</p>
-  <p>Enjoy the new features and benefits! You can view your subscription details in your <a href="{{accountLink}}">account settings</a>.</p>
-  <p>If you have any questions, feel free to reach out to us.</p>
+    <div class="container">
+        <h2>Congratulations, {{emailData.name}}! 🎉</h2>
+        <p>Your subscription has been successfully upgraded to <strong>{{emailData.plan}}</strong>!</p>
+        <p>You now have full access to all the {{emailData.plan}} features of WOND3R CARD.</p>
+        <p>Your new plan is valid until <strong>{{expiresAt}}</strong>.</p>
+        <a href="{{dashboardLink}}" class="cta-button">Go to Dashboard</a>
+        <p class="footer">If you have any questions, feel free to <a href="mailto:support@wond3rcard.com">contact us</a>.</p>
+        <p class="footer">— The WOND3R CARD Team</p>
+    </div>
 </body>
 </html>
+
 `,
 
   setup2faConfirmation: /*html*/ `<!DOCTYPE html>
