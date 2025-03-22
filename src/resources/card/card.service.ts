@@ -7,7 +7,7 @@ import organizationModel from "../organization/organization.model";
 import {
   Organization,
   OrganizationMember,
-  TeamRole,
+  OrgRole,
 } from "../organization/organization.protocol";
 import userModel from "../user/user.model";
 import { User } from "../user/user.protocol";
@@ -145,7 +145,7 @@ class CardService {
       const creatorMember = await this.#isTeamMember(creator.id, orgMembers);
       const ownerMember = await this.#isTeamMember(ownerId, orgMembers);
 
-      await this.#validateOrganizationRole(org, creatorMember, TeamRole.Lead);
+      await this.#validateOrganizationRole(org, creatorMember, OrgRole.Lead);
 
       const cardData: Partial<Card> = {
         ...cardDefaultData,
@@ -271,7 +271,7 @@ class CardService {
       const isAuthorized = organization.members.some(
         (member) =>
           member.memberId === user.id &&
-          (member.role === TeamRole.Lead || member.role === TeamRole.Moderator)
+          (member.role === OrgRole.Lead || member.role === OrgRole.Moderator)
       );
 
       if (!isAuthorized) {
@@ -369,8 +369,8 @@ class CardService {
       const userMember = await this.#isTeamMember(user.id, org.members);
       if (
         !userMember ||
-        (userMember.role !== TeamRole.Lead &&
-          userMember.role !== TeamRole.Moderator)
+        (userMember.role !== OrgRole.Lead &&
+          userMember.role !== OrgRole.Moderator)
       ) {
         throw new HttpException(
           403,
@@ -847,7 +847,7 @@ class CardService {
     assignedTo: string,
     org: Organization
   ): Promise<void> => {
-    const isTeamLead = await this.#hasTeamRole(user, org, TeamRole.Lead);
+    const isTeamLead = await this.#hasTeamRole(user, org, OrgRole.Lead);
     if (!isTeamLead) {
       throw new HttpException(
         403,
@@ -860,7 +860,7 @@ class CardService {
       id: assignedTo,
       organizationRoles: {
         $elemMatch: {
-          organizationId: org.id,
+          organizationId: org._id,
           role: { $in: ["lead", "member", "moderator"] },
         },
       },
@@ -901,7 +901,7 @@ class CardService {
   #hasTeamRole = async (
     user: OrganizationMember,
     organization: Organization,
-    role: TeamRole
+    role: OrgRole
   ): Promise<boolean> => {
     const userRole = organization.members.find(
       (member) =>
@@ -916,7 +916,7 @@ class CardService {
   #validateOrganizationRole = async (
     org: Organization,
     creator: OrganizationMember,
-    requiredRole: TeamRole
+    requiredRole: OrgRole
   ): Promise<void> => {
     const hasRole = await this.#hasTeamRole(creator, org, requiredRole);
 
