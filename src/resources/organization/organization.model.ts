@@ -7,15 +7,10 @@ const organizationSchema = new Schema<Organization>(
     name: { type: String, required: true },
     businessType: { type: String, required: true },
     industry: { type: String, required: true },
-    companyWebsite: { type: String, required: false },
+    companyWebsite: { type: String },
     members: [
       {
         memberId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        organizationId: {
-          type: Schema.Types.ObjectId,
-          ref: "Organization",
-          required: true,
-        },
         role: { type: String, enum: Object.values(OrgRole), required: true },
       },
     ],
@@ -27,3 +22,4 @@ const organizationSchema = new Schema<Organization>(
 );
 
 export default model<Organization>("Organization", organizationSchema);
+export { Organization, OrgRole };

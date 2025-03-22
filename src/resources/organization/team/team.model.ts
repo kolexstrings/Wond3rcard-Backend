@@ -1,28 +1,10 @@
 import { Schema, model, Types } from "mongoose";
-
-enum TeamRole {
-  Lead = "lead",
-  Moderator = "moderator",
-  Member = "member",
-}
-
-interface TeamMember {
-  memberId: Types.ObjectId;
-  teamId: Types.ObjectId;
-  role: TeamRole;
-}
-
-interface Team {
-  _id: Types.ObjectId;
-  organizationId: Types.ObjectId;
-  name: string;
-  description: string;
-  members: TeamMember[];
-}
+import { TeamRole, TeamMember, Team } from "./team.protocol";
 
 const teamSchema = new Schema<Team>(
   {
     name: { type: String, required: true },
+    description: { type: String },
     organizationId: {
       type: Schema.Types.ObjectId,
       ref: "Organization",
@@ -31,7 +13,6 @@ const teamSchema = new Schema<Team>(
     members: [
       {
         memberId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        teamId: { type: Schema.Types.ObjectId, ref: "Team", required: true },
         role: { type: String, enum: Object.values(TeamRole), required: true },
       },
     ],
