@@ -48,6 +48,8 @@ interface User extends Document {
   microsoftTeamsAccessToken?: string;
   tokenExpiry?: Date;
 
+  connections: [{ type: Schema.Types.ObjectId; ref: "User" }];
+
   isValidPassword(password: string): Promise<Error | boolean>;
 }
 
