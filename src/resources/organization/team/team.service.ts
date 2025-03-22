@@ -202,14 +202,14 @@ class TeamService {
     }
   }
 
-  public async getMembers(): Promise<Team[]> {
+  public async getMembers(teamId: string): Promise<Team | null> {
     try {
-      return await this.team.find();
+      return await this.team.findOne({ _id: teamId }).populate("members");
     } catch (error) {
       throw new HttpException(
         500,
         "Failed",
-        `Error retrieving teams: ${error.message}`
+        `Error retrieving team members: ${error.message}`
       );
     }
   }

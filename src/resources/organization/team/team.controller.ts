@@ -1,12 +1,53 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, Router } from "express";
 import HttpException from "../../../exceptions/http.exception";
 import TeamService from "./team.service";
+import verifyTeamRolesMiddleware from "../../../middlewares/orgTeamRoles.middleware";
+import authenticatedMiddleware from "../../../middlewares/authenticated.middleware";
+import validationMiddleware from "../../../middlewares/validation.middleware";
+import { TeamRole } from "./team.protocol";
+import validator from "./team.validation";
 
 class TeamController {
-  private teamService: TeamService;
+  public path = "/organizations";
+  public router = Router();
+  private teamService = new TeamService();
 
   constructor() {
     this.teamService = new TeamService();
+  }
+
+  initializeRoute(): void {
+    this.router.post(
+      `${this.path}/create`,
+      authenticatedMiddleware,
+      validationMiddleware(validator.createTeamValidator),
+      this.createNewTeam
+    );
+
+    // Add a member to a team
+    this.router.post(
+      `${this.path}/add-member`,
+      authenticatedMiddleware,
+      verifyTeamRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
+      validationMiddleware(validator.addTeamMemberValidator),
+      this.addTeamMember
+    );
+
+    // Remove a member from a team
+    this.router.delete(
+      `${this.path}/remove-member`,
+      authenticatedMiddleware,
+      verifyTeamRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
+      validationMiddleware(validator.removeTeamMemberValidator),
+      this.removeTeamMember
+    );
+
+    // Get members of a specific team
+    this.router.get(
+      `${this.path}/:teamId/members`,
+      authenticatedMiddleware,
+      this.getTeamMembers
+    );
   }
 
   public createNewTeam = async (

@@ -1,10 +1,9 @@
 import { Schema, model, Types } from "mongoose";
 
 enum TeamRole {
-  None = "none",
-  Member = "member",
   Lead = "lead",
   Moderator = "moderator",
+  Member = "member",
 }
 
 interface TeamMember {

@@ -1,10 +1,9 @@
 import { Types } from "mongoose";
 
 enum TeamRole {
-  None = "none",
-  Member = "member",
   Lead = "lead",
   Moderator = "moderator",
+  Member = "member",
 }
 
 interface TeamMember {
@@ -14,7 +13,7 @@ interface TeamMember {
 }
 
 interface Team {
-  id: Types.ObjectId;
+  _id: Types.ObjectId;
   organizationId: Types.ObjectId;
   name: string;
   description?: string;
