@@ -27,7 +27,6 @@ class OrganizationService {
       // Default member as the creator with a fixed role "Lead"
       const defaultMember: OrganizationMember = {
         memberId: creatorObjectId,
-        organizationId: null as unknown as Types.ObjectId,
         role: OrgRole.Lead,
       };
 
@@ -133,7 +132,6 @@ class OrganizationService {
 
       const newMember: OrganizationMember = {
         memberId: memberObjectId,
-        organizationId: orgObjectId,
         role,
       };
 

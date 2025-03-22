@@ -1,4 +1,5 @@
 import Joi from "joi";
+import { OrgRole } from "./organization.protocol";
 
 // MongoDB ObjectId validation regex
 const objectIdSchema = Joi.string()
@@ -13,24 +14,22 @@ const createOrgValidator = Joi.object({
     .required(),
   industry: Joi.string().min(3).max(100).required(),
   companyWebsite: Joi.string().uri().optional(),
-  memberId: objectIdSchema,
   members: Joi.array()
     .items(
       Joi.object({
         memberId: objectIdSchema,
         role: Joi.string()
-          .valid("none", "teamMember", "teamLead", "teamModerator")
+          .valid(...Object.values(OrgRole))
           .required(),
       })
     )
     .optional(),
+  teams: Joi.array().items(objectIdSchema).optional(),
 });
 
 const updateOrganizationValidator = Joi.object({
   name: Joi.string().min(3).max(100).optional(),
-  businessType: Joi.string()
-    .valid("LLC", "Corporation", "Nonprofit", "Startup")
-    .optional(),
+  businessType: Joi.string().optional(),
   industry: Joi.string().min(3).max(100).optional(),
   companyWebsite: Joi.string().uri().optional(),
   members: Joi.array()
@@ -38,23 +37,26 @@ const updateOrganizationValidator = Joi.object({
       Joi.object({
         memberId: objectIdSchema,
         role: Joi.string()
-          .valid("none", "teamMember", "teamLead", "teamModerator")
+          .valid(...Object.values(OrgRole))
           .required(),
       })
     )
     .optional(),
+  teams: Joi.array().items(objectIdSchema).optional(),
 }).min(1);
 
 const addMemberValidator = Joi.object({
   memberId: objectIdSchema,
   organizationId: objectIdSchema,
-  role: Joi.string().valid("admin", "member", "viewer").required(),
+  role: Joi.string()
+    .valid(...Object.values(OrgRole))
+    .required(),
 });
 
 const changeRoleValidator = Joi.object({
   memberId: objectIdSchema,
   newRole: Joi.string()
-    .valid("none", "teamMember", "teamLead", "teamModerator")
+    .valid(...Object.values(OrgRole))
     .required(),
 });
 

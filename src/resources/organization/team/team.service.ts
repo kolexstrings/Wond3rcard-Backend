@@ -33,12 +33,10 @@ class TeamService {
       const members: TeamMember[] = [
         {
           memberId: creatorObjectId,
-          teamId: null as unknown as Types.ObjectId,
           role: TeamRole.Lead,
         },
         {
           memberId: leadObjectId,
-          teamId: null as unknown as Types.ObjectId,
           role: TeamRole.Lead,
         },
       ];
@@ -122,7 +120,6 @@ class TeamService {
       // Add new member to the team
       team.members.push({
         memberId: new Types.ObjectId(memberId),
-        teamId: team._id,
         role,
       });
 
