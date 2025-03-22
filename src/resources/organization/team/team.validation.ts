@@ -9,6 +9,7 @@ const objectIdSchema = Joi.string()
 const createTeamValidator = Joi.object({
   name: Joi.string().min(3).max(100).required(),
   description: Joi.string().max(500).optional(),
+  leadId: objectIdSchema,
 });
 
 const addTeamMemberValidator = Joi.object({
