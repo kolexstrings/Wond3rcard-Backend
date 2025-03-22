@@ -1,4 +1,5 @@
 import Joi from "joi";
+import { TeamRole } from "./team.protocol";
 
 // MongoDB ObjectId validation regex
 const objectIdSchema = Joi.string()
@@ -9,14 +10,24 @@ const objectIdSchema = Joi.string()
 const createTeamValidator = Joi.object({
   name: Joi.string().min(3).max(100).required(),
   description: Joi.string().max(500).optional(),
-  leadId: objectIdSchema,
+  organizationId: objectIdSchema,
+  members: Joi.array()
+    .items(
+      Joi.object({
+        memberId: objectIdSchema,
+        role: Joi.string()
+          .valid(...Object.values(TeamRole))
+          .required(),
+      })
+    )
+    .optional(),
 });
 
 const addTeamMemberValidator = Joi.object({
   teamId: objectIdSchema,
   memberId: objectIdSchema,
   role: Joi.string()
-    .valid("teamMember", "teamLead", "teamModerator")
+    .valid(...Object.values(TeamRole))
     .required(),
 });
 
@@ -33,7 +44,7 @@ const updateTeamValidator = Joi.object({
       Joi.object({
         memberId: objectIdSchema,
         role: Joi.string()
-          .valid("teamMember", "teamLead", "teamModerator")
+          .valid(...Object.values(TeamRole))
           .required(),
       })
     )
@@ -44,7 +55,7 @@ const assignRoleValidator = Joi.object({
   teamId: objectIdSchema,
   memberId: objectIdSchema,
   role: Joi.string()
-    .valid("teamMember", "teamLead", "teamModerator")
+    .valid(...Object.values(TeamRole))
     .required(),
 });
 
