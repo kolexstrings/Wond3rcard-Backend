@@ -30,7 +30,8 @@ const teamSchema = new Schema<Team>(
     },
     members: [
       {
-        userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        memberId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        teamId: { type: Schema.Types.ObjectId, ref: "Team", required: true },
         role: { type: String, enum: Object.values(TeamRole), required: true },
       },
     ],

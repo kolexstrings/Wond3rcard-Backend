@@ -40,6 +40,14 @@ const updateTeamValidator = Joi.object({
     .optional(),
 }).min(1);
 
+const assignRoleValidator = Joi.object({
+  teamId: objectIdSchema,
+  memberId: objectIdSchema,
+  role: Joi.string()
+    .valid("teamMember", "teamLead", "teamModerator")
+    .required(),
+});
+
 const getTeamMembersValidator = Joi.object({
   teamId: objectIdSchema,
 });
@@ -49,5 +57,6 @@ export default {
   addTeamMemberValidator,
   removeTeamMemberValidator,
   updateTeamValidator,
+  assignRoleValidator,
   getTeamMembersValidator,
 };

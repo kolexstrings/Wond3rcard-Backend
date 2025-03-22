@@ -40,6 +40,13 @@ class TeamController {
       this.removeTeamMember
     );
 
+    this.router.put(
+      "/:teamId/assign-role",
+      authenticatedMiddleware,
+      verifyTeamRolesMiddleware(["teamLead"]),
+      this.assignRoleToMember
+    );
+
     this.router.get(
       `${this.path}/:teamId/members`,
       authenticatedMiddleware,
@@ -130,6 +137,46 @@ class TeamController {
       });
     } catch (error) {
       next(new HttpException(500, "failed", error.message));
+    }
+  };
+
+  public assignRoleToMember = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { teamId } = req.params;
+      const { memberId, role } = req.body;
+      const userId = req.user?.id; // Authenticated user's ID
+
+      // Validate request body
+      const { error } = validator.assignRoleValidator.validate({
+        teamId,
+        memberId,
+        role,
+      });
+      if (error) {
+        return next(
+          new HttpException(400, "Validation Error", error.details[0].message)
+        );
+      }
+
+      // Assign role
+      const updatedTeam = await this.teamService.assignRole(
+        teamId,
+        userId,
+        memberId,
+        role
+      );
+
+      res.status(200).json({
+        status: "success",
+        message: "Role assigned successfully",
+        payload: updatedTeam,
+      });
+    } catch (error) {
+      next(new HttpException(500, "Failed", error.message));
     }
   };
 

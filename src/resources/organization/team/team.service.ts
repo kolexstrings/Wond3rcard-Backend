@@ -116,7 +116,6 @@ class TeamService {
 
       await team.save();
 
-      // ✅ Convert Mongoose document to plain JavaScript object
       return team.toObject();
     } catch (error) {
       throw new HttpException(
@@ -156,6 +155,62 @@ class TeamService {
         `Error removing member: ${error.message}`
       );
     }
+  }
+
+  public async assignRole(
+    teamId: string,
+    userId: string,
+    memberId: string,
+    role: string
+  ) {
+    const teamObjectId = new Types.ObjectId(teamId);
+    const memberObjectId = new Types.ObjectId(memberId);
+    const userObjectId = new Types.ObjectId(userId);
+
+    // Fetch team
+    const team = await teamModel.findById(teamObjectId);
+    if (!team) {
+      throw new HttpException(
+        404,
+        "Team Not Found",
+        "The specified team does not exist."
+      );
+    }
+
+    // Check if requester is a team lead
+    const requestingUser = team.members.find((m) =>
+      m.memberId.equals(userObjectId)
+    );
+    if (!requestingUser || requestingUser.role !== TeamRole.Lead) {
+      throw new HttpException(
+        403,
+        "Forbidden",
+        "Only Team Leads can assign roles."
+      );
+    }
+
+    // Check if the member exists in the team
+    const member = team.members.find((m) => m.memberId.equals(memberObjectId));
+    if (!member) {
+      throw new HttpException(
+        404,
+        "Member Not Found",
+        "The specified member is not in this team."
+      );
+    }
+
+    // Ensure the role is valid and assign it
+    if (!Object.values(TeamRole).includes(role as TeamRole)) {
+      throw new HttpException(400, "Invalid Role", "Role is not valid.");
+    }
+
+    member.role = role as TeamRole;
+
+    team.markModified("members");
+
+    await team.save();
+
+    return team.toObject();
   }
 
   public async deleteTeam(teamId: string): Promise<void> {
