@@ -10,49 +10,52 @@ class TeamService {
 
   public async createTeam(
     creatorId: string,
+    leadId: string,
     name: string,
     description?: string
   ): Promise<Team> {
     try {
       const creatorObjectId = new Types.ObjectId(creatorId);
+      const leadObjectId = new Types.ObjectId(leadId);
 
-      // Default member as the creator with a fixed role "Lead"
-      const defaultMember: TeamMember = {
-        memberId: creatorObjectId,
-        teamId: null as unknown as Types.ObjectId,
-        role: TeamRole.Lead,
-      };
+      // Ensure the creator and lead are different people
+      if (creatorId === leadId) {
+        throw new HttpException(
+          400,
+          "error",
+          "Creator cannot be the only Team Lead."
+        );
+      }
 
-      // Create team with only the default member
+      // Define members (Creator & Lead)
+      const members: TeamMember[] = [
+        {
+          memberId: creatorObjectId,
+          teamId: null as unknown as Types.ObjectId,
+          role: TeamRole.Lead,
+        }, // Creator is Lead
+        {
+          memberId: leadObjectId,
+          teamId: null as unknown as Types.ObjectId,
+          role: TeamRole.Lead,
+        }, // Assigned Team Lead
+      ];
+
+      // Create the team
       const team = await this.team.create({
         creatorId: creatorObjectId,
         name,
         description,
-        members: [defaultMember],
+        members,
       });
 
-      // Update each member with the correct teamId
+      // Assign the correct teamId to members
       team.members = team.members.map((member) => ({
         ...member,
         teamId: team._id,
       }));
 
       await team.save();
-
-      // Link the team to the creator's user profile
-      const creator = await userModel.findById(creatorId);
-      if (!creator) {
-        throw new HttpException(
-          404,
-          "User Not Found",
-          "The creator does not exist"
-        );
-      }
-
-      if (!creator.teams.includes(team._id)) {
-        creator.teams.push(team._id);
-        await creator.save();
-      }
 
       return team.toObject();
     } catch (error) {

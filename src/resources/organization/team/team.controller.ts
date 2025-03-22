@@ -24,7 +24,6 @@ class TeamController {
       this.createNewTeam
     );
 
-    // Add a member to a team
     this.router.post(
       `${this.path}/add-member`,
       authenticatedMiddleware,
@@ -33,7 +32,6 @@ class TeamController {
       this.addTeamMember
     );
 
-    // Remove a member from a team
     this.router.delete(
       `${this.path}/remove-member`,
       authenticatedMiddleware,
@@ -42,7 +40,6 @@ class TeamController {
       this.removeTeamMember
     );
 
-    // Get members of a specific team
     this.router.get(
       `${this.path}/:teamId/members`,
       authenticatedMiddleware,
@@ -62,11 +59,20 @@ class TeamController {
         );
       }
 
-      const { name, description } = req.body;
+      const { name, description, leadId } = req.body;
       const creatorId = req.user.id;
 
+      // Validate that a lead is assigned
+      if (!leadId) {
+        return next(
+          new HttpException(400, "error", "Team Lead must be specified.")
+        );
+      }
+
+      // Create the team (both creator and assigned lead are Leads)
       const team = await this.teamService.createTeam(
         creatorId,
+        leadId,
         name,
         description
       );
@@ -74,7 +80,8 @@ class TeamController {
       res.status(201).json({
         statusCode: 201,
         status: "success",
-        message: "Team created successfully",
+        message:
+          "Team created successfully. Creator and assigned Lead are both Leads.",
         payload: team,
       });
     } catch (error) {
