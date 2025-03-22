@@ -1,5 +1,6 @@
 import { Document } from "mongoose";
 import { OrganizationMember } from "../organization/organization.protocol";
+import { Types } from "mongoose";
 
 enum UserStatus {
   Active = "active",
@@ -47,6 +48,8 @@ interface User extends Document {
   googleMeetAccessToken?: string;
   microsoftTeamsAccessToken?: string;
   tokenExpiry?: Date;
+
+  connections: Types.ObjectId[];
 
   isValidPassword(password: string): Promise<Error | boolean>;
 }
