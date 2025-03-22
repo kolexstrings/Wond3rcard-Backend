@@ -9,6 +9,7 @@ import {
   TeamRole,
 } from "./organization.protocol";
 import { Types } from "mongoose";
+import teamModel from "./team/team.model";
 
 class OrganizationService {
   private org = organizationModel;
@@ -356,6 +357,16 @@ class OrganizationService {
         `Error retrieving organizations: ${error.message}`
       );
     }
+  }
+
+  public async getOrganizationTeams(orgId: string) {
+    if (!Types.ObjectId.isValid(orgId)) {
+      throw new Error("Invalid organization ID");
+    }
+
+    const teams = await teamModel.find({ organizationId: orgId });
+
+    return teams;
   }
 }
 

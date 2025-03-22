@@ -11,6 +11,7 @@ import validator from "./organization.validations";
 import { Types } from "mongoose";
 import verifyOrgRolesMiddleware from "../../middlewares/orgnizationRoles.middleware";
 import { TeamRole } from "./organization.protocol";
+import teamModel from "./team/team.model";
 
 class OrganizationController implements GeneralController {
   public path = "/organizations";
@@ -88,6 +89,12 @@ class OrganizationController implements GeneralController {
         validationMiddleware(validator.updateOrganizationValidator),
       ],
       this.updateOrganization
+    );
+
+    this.router.get(
+      `${this.path}/:orgId/teams`,
+      [authenticatedMiddleware],
+      this.getOrganizationTeams
     );
   }
 
@@ -354,6 +361,28 @@ class OrganizationController implements GeneralController {
       next(new HttpException(500, "failed", err.message));
     }
   };
+
+  public async getOrganizationTeams(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { orgId } = req.params;
+
+      // Ensure orgId is a valid ObjectId
+      if (!Types.ObjectId.isValid(orgId)) {
+        return res.status(400).json({ message: "Invalid organization ID" });
+      }
+
+      // Fetch all teams associated with the organization
+      const teams = await teamModel.find({ organizationId: orgId });
+
+      return res.status(200).json({ success: true, teams });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default OrganizationController;
