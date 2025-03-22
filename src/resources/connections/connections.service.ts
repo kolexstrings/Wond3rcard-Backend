@@ -11,6 +11,9 @@ class ConnectionService {
     try {
       const { userId, connectionId } = data;
 
+      const userObjectId = new Types.ObjectId(userId);
+      const connectionObjectId = new Types.ObjectId(connectionId);
+
       // Fetch both users
       const user = await userModel.findById(userId);
       const connection = await userModel.findById(connectionId);
@@ -19,14 +22,12 @@ class ConnectionService {
         throw new HttpException(404, "error", "User not found");
       }
 
-      const connectionObjectId = new Types.ObjectId(connectionId);
-
       if (user.connections.some((id) => id.equals(connectionObjectId))) {
         throw new HttpException(400, "error", "Connection already exists");
       }
 
       user.connections.push(connectionObjectId);
-      connection.connections.push(userId); // Mutual connection
+      connection.connections.push(userObjectId);
       await user.save();
       await connection.save();
 
