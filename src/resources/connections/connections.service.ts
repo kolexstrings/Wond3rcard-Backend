@@ -1,12 +1,9 @@
 import HttpException from "../../exceptions/http.exception";
-import ConnectionModel from "./connections.model";
 import { AddConnection, RemoveConnection } from "./connections.protocol";
 import userModel from "../user/user.model";
 import { Types } from "mongoose";
 
 class ConnectionService {
-  private connection = ConnectionModel;
-
   public async addConnection(data: AddConnection): Promise<any> {
     try {
       const { userId, connectionId } = data;
