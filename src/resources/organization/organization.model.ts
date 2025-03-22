@@ -19,6 +19,7 @@ const organizationSchema = new Schema<Organization>(
         role: { type: String, enum: Object.values(TeamRole), required: true },
       },
     ],
+    teams: [{ type: Schema.Types.ObjectId, ref: "Team" }],
   },
   {
     timestamps: true,

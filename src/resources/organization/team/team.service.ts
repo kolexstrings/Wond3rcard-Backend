@@ -1,0 +1,218 @@
+import mongoose, { Types } from "mongoose";
+import HttpException from "../../../exceptions/http.exception";
+import logger from "../../../services/logger/logger";
+import teamModel from "./team.model";
+import userModel from "../../user/user.model";
+import { Team, TeamMember, TeamRole } from "./team.protocol";
+
+class TeamService {
+  private team = teamModel;
+
+  public async createTeam(
+    creatorId: string,
+    name: string,
+    description?: string
+  ): Promise<Team> {
+    try {
+      const creatorObjectId = new Types.ObjectId(creatorId);
+
+      // Default member as the creator with a fixed role "Lead"
+      const defaultMember: TeamMember = {
+        memberId: creatorObjectId,
+        teamId: null as unknown as Types.ObjectId,
+        role: TeamRole.Lead,
+      };
+
+      // Create team with only the default member
+      const team = await this.team.create({
+        creatorId: creatorObjectId,
+        name,
+        description,
+        members: [defaultMember],
+      });
+
+      // Update each member with the correct teamId
+      team.members = team.members.map((member) => ({
+        ...member,
+        teamId: team._id,
+      }));
+
+      await team.save();
+
+      // Link the team to the creator's user profile
+      const creator = await userModel.findById(creatorId);
+      if (!creator) {
+        throw new HttpException(
+          404,
+          "User Not Found",
+          "The creator does not exist"
+        );
+      }
+
+      if (!creator.teams.includes(team._id)) {
+        creator.teams.push(team._id);
+        await creator.save();
+      }
+
+      return team.toObject();
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "failed",
+        `Unable to create team: ${error.message}`
+      );
+    }
+  }
+
+  public async getUserTeams(userId: string): Promise<Team[]> {
+    try {
+      const teams = await this.team.find({
+        $or: [{ creatorId: userId }, { "members.memberId": userId }],
+      });
+
+      return teams.map((team) => team.toObject());
+    } catch (error) {
+      logger.error(`Failed to retrieve teams for user: ${userId}`);
+      throw new HttpException(500, "failed", "Unable to retrieve teams");
+    }
+  }
+
+  public async addMemberToTeam(
+    teamId: string,
+    memberId: string,
+    role: TeamRole
+  ): Promise<Team> {
+    try {
+      if (
+        !mongoose.Types.ObjectId.isValid(teamId) ||
+        !mongoose.Types.ObjectId.isValid(memberId)
+      ) {
+        throw new HttpException(400, "Bad Request", "Invalid ID format");
+      }
+
+      const team = await this.team.findById(teamId);
+      if (!team) {
+        throw new HttpException(404, "Not Found", "Team not found");
+      }
+
+      if (
+        team.members.some((member) => member.memberId.toString() === memberId)
+      ) {
+        throw new HttpException(
+          409,
+          "Conflict",
+          "Member already exists in the team"
+        );
+      }
+
+      team.members.push({
+        memberId: new Types.ObjectId(memberId),
+        teamId: team._id,
+        role,
+      });
+
+      await team.save();
+
+      // ✅ Convert Mongoose document to plain JavaScript object
+      return team.toObject();
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "Failed",
+        `Error adding member: ${error.message}`
+      );
+    }
+  }
+
+  public async removeMember(teamId: string, memberId: string): Promise<Team> {
+    try {
+      const team = await this.team.findById(teamId);
+      if (!team) {
+        throw new HttpException(404, "Not Found", "Team not found");
+      }
+
+      const initialMemberCount = team.members.length;
+      team.members = team.members.filter(
+        (m) => m.memberId.toString() !== memberId
+      );
+
+      if (team.members.length === initialMemberCount) {
+        throw new HttpException(
+          404,
+          "Not Found",
+          "Member not found in the team"
+        );
+      }
+
+      await team.save();
+      return team.toObject();
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "Failed",
+        `Error removing member: ${error.message}`
+      );
+    }
+  }
+
+  public async deleteTeam(teamId: string): Promise<void> {
+    try {
+      const team = await this.team.findById(teamId);
+      if (!team) {
+        throw new HttpException(404, "Not Found", "Team not found");
+      }
+
+      await this.team.findByIdAndDelete(teamId);
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "Failed",
+        `Error deleting team: ${error.message}`
+      );
+    }
+  }
+
+  public async updateTeam(
+    teamId: string,
+    updates: Partial<Team>
+  ): Promise<Team> {
+    try {
+      const team = await this.team.findById(teamId);
+      if (!team) {
+        throw new HttpException(404, "Not Found", "Team not found");
+      }
+
+      const allowedUpdates = ["name", "description", "members"];
+      Object.keys(updates).forEach((key) => {
+        if (!allowedUpdates.includes(key)) {
+          delete (updates as any)[key];
+        }
+      });
+
+      Object.assign(team, updates);
+      await team.save();
+
+      return team.toObject();
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "Failed",
+        `Error updating team: ${error.message}`
+      );
+    }
+  }
+
+  public async getMembers(): Promise<Team[]> {
+    try {
+      return await this.team.find();
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "Failed",
+        `Error retrieving teams: ${error.message}`
+      );
+    }
+  }
+}
+
+export default TeamService;

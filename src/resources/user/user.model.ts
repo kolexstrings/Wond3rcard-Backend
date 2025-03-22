@@ -54,6 +54,8 @@ const UserSchema = new Schema(
     googleMeetAccessToken: { type: String, default: null },
     microsoftTeamsAccessToken: { type: String, default: null },
     tokenExpiry: { type: Date, default: null },
+
+    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: "Team", default: [] }],
   },
 
   {

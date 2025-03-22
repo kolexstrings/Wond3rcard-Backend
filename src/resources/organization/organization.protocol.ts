@@ -21,6 +21,7 @@ interface Organization {
   industry: string;
   companyWebsite?: string;
   members?: OrganizationMember[];
+  teams: Types.ObjectId[];
 }
 
 export { Organization, OrganizationMember, TeamRole };
