@@ -10,7 +10,7 @@ function verifyTeamRolesMiddleware(allowedRoles: string[]): RequestHandler {
       }
 
       const userTeams = req.user.teams;
-      const userOrgRole = req.user.organizationRole; // Assuming this is set in req.user
+      const userOrgRole = req.user.organizationRole;
 
       // Extract teamId from request
       const { teamId } = req.params || req.body;

@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { Organization, TeamRole } from "./organization.protocol";
+import { Organization, OrgRole } from "./organization.protocol";
 
 const organizationSchema = new Schema<Organization>(
   {
@@ -16,7 +16,7 @@ const organizationSchema = new Schema<Organization>(
           ref: "Organization",
           required: true,
         },
-        role: { type: String, enum: Object.values(TeamRole), required: true },
+        role: { type: String, enum: Object.values(OrgRole), required: true },
       },
     ],
     teams: [{ type: Schema.Types.ObjectId, ref: "Team" }],

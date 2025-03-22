@@ -8,24 +8,48 @@ import { TeamRole } from "./team.protocol";
 import validator from "./team.validation";
 
 class TeamController {
-  public path = "/organizations";
+  public path = "/organizations/:orgId/teams";
   public router = Router();
   private teamService = new TeamService();
 
   constructor() {
     this.teamService = new TeamService();
+    this.initializeRoute();
   }
 
   initializeRoute(): void {
     this.router.post(
-      `${this.path}/create`,
+      `${this.path}`,
       authenticatedMiddleware,
       validationMiddleware(validator.createTeamValidator),
       this.createNewTeam
     );
 
+    this.router.get(`${this.path}`, authenticatedMiddleware, this.getAllTeams);
+
+    this.router.get(
+      `${this.path}/:teamId`,
+      authenticatedMiddleware,
+      this.getTeamById
+    );
+
+    this.router.put(
+      `${this.path}/:teamId`,
+      authenticatedMiddleware,
+      verifyTeamRolesMiddleware([TeamRole.Lead]),
+      validationMiddleware(validator.updateTeamValidator),
+      this.updateTeam
+    );
+
+    this.router.delete(
+      `${this.path}/:teamId`,
+      authenticatedMiddleware,
+      verifyTeamRolesMiddleware([TeamRole.Lead]),
+      this.deleteTeam
+    );
+
     this.router.post(
-      `${this.path}/add-member`,
+      `${this.path}/:teamId/members`,
       authenticatedMiddleware,
       verifyTeamRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
       validationMiddleware(validator.addTeamMemberValidator),
@@ -33,7 +57,7 @@ class TeamController {
     );
 
     this.router.delete(
-      `${this.path}/remove-member`,
+      `${this.path}/:teamId/members`,
       authenticatedMiddleware,
       verifyTeamRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
       validationMiddleware(validator.removeTeamMemberValidator),
@@ -41,9 +65,10 @@ class TeamController {
     );
 
     this.router.put(
-      "/:teamId/assign-role",
+      `${this.path}/:teamId/assign-role`,
       authenticatedMiddleware,
-      verifyTeamRolesMiddleware(["teamLead"]),
+      verifyTeamRolesMiddleware([TeamRole.Lead]),
+      validationMiddleware(validator.assignRoleValidator),
       this.assignRoleToMember
     );
 
@@ -66,18 +91,18 @@ class TeamController {
         );
       }
 
+      const { orgId } = req.params;
       const { name, description, leadId } = req.body;
       const creatorId = req.user.id;
 
-      // Validate that a lead is assigned
       if (!leadId) {
         return next(
           new HttpException(400, "error", "Team Lead must be specified.")
         );
       }
 
-      // Create the team (both creator and assigned lead are Leads)
       const team = await this.teamService.createTeam(
+        orgId,
         creatorId,
         leadId,
         name,
@@ -87,9 +112,91 @@ class TeamController {
       res.status(201).json({
         statusCode: 201,
         status: "success",
-        message:
-          "Team created successfully. Creator and assigned Lead are both Leads.",
+        message: "Team created successfully.",
         payload: team,
+      });
+    } catch (error) {
+      next(new HttpException(500, "failed", error.message));
+    }
+  };
+
+  public getAllTeams = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orgId } = req.params;
+      const teams = await this.teamService.getAllTeams(orgId);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Teams retrieved successfully",
+        payload: teams,
+      });
+    } catch (error) {
+      next(new HttpException(500, "failed", error.message));
+    }
+  };
+
+  public getTeamById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orgId, teamId } = req.params;
+      const team = await this.teamService.getTeamById(orgId, teamId);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Team retrieved successfully",
+        payload: team,
+      });
+    } catch (error) {
+      next(new HttpException(500, "failed", error.message));
+    }
+  };
+
+  public updateTeam = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orgId, teamId } = req.params;
+      const updatedTeam = await this.teamService.updateTeam(
+        orgId,
+        teamId,
+        req.body
+      );
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Team updated successfully",
+        payload: updatedTeam,
+      });
+    } catch (error) {
+      next(new HttpException(500, "failed", error.message));
+    }
+  };
+
+  public deleteTeam = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orgId, teamId } = req.params;
+      await this.teamService.deleteTeam(orgId, teamId);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Team deleted successfully",
       });
     } catch (error) {
       next(new HttpException(500, "failed", error.message));
@@ -102,8 +209,10 @@ class TeamController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { teamId, memberId, role } = req.body;
+      const { orgId, teamId } = req.params;
+      const { memberId, role } = req.body;
       const updatedTeam = await this.teamService.addMemberToTeam(
+        orgId,
         teamId,
         memberId,
         role
@@ -112,7 +221,7 @@ class TeamController {
       res.status(200).json({
         statusCode: 200,
         status: "success",
-        message: "Member added to team successfully",
+        message: "Member added successfully",
         payload: updatedTeam,
       });
     } catch (error) {
@@ -126,13 +235,18 @@ class TeamController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { teamId, memberId } = req.body;
-      const updatedTeam = await this.teamService.removeMember(teamId, memberId);
+      const { orgId, teamId } = req.params;
+      const { memberId } = req.body;
+      const updatedTeam = await this.teamService.removeMember(
+        orgId,
+        teamId,
+        memberId
+      );
 
       res.status(200).json({
         statusCode: 200,
         status: "success",
-        message: "Member removed from team successfully",
+        message: "Member removed successfully",
         payload: updatedTeam,
       });
     } catch (error) {
@@ -148,7 +262,7 @@ class TeamController {
     try {
       const { teamId } = req.params;
       const { memberId, role } = req.body;
-      const userId = req.user?.id; // Authenticated user's ID
+      const userId = req.user?.id;
 
       // Validate request body
       const { error } = validator.assignRoleValidator.validate({

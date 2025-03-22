@@ -6,7 +6,7 @@ import organizationModel from "./organization.model";
 import {
   Organization,
   OrganizationMember,
-  TeamRole,
+  OrgRole,
 } from "./organization.protocol";
 import { Types } from "mongoose";
 import teamModel from "./team/team.model";
@@ -28,7 +28,7 @@ class OrganizationService {
       const defaultMember: OrganizationMember = {
         memberId: creatorObjectId,
         organizationId: null as unknown as Types.ObjectId,
-        role: TeamRole.Lead,
+        role: OrgRole.Lead,
       };
 
       // Create organization with only the default member
@@ -94,7 +94,7 @@ class OrganizationService {
   public async addMemberToOrganization(
     orgId: string,
     memberId: string,
-    role: TeamRole
+    role: OrgRole
   ): Promise<Organization> {
     try {
       if (!mongoose.Types.ObjectId.isValid(orgId)) {
@@ -173,7 +173,7 @@ class OrganizationService {
   public async changeMemberRole(
     orgId: string,
     memberId: string,
-    newRole: TeamRole
+    newRole: OrgRole
   ): Promise<Organization> {
     try {
       if (!mongoose.Types.ObjectId.isValid(orgId)) {

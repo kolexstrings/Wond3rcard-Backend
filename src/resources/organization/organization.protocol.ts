@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 
-enum TeamRole {
+enum OrgRole {
   Admin = "admin",
   Lead = "lead",
   Moderator = "moderator",
@@ -10,7 +10,7 @@ enum TeamRole {
 interface OrganizationMember {
   memberId: Types.ObjectId;
   organizationId: Types.ObjectId;
-  role: TeamRole;
+  role: OrgRole;
 }
 
 interface Organization {
@@ -24,4 +24,4 @@ interface Organization {
   teams: Types.ObjectId[];
 }
 
-export { Organization, OrganizationMember, TeamRole };
+export { Organization, OrganizationMember, OrgRole };

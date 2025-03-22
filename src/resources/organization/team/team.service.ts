@@ -9,6 +9,7 @@ class TeamService {
   private team = teamModel;
 
   public async createTeam(
+    orgId: string,
     creatorId: string,
     leadId: string,
     name: string,
@@ -17,6 +18,7 @@ class TeamService {
     try {
       const creatorObjectId = new Types.ObjectId(creatorId);
       const leadObjectId = new Types.ObjectId(leadId);
+      const orgObjectId = new Types.ObjectId(orgId);
 
       // Ensure the creator and lead are different people
       if (creatorId === leadId) {
@@ -33,16 +35,17 @@ class TeamService {
           memberId: creatorObjectId,
           teamId: null as unknown as Types.ObjectId,
           role: TeamRole.Lead,
-        }, // Creator is Lead
+        },
         {
           memberId: leadObjectId,
           teamId: null as unknown as Types.ObjectId,
           role: TeamRole.Lead,
-        }, // Assigned Team Lead
+        },
       ];
 
       // Create the team
       const team = await this.team.create({
+        orgId: orgObjectId, // Ensure team is linked to organization
         creatorId: creatorObjectId,
         name,
         description,
@@ -81,23 +84,31 @@ class TeamService {
   }
 
   public async addMemberToTeam(
+    orgId: string,
     teamId: string,
     memberId: string,
     role: TeamRole
   ): Promise<Team> {
     try {
       if (
+        !mongoose.Types.ObjectId.isValid(orgId) ||
         !mongoose.Types.ObjectId.isValid(teamId) ||
         !mongoose.Types.ObjectId.isValid(memberId)
       ) {
         throw new HttpException(400, "Bad Request", "Invalid ID format");
       }
 
-      const team = await this.team.findById(teamId);
+      // Find the team within the given organization
+      const team = await this.team.findOne({ _id: teamId, orgId });
       if (!team) {
-        throw new HttpException(404, "Not Found", "Team not found");
+        throw new HttpException(
+          404,
+          "Not Found",
+          "Team not found in the organization"
+        );
       }
 
+      // Check if the member already exists in the team
       if (
         team.members.some((member) => member.memberId.toString() === memberId)
       ) {
@@ -108,6 +119,7 @@ class TeamService {
         );
       }
 
+      // Add new member to the team
       team.members.push({
         memberId: new Types.ObjectId(memberId),
         teamId: team._id,
@@ -126,11 +138,28 @@ class TeamService {
     }
   }
 
-  public async removeMember(teamId: string, memberId: string): Promise<Team> {
+  public async removeMember(
+    orgId: string,
+    teamId: string,
+    memberId: string
+  ): Promise<Team> {
     try {
-      const team = await this.team.findById(teamId);
+      if (
+        !mongoose.Types.ObjectId.isValid(orgId) ||
+        !mongoose.Types.ObjectId.isValid(teamId) ||
+        !mongoose.Types.ObjectId.isValid(memberId)
+      ) {
+        throw new HttpException(400, "Bad Request", "Invalid ID format");
+      }
+
+      // Find the team within the specified organization
+      const team = await this.team.findOne({ _id: teamId, orgId });
       if (!team) {
-        throw new HttpException(404, "Not Found", "Team not found");
+        throw new HttpException(
+          404,
+          "Not Found",
+          "Team not found in the organization"
+        );
       }
 
       const initialMemberCount = team.members.length;
@@ -213,14 +242,26 @@ class TeamService {
     return team.toObject();
   }
 
-  public async deleteTeam(teamId: string): Promise<void> {
+  public async deleteTeam(orgId: string, teamId: string): Promise<void> {
     try {
-      const team = await this.team.findById(teamId);
-      if (!team) {
-        throw new HttpException(404, "Not Found", "Team not found");
+      if (
+        !mongoose.Types.ObjectId.isValid(orgId) ||
+        !mongoose.Types.ObjectId.isValid(teamId)
+      ) {
+        throw new HttpException(400, "Bad Request", "Invalid ID format");
       }
 
-      await this.team.findByIdAndDelete(teamId);
+      // Find the team within the specified organization
+      const team = await this.team.findOne({ _id: teamId, orgId });
+      if (!team) {
+        throw new HttpException(
+          404,
+          "Not Found",
+          "Team not found in the organization"
+        );
+      }
+
+      await this.team.deleteOne({ _id: teamId, orgId });
     } catch (error) {
       throw new HttpException(
         500,
@@ -231,15 +272,29 @@ class TeamService {
   }
 
   public async updateTeam(
+    orgId: string,
     teamId: string,
     updates: Partial<Team>
   ): Promise<Team> {
     try {
-      const team = await this.team.findById(teamId);
-      if (!team) {
-        throw new HttpException(404, "Not Found", "Team not found");
+      if (
+        !mongoose.Types.ObjectId.isValid(orgId) ||
+        !mongoose.Types.ObjectId.isValid(teamId)
+      ) {
+        throw new HttpException(400, "Bad Request", "Invalid ID format");
       }
 
+      // Find the team within the specified organization
+      const team = await this.team.findOne({ _id: teamId, orgId });
+      if (!team) {
+        throw new HttpException(
+          404,
+          "Not Found",
+          "Team not found in the organization"
+        );
+      }
+
+      // Define allowed fields that can be updated
       const allowedUpdates = ["name", "description", "members"];
       Object.keys(updates).forEach((key) => {
         if (!allowedUpdates.includes(key)) {
@@ -247,6 +302,7 @@ class TeamService {
         }
       });
 
+      // Apply updates
       Object.assign(team, updates);
       await team.save();
 
@@ -256,6 +312,35 @@ class TeamService {
         500,
         "Failed",
         `Error updating team: ${error.message}`
+      );
+    }
+  }
+
+  public async getAllTeams(orgId: string): Promise<Team[]> {
+    try {
+      return await this.team.find({ orgId }).populate("members");
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "Failed",
+        `Error retrieving teams: ${error.message}`
+      );
+    }
+  }
+
+  public async getTeamById(
+    orgId: string,
+    teamId: string
+  ): Promise<Team | null> {
+    try {
+      return await this.team
+        .findOne({ _id: teamId, orgId })
+        .populate("members");
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "Failed",
+        `Error retrieving team: ${error.message}`
       );
     }
   }
