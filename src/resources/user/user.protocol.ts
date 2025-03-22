@@ -1,5 +1,6 @@
 import { Document } from "mongoose";
 import { OrganizationMember } from "../organization/organization.protocol";
+import { Types } from "mongoose";
 
 enum UserStatus {
   Active = "active",
@@ -48,7 +49,7 @@ interface User extends Document {
   microsoftTeamsAccessToken?: string;
   tokenExpiry?: Date;
 
-  connections: [{ type: Schema.Types.ObjectId; ref: "User" }];
+  connections: Types.ObjectId[];
 
   isValidPassword(password: string): Promise<Error | boolean>;
 }

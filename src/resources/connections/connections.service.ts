@@ -2,6 +2,7 @@ import HttpException from "../../exceptions/http.exception";
 import ConnectionModel from "./connections.model";
 import { AddConnection, RemoveConnection } from "./connections.protocol";
 import userModel from "../user/user.model";
+import { Types } from "mongoose";
 
 class ConnectionService {
   private connection = ConnectionModel;
@@ -18,11 +19,13 @@ class ConnectionService {
         throw new HttpException(404, "error", "User not found");
       }
 
-      if (user.connections.includes(connectionId)) {
+      const connectionObjectId = new Types.ObjectId(connectionId);
+
+      if (user.connections.some((id) => id.equals(connectionObjectId))) {
         throw new HttpException(400, "error", "Connection already exists");
       }
 
-      user.connections.push(connectionId);
+      user.connections.push(connectionObjectId);
       connection.connections.push(userId); // Mutual connection
       await user.save();
       await connection.save();
