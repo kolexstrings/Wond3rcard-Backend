@@ -10,7 +10,8 @@ import OrganizationService from "./organization.service";
 import validator from "./organization.validations";
 import { Types } from "mongoose";
 import verifyOrgRolesMiddleware from "../../middlewares/orgnizationRoles.middleware";
-import { TeamRole } from "./organization.protocol";
+import { OrgRole } from "./organization.protocol";
+import teamModel from "./team/team.model";
 
 class OrganizationController implements GeneralController {
   public path = "/organizations";
@@ -44,7 +45,7 @@ class OrganizationController implements GeneralController {
     this.router.post(
       `${this.path}/add-member`,
       validationMiddleware(validator.addMemberValidator),
-      verifyOrgRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
+      verifyOrgRolesMiddleware([OrgRole.Lead, OrgRole.Moderator]),
       authenticatedMiddleware,
       this.addMemberToOrganization
     );
@@ -60,7 +61,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.changeRoleValidator),
-        verifyOrgRolesMiddleware([TeamRole.Lead]),
+        verifyOrgRolesMiddleware([OrgRole.Lead]),
       ],
       this.changeMemberRole
     );
@@ -70,7 +71,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.removeMemberValidator),
-        verifyOrgRolesMiddleware([TeamRole.Lead, TeamRole.Moderator]),
+        verifyOrgRolesMiddleware([OrgRole.Lead, OrgRole.Moderator]),
       ],
       this.removeMember
     );
@@ -88,6 +89,12 @@ class OrganizationController implements GeneralController {
         validationMiddleware(validator.updateOrganizationValidator),
       ],
       this.updateOrganization
+    );
+
+    this.router.get(
+      `${this.path}/:orgId/teams`,
+      [authenticatedMiddleware],
+      this.getOrganizationTeams
     );
   }
 
@@ -354,6 +361,28 @@ class OrganizationController implements GeneralController {
       next(new HttpException(500, "failed", err.message));
     }
   };
+
+  public async getOrganizationTeams(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { orgId } = req.params;
+
+      // Ensure orgId is a valid ObjectId
+      if (!Types.ObjectId.isValid(orgId)) {
+        return res.status(400).json({ message: "Invalid organization ID" });
+      }
+
+      // Fetch all teams associated with the organization
+      const teams = await teamModel.find({ organizationId: orgId });
+
+      return res.status(200).json({ success: true, teams });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default OrganizationController;

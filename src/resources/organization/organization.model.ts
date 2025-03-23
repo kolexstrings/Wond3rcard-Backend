@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { Organization, TeamRole } from "./organization.protocol";
+import { Organization, OrgRole } from "./organization.protocol";
 
 const organizationSchema = new Schema<Organization>(
   {
@@ -7,18 +7,14 @@ const organizationSchema = new Schema<Organization>(
     name: { type: String, required: true },
     businessType: { type: String, required: true },
     industry: { type: String, required: true },
-    companyWebsite: { type: String, required: false },
+    companyWebsite: { type: String },
     members: [
       {
         memberId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        organizationId: {
-          type: Schema.Types.ObjectId,
-          ref: "Organization",
-          required: true,
-        },
-        role: { type: String, enum: Object.values(TeamRole), required: true },
+        role: { type: String, enum: Object.values(OrgRole), required: true },
       },
     ],
+    teams: [{ type: Schema.Types.ObjectId, ref: "Team" }],
   },
   {
     timestamps: true,
@@ -26,3 +22,4 @@ const organizationSchema = new Schema<Organization>(
 );
 
 export default model<Organization>("Organization", organizationSchema);
+export { Organization, OrgRole };
