@@ -31,12 +31,14 @@ class GoogleMeetController implements GeneralController {
   }
 
   private authorize = async (req: Request, res: Response) => {
-    res.redirect(await this.googleMeetService.getAuthUrl());
+    const authUrl = await this.googleMeetService.getAuthUrl();
+    // res.json({ authUrl }); // for testing on postman
+    res.redirect(await this.googleMeetService.getAuthUrl()); // for use on the browser
   };
 
   private callback = async (req: Request, res: Response) => {
     try {
-      const userId = req.user.id; // Assuming `req.user` is populated via authentication middleware
+      const userId = req.user.id;
       const accessToken = await this.googleMeetService.getAccessToken(
         userId,
         req.query.code as string
