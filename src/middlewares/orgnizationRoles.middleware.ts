@@ -11,10 +11,17 @@ function verifyOrgRolesMiddleware(allowedRoles: string[]): RequestHandler {
 
       const userOrganizations = req.user.organizations;
 
-      // Extract the user's role in the requested organization
+      // Extract the orgId from params or body
       const { orgId } = req.params || req.body;
+
+      // Ensure orgId is a valid ObjectId
+      if (!Types.ObjectId.isValid(orgId)) {
+        throw new HttpException(400, "error", "Invalid organization ID.");
+      }
+
+      // Find the organization where the user is a member
       const userOrg = userOrganizations.find((org) =>
-        new Types.ObjectId(org.organizationId).equals(new Types.ObjectId(orgId))
+        new Types.ObjectId(org.memberId).equals(new Types.ObjectId(orgId))
       );
 
       if (!userOrg) {

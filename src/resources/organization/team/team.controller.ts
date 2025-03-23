@@ -19,7 +19,7 @@ class TeamController {
 
   initializeRoute(): void {
     this.router.post(
-      `${this.path}`,
+      `${this.path}/`,
       authenticatedMiddleware,
       validationMiddleware(validator.createTeamValidator),
       this.createNewTeam
