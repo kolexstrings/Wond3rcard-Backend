@@ -4,6 +4,8 @@ import authenticatedMiddleware from "../../middlewares/authenticated.middleware"
 import validationMiddleware from "../../middlewares/validation.middleware";
 import ProfileService from "./profile.service";
 import validator from "./profile.validation";
+import { Types } from "mongoose";
+import HttpException from "../../exceptions/http.exception";
 
 class ProfileController {
   public path = "/profile";
@@ -101,7 +103,7 @@ class ProfileController {
         });
       }
       const uid = req.params.id;
-      const { contactEmail } = req.body.contactEmail;
+      const { contactEmail } = req.body;
 
       const user = await this.profileService.addContact(uid, contactEmail);
       res.status(200).json({ message: "Contact added", data: user });
@@ -167,8 +169,16 @@ class ProfileController {
       const uid = req.user.id;
       const { userId } = req.body;
 
+      if (!Types.ObjectId.isValid(uid) || !Types.ObjectId.isValid(userId)) {
+        throw new HttpException(
+          400,
+          "Invalid ID",
+          "Invalid userId or contactId format"
+        );
+      }
+
       const user = await this.profileService.removeContact(uid, userId);
-      res.status(200).json({ message: "Contact added", data: user });
+      res.status(200).json({ message: "Contact removed", data: user });
     } catch (error) {
       next(error);
     }

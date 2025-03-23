@@ -17,6 +17,7 @@ import PaystackController from "./resources/payments/paystack/paystack.controlle
 import StripeController from "./resources/payments/stripe/stripe.controller";
 import ManualPaymentController from "./resources/payments/manual/manual.controller";
 import TransactionsController from "./resources/payments/transactions.controller";
+import ConnectionController from "./resources/connections/connection.controller";
 
 validateEnv();
 
@@ -38,6 +39,7 @@ const app = new App(
     new StripeController(),
     new ManualPaymentController(),
     new TransactionsController(),
+    new ConnectionController(),
   ],
   Number(process.env.PORT)
 );

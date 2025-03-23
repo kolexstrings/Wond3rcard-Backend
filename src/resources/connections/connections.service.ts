@@ -30,8 +30,9 @@ class ConnectionService {
 
       return user;
     } catch (error) {
+      const status = typeof error.status === "number" ? error.status : 500;
       throw new HttpException(
-        error.status || 500,
+        status,
         "error",
         error.message || "Could not add connection"
       );
@@ -79,7 +80,7 @@ class ConnectionService {
         throw new HttpException(404, "error", "User has no connections");
       }
 
-      return userConnections;
+      return userConnections.connections;
     } catch (error) {
       throw new HttpException(
         error.status || 500,
