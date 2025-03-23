@@ -17,6 +17,9 @@ import PaystackController from "./resources/payments/paystack/paystack.controlle
 import StripeController from "./resources/payments/stripe/stripe.controller";
 import ManualPaymentController from "./resources/payments/manual/manual.controller";
 import TransactionsController from "./resources/payments/transactions.controller";
+import GoogleMeetController from "./resources/cloud-meeting/google-meet/meet.controller";
+import ZoomController from "./resources/cloud-meeting/zoom/zoom.controller";
+import TeamController from "./resources/organization/team/team.controller";
 
 validateEnv();
 
@@ -38,6 +41,9 @@ const app = new App(
     new StripeController(),
     new ManualPaymentController(),
     new TransactionsController(),
+    new GoogleMeetController(),
+    new ZoomController(),
+    new TeamController(),
   ],
   Number(process.env.PORT)
 );
