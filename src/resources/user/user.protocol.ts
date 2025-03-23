@@ -49,8 +49,6 @@ interface User extends Document {
   microsoftTeamsAccessToken?: string;
   tokenExpiry?: Date;
 
-  teams: Types.ObjectId[];
-
   isValidPassword(password: string): Promise<Error | boolean>;
 }
 
