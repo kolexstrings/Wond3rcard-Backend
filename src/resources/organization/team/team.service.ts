@@ -261,7 +261,10 @@ class TeamService {
       }
 
       // Find the team within the specified organization
-      const team = await this.team.findOne({ _id: teamId, orgId });
+      const team = await this.team.findOne({
+        _id: teamId,
+        organizationId: orgId,
+      });
       if (!team) {
         throw new HttpException(
           404,
@@ -270,7 +273,7 @@ class TeamService {
         );
       }
 
-      await this.team.deleteOne({ _id: teamId, orgId });
+      await this.team.deleteOne({ _id: teamId, organizationId: orgId });
     } catch (error) {
       throw new HttpException(
         500,
