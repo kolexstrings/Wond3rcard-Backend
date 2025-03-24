@@ -43,10 +43,10 @@ class OrganizationController implements GeneralController {
     );
 
     this.router.post(
-      `${this.path}/add-member`,
-      validationMiddleware(validator.addMemberValidator),
-      verifyOrgRolesMiddleware([OrgRole.Admin, OrgRole.Lead]),
+      `${this.path}/:orgId/add-member`,
       authenticatedMiddleware,
+      verifyOrgRolesMiddleware([OrgRole.Admin, OrgRole.Lead]),
+      validationMiddleware(validator.addMemberValidator),
       this.addMemberToOrganization
     );
 
@@ -143,7 +143,8 @@ class OrganizationController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { memberId, organizationId, role } = req.body;
+      const organizationId = req.params.orgId;
+      const { memberId, role } = req.body;
 
       if (!memberId || !organizationId || !role) {
         throw new HttpException(
@@ -168,8 +169,14 @@ class OrganizationController implements GeneralController {
         );
       }
 
-      if (!user.organizations.includes(organizationId)) {
-        user.organizations.push(organizationId);
+      const orgObjectId = new Types.ObjectId(organizationId);
+
+      if (
+        !user.organizations.some(
+          (org) => org.memberId.toString() === orgObjectId.toString()
+        )
+      ) {
+        user.organizations.push({ memberId: orgObjectId, role });
         await user.save();
       }
 
