@@ -1,12 +1,11 @@
 import HttpException from "../../exceptions/http.exception";
-import cardTemplateModel from "../models/cardTemplate.model";
-import physicalCardModel from "../models/physicalCard.model";
-import { CardTemplate } from "../protocols/cardTemplate.protocol";
-import { PhysicalCard } from "../protocols/physicalCard.protocol";
+import { CardTemplateModel, PhysicalCardModel } from "./physical-card.model";
+import { CardTemplate } from "./physical-card.protocol";
+import { PhysicalCard } from "./physical-card.protocol";
 
 class PhysicalCardService {
-  private cardTemplate = cardTemplateModel;
-  private physicalCard = physicalCardModel;
+  private cardTemplate = CardTemplateModel;
+  private physicalCard = PhysicalCardModel;
 
   public async createCardTemplate(
     name: string,

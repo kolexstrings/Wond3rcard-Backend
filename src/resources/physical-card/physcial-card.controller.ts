@@ -43,10 +43,18 @@ class PhysicalCardController implements GeneralController {
       }
 
       const { name, price } = req.body;
+
+      const parsedPrice = parseFloat(price);
+      if (isNaN(parsedPrice)) {
+        return next(
+          new HttpException(400, "error", "Price must be a valid number")
+        );
+      }
+
       const template = await this.physicalCardService.createCardTemplate(
         name,
         req.file.path,
-        price
+        parsedPrice
       );
 
       res.status(201).json({

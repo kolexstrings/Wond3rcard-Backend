@@ -31,7 +31,7 @@ const PhysicalCardSchema = new Schema(
   { timestamps: true }
 );
 
-const CardTemplate = model("CardTemplate", CardTemplateSchema);
-const PhysicalCard = model("PhysicalCard", PhysicalCardSchema);
+const CardTemplateModel = model("CardTemplate", CardTemplateSchema);
+const PhysicalCardModel = model("PhysicalCard", PhysicalCardSchema);
 
-export { CardTemplate, PhysicalCard };
+export { CardTemplateModel, PhysicalCardModel };
