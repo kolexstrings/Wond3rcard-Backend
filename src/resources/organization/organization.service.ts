@@ -357,6 +357,24 @@ class OrganizationService {
     }
   }
 
+  public async getOrganizationById(orgId: string): Promise<Organization> {
+    try {
+      const organization = await this.org.findById(orgId);
+
+      if (!organization) {
+        throw new HttpException(404, "not_found", "Organization not found");
+      }
+
+      return organization;
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "failed",
+        `Error retrieving organization: ${error.message}`
+      );
+    }
+  }
+
   public async getOrganizationTeams(orgId: string) {
     if (!Types.ObjectId.isValid(orgId)) {
       throw new Error("Invalid organization ID");
