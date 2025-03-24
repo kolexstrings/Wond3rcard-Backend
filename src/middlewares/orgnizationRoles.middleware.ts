@@ -1,6 +1,7 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import HttpException from "../exceptions/http.exception";
 import { Types } from "mongoose";
+import organizationModel from "../resources/organization/organization.model";
 
 function verifyOrgRolesMiddleware(allowedRoles: string[]): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -9,22 +10,25 @@ function verifyOrgRolesMiddleware(allowedRoles: string[]): RequestHandler {
         throw new HttpException(401, "error", "Unauthorized");
       }
 
-      const userOrganizations = req.user.organizations;
-
-      // Extract the orgId from params or body
-      const { orgId } = req.params || req.body;
-
-      // Ensure orgId is a valid ObjectId
-      if (!Types.ObjectId.isValid(orgId)) {
+      const orgId = req.params.orgId || req.body.orgId;
+      if (!orgId || !Types.ObjectId.isValid(orgId)) {
         throw new HttpException(400, "error", "Invalid organization ID.");
       }
 
-      // Find the organization where the user is a member
-      const userOrg = userOrganizations.find((org) =>
-        new Types.ObjectId(org.memberId).equals(new Types.ObjectId(orgId))
+      const requesterId = req.user.id || req.user._id;
+
+      // Fetch the organization details
+      const organization = await organizationModel.findById(orgId);
+      if (!organization) {
+        throw new HttpException(404, "error", "Organization not found.");
+      }
+
+      // Find the requester's role in this organization
+      const requester = organization.members.find(
+        (member) => member.memberId.toString() === requesterId.toString()
       );
 
-      if (!userOrg) {
+      if (!requester) {
         throw new HttpException(
           403,
           "error",
@@ -32,7 +36,8 @@ function verifyOrgRolesMiddleware(allowedRoles: string[]): RequestHandler {
         );
       }
 
-      if (!allowedRoles.includes(userOrg.role)) {
+      // Ensure the requester has the required role
+      if (!allowedRoles.includes(requester.role)) {
         throw new HttpException(
           403,
           "error",
