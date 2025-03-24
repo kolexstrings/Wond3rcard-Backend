@@ -93,6 +93,12 @@ class OrganizationController implements GeneralController {
     );
 
     this.router.get(
+      `${this.path}/:orgId`,
+      [authenticatedMiddleware],
+      this.getOrganizationById
+    );
+
+    this.router.get(
       `${this.path}/:orgId/teams`,
       [authenticatedMiddleware],
       this.getOrganizationTeams
@@ -367,6 +373,26 @@ class OrganizationController implements GeneralController {
       });
     } catch (err) {
       next(new HttpException(500, "failed", err.message));
+    }
+  };
+
+  private getOrganizationById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orgId } = req.params;
+      const organization = await this.orgService.getOrganizationById(orgId);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Organization retrieved successfully",
+        payload: organization,
+      });
+    } catch (error) {
+      next(new HttpException(error.statusCode || 500, "failed", error.message));
     }
   };
 
