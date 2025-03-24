@@ -94,10 +94,7 @@ class OrganizationController implements GeneralController {
 
     this.router.get(
       `${this.path}/:orgId`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validator.getOrganizationByIdValidator),
-      ],
+      [authenticatedMiddleware],
       this.getOrganizationById
     );
 
