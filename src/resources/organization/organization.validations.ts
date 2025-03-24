@@ -47,7 +47,6 @@ const updateOrganizationValidator = Joi.object({
 
 const addMemberValidator = Joi.object({
   memberId: objectIdSchema,
-  organizationId: objectIdSchema,
   role: Joi.string()
     .valid(...Object.values(OrgRole))
     .required(),

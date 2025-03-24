@@ -43,10 +43,10 @@ class OrganizationController implements GeneralController {
     );
 
     this.router.post(
-      `${this.path}/add-member`,
-      validationMiddleware(validator.addMemberValidator),
-      verifyOrgRolesMiddleware([OrgRole.Lead, OrgRole.Moderator]),
+      `${this.path}/:orgId/add-member`,
       authenticatedMiddleware,
+      verifyOrgRolesMiddleware([OrgRole.Admin, OrgRole.Lead]),
+      validationMiddleware(validator.addMemberValidator),
       this.addMemberToOrganization
     );
 
@@ -61,7 +61,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.changeRoleValidator),
-        verifyOrgRolesMiddleware([OrgRole.Lead]),
+        verifyOrgRolesMiddleware([OrgRole.Admin]),
       ],
       this.changeMemberRole
     );
@@ -71,7 +71,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.removeMemberValidator),
-        verifyOrgRolesMiddleware([OrgRole.Lead, OrgRole.Moderator]),
+        verifyOrgRolesMiddleware([OrgRole.Admin, OrgRole.Lead]),
       ],
       this.removeMember
     );
@@ -79,6 +79,7 @@ class OrganizationController implements GeneralController {
     this.router.delete(
       `${this.path}/:orgId/delete`,
       [authenticatedMiddleware],
+      verifyRolesMiddleware([UserRole.Admin]),
       this.deleteOrganization
     );
 
@@ -89,6 +90,12 @@ class OrganizationController implements GeneralController {
         validationMiddleware(validator.updateOrganizationValidator),
       ],
       this.updateOrganization
+    );
+
+    this.router.get(
+      `${this.path}/:orgId`,
+      [authenticatedMiddleware],
+      this.getOrganizationById
     );
 
     this.router.get(
@@ -142,7 +149,8 @@ class OrganizationController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { memberId, organizationId, role } = req.body;
+      const organizationId = req.params.orgId;
+      const { memberId, role } = req.body;
 
       if (!memberId || !organizationId || !role) {
         throw new HttpException(
@@ -167,8 +175,14 @@ class OrganizationController implements GeneralController {
         );
       }
 
-      if (!user.organizations.includes(organizationId)) {
-        user.organizations.push(organizationId);
+      const orgObjectId = new Types.ObjectId(organizationId);
+
+      if (
+        !user.organizations.some(
+          (org) => org.memberId.toString() === orgObjectId.toString()
+        )
+      ) {
+        user.organizations.push({ memberId: orgObjectId, role });
         await user.save();
       }
 
@@ -359,6 +373,26 @@ class OrganizationController implements GeneralController {
       });
     } catch (err) {
       next(new HttpException(500, "failed", err.message));
+    }
+  };
+
+  private getOrganizationById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orgId } = req.params;
+      const organization = await this.orgService.getOrganizationById(orgId);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Organization retrieved successfully",
+        payload: organization,
+      });
+    } catch (error) {
+      next(new HttpException(error.statusCode || 500, "failed", error.message));
     }
   };
 

@@ -24,10 +24,10 @@ class OrganizationService {
     try {
       const creatorObjectId = new Types.ObjectId(creatorId);
 
-      // Default member as the creator with a fixed role "Lead"
+      // Default member as the creator with a fixed role "Admin"
       const defaultMember: OrganizationMember = {
         memberId: creatorObjectId,
-        role: OrgRole.Lead,
+        role: OrgRole.Admin,
       };
 
       // Create organization with only the default member
@@ -353,6 +353,24 @@ class OrganizationService {
         500,
         "failed",
         `Error retrieving organizations: ${error.message}`
+      );
+    }
+  }
+
+  public async getOrganizationById(orgId: string): Promise<Organization> {
+    try {
+      const organization = await this.org.findById(orgId);
+
+      if (!organization) {
+        throw new HttpException(404, "not_found", "Organization not found");
+      }
+
+      return organization;
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "failed",
+        `Error retrieving organization: ${error.message}`
       );
     }
   }
