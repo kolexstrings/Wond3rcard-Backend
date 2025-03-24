@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction, Router } from "express";
+import { Types } from "mongoose";
 import HttpException from "../../../exceptions/http.exception";
 import TeamService from "./team.service";
 import verifyTeamRolesMiddleware from "../../../middlewares/orgTeamRoles.middleware";
+import verifyOrgRolesMiddleware from "../../../middlewares/orgnizationRoles.middleware";
 import authenticatedMiddleware from "../../../middlewares/authenticated.middleware";
 import validationMiddleware from "../../../middlewares/validation.middleware";
 import { TeamRole } from "./team.protocol";
@@ -93,13 +95,46 @@ class TeamController {
 
       const { orgId } = req.params;
       const { name, description, leadId } = req.body;
+
       const creatorId = req.user.id;
+
+      console.log("Lead ID:", leadId, "| Type:", typeof leadId);
+      console.log("Org ID:", orgId, "| Type:", typeof orgId);
+      console.log("Creator ID:", creatorId, "| Type:", typeof creatorId);
+
+      if (!orgId) {
+        return next(
+          new HttpException(
+            400,
+            "Bad Request",
+            "Organization ID is required in the request path."
+          )
+        );
+      }
+
+      if (!Types.ObjectId.isValid(orgId)) {
+        return next(
+          new HttpException(
+            400,
+            "Bad Request",
+            "Invalid Organization ID format."
+          )
+        );
+      }
 
       if (!leadId) {
         return next(
-          new HttpException(400, "error", "Team Lead must be specified.")
+          new HttpException(400, "Bad Request", "Team Lead must be specified.")
         );
       }
+
+      if (!Types.ObjectId.isValid(leadId)) {
+        return next(
+          new HttpException(400, "Bad Request", "Invalid Lead ID format.")
+        );
+      }
+
+      console.log("Validated Input - Org ID:", orgId, "Lead ID:", leadId);
 
       const team = await this.teamService.createTeam(
         orgId,
@@ -266,7 +301,6 @@ class TeamController {
 
       // Validate request body
       const { error } = validator.assignRoleValidator.validate({
-        teamId,
         memberId,
         role,
       });

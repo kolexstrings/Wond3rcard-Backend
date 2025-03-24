@@ -4,9 +4,11 @@ import logger from "../../../services/logger/logger";
 import teamModel from "./team.model";
 import userModel from "../../user/user.model";
 import { Team, TeamMember, TeamRole } from "./team.protocol";
+import organizationModel from "../organization.model";
 
 class TeamService {
   private team = teamModel;
+  private organization = organizationModel;
 
   public async createTeam(
     orgId: string,
@@ -43,7 +45,7 @@ class TeamService {
 
       // Create the team
       const team = await this.team.create({
-        orgId: orgObjectId, // Ensure team is linked to organization
+        organizationId: orgObjectId,
         creatorId: creatorObjectId,
         name,
         description,
@@ -57,6 +59,10 @@ class TeamService {
       }));
 
       await team.save();
+
+      await this.organization.findByIdAndUpdate(orgId, {
+        $push: { teams: team._id },
+      });
 
       return team.toObject();
     } catch (error) {
@@ -97,7 +103,10 @@ class TeamService {
       }
 
       // Find the team within the given organization
-      const team = await this.team.findOne({ _id: teamId, orgId });
+      const team = await this.team.findOne({
+        _id: teamId,
+        organizationId: orgId,
+      });
       if (!team) {
         throw new HttpException(
           404,
@@ -150,7 +159,10 @@ class TeamService {
       }
 
       // Find the team within the specified organization
-      const team = await this.team.findOne({ _id: teamId, orgId });
+      const team = await this.team.findOne({
+        _id: teamId,
+        organizationId: orgId,
+      });
       if (!team) {
         throw new HttpException(
           404,
@@ -282,7 +294,10 @@ class TeamService {
       }
 
       // Find the team within the specified organization
-      const team = await this.team.findOne({ _id: teamId, orgId });
+      const team = await this.team.findOne({
+        _id: teamId,
+        organizationId: orgId,
+      });
       if (!team) {
         throw new HttpException(
           404,
@@ -331,7 +346,7 @@ class TeamService {
   ): Promise<Team | null> {
     try {
       return await this.team
-        .findOne({ _id: teamId, orgId })
+        .findOne({ _id: teamId, organizationId: orgId })
         .populate("members");
     } catch (error) {
       throw new HttpException(
