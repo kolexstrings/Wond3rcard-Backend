@@ -10,21 +10,10 @@ const objectIdSchema = Joi.string()
 const createTeamValidator = Joi.object({
   name: Joi.string().min(3).max(100).required(),
   description: Joi.string().max(500).optional(),
-  organizationId: objectIdSchema,
-  members: Joi.array()
-    .items(
-      Joi.object({
-        memberId: objectIdSchema,
-        role: Joi.string()
-          .valid(...Object.values(TeamRole))
-          .required(),
-      })
-    )
-    .optional(),
+  leadId: objectIdSchema.required(),
 });
 
 const addTeamMemberValidator = Joi.object({
-  teamId: objectIdSchema,
   memberId: objectIdSchema,
   role: Joi.string()
     .valid(...Object.values(TeamRole))
@@ -32,7 +21,6 @@ const addTeamMemberValidator = Joi.object({
 });
 
 const removeTeamMemberValidator = Joi.object({
-  teamId: objectIdSchema,
   memberId: objectIdSchema,
 });
 
@@ -52,7 +40,6 @@ const updateTeamValidator = Joi.object({
 }).min(1);
 
 const assignRoleValidator = Joi.object({
-  teamId: objectIdSchema,
   memberId: objectIdSchema,
   role: Joi.string()
     .valid(...Object.values(TeamRole))
