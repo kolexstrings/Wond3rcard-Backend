@@ -59,10 +59,6 @@ const changeRoleValidator = Joi.object({
     .required(),
 });
 
-const getOrganizationByIdValidator = Joi.object({
-  orgId: objectIdSchema,
-});
-
 const removeMemberValidator = Joi.object({
   memberId: objectIdSchema,
 });
@@ -73,5 +69,4 @@ export default {
   removeMemberValidator,
   updateOrganizationValidator,
   changeRoleValidator,
-  getOrganizationByIdValidator,
 };
