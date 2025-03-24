@@ -24,10 +24,10 @@ class OrganizationService {
     try {
       const creatorObjectId = new Types.ObjectId(creatorId);
 
-      // Default member as the creator with a fixed role "Lead"
+      // Default member as the creator with a fixed role "Admin"
       const defaultMember: OrganizationMember = {
         memberId: creatorObjectId,
-        role: OrgRole.Lead,
+        role: OrgRole.Admin,
       };
 
       // Create organization with only the default member

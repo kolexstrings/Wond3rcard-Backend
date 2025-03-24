@@ -45,7 +45,7 @@ class OrganizationController implements GeneralController {
     this.router.post(
       `${this.path}/add-member`,
       validationMiddleware(validator.addMemberValidator),
-      verifyOrgRolesMiddleware([OrgRole.Lead, OrgRole.Moderator]),
+      verifyOrgRolesMiddleware([OrgRole.Admin, OrgRole.Lead]),
       authenticatedMiddleware,
       this.addMemberToOrganization
     );
@@ -61,7 +61,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.changeRoleValidator),
-        verifyOrgRolesMiddleware([OrgRole.Lead]),
+        verifyOrgRolesMiddleware([OrgRole.Admin]),
       ],
       this.changeMemberRole
     );
@@ -71,7 +71,7 @@ class OrganizationController implements GeneralController {
       [
         authenticatedMiddleware,
         validationMiddleware(validator.removeMemberValidator),
-        verifyOrgRolesMiddleware([OrgRole.Lead, OrgRole.Moderator]),
+        verifyOrgRolesMiddleware([OrgRole.Admin, OrgRole.Lead]),
       ],
       this.removeMember
     );
@@ -79,6 +79,7 @@ class OrganizationController implements GeneralController {
     this.router.delete(
       `${this.path}/:orgId/delete`,
       [authenticatedMiddleware],
+      verifyRolesMiddleware([UserRole.Admin]),
       this.deleteOrganization
     );
 
