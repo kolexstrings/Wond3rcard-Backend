@@ -6,14 +6,13 @@ import TransactionModel from "../../../payments/transactions.model";
 import { PhysicalCardModel } from "../../physical-card.model";
 import { generateTransactionId } from "../../../../utils/generateTransactionId";
 import MailTemplates from "../../../mails/mail.templates";
-import { PhysicalCardStatus } from "../../physical-card.protocol";
-import PhysicalCardOrderService from "../order.service";
+import PhysicalCardService from "../../physical-card.service";
 
 class ManualOrderService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY;
   private baseUrl = "https://api.paystack.co";
   private mailer = new NodeMailerService();
-  private physicalOrderCardService = new PhysicalCardOrderService();
+  private physicalCardService = new PhysicalCardService();
   public async createManualOrder(
     userId: string,
     physicalCardId: string,
@@ -22,14 +21,19 @@ class ManualOrderService {
     region: string,
     address: string
   ) {
+    // Fetch the user
+    const user = await userModel.findById(userId);
+    if (!user) throw new HttpException(404, "error", "User not found");
     // Fetch card template details (includes price)
-    const cardTemplate = await this.physicalOrderCardService.getTemplateById(
+    const cardTemplate = await this.physicalCardService.getTemplateById(
       cardTemplateId
     );
     if (!cardTemplate) {
       throw new HttpException(404, "error", "Card template not found");
     }
 
+    const referenceId = generateTransactionId("card_order", "paystack");
+    const paidAt = new Date();
     const { priceNaira, priceUsd } = cardTemplate;
 
     // Calculate total price based on region
@@ -48,16 +52,41 @@ class ManualOrderService {
       region,
       address,
       price: totalPrice,
-      status: "manual", // Marking as a manual order
+      status: "success",
     });
+    const orderId = order._id.toString();
 
     // Save the transaction record for manual order
     const transaction = await TransactionModel.create({
-      orderId: order._id,
+      userId,
+      userName: user.username,
+      email: user.email,
       amount: totalPrice,
-      status: "completed", // Assuming the status is completed for manual orders
-      method: "manual", // Marking as a manual transaction
+      referenceId,
+      transactionType: "card_order",
+      status: "success",
+      paymentProvider: "manual",
+      paidAt,
     });
+
+    // Send confirmation email
+    const template = MailTemplates.physicalCardOrderConfirmation;
+    const email = user.email;
+    const emailData = {
+      name: user.username,
+      address,
+      price: String(totalPrice),
+      paidAt: paidAt.toDateString(),
+      orderId,
+    };
+
+    await this.mailer.sendMail(
+      email,
+      "Order Confirmation",
+      template,
+      "Order Successful",
+      emailData
+    );
 
     // Populate order with cardId
     const populatedOrder = await order.populate("cardId");

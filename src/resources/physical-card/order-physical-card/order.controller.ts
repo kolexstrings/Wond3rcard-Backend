@@ -3,11 +3,13 @@ import HttpException from "../../../exceptions/http.exception";
 import authenticatedMiddleware from "../../../middlewares/authenticated.middleware";
 import GeneralController from "../../../protocols/global.controller";
 import PhysicalCardOrderService from "./order.service";
+import ManualOrderService from "./manual/manual.service";
 
 class PhysicalCardOrderController implements GeneralController {
   public path = "/card-orders";
   public router = Router();
   private physicalCardOrderService = new PhysicalCardOrderService();
+  private manualCardOrderService = new ManualOrderService();
 
   constructor() {
     this.initializeRoute();
@@ -102,16 +104,12 @@ class PhysicalCardOrderController implements GeneralController {
         !region ||
         !address
       ) {
-        res.status(400).json({
-          statusCode: 400,
-          status: "error",
-          message: "Missing required fields",
-        });
+        throw new HttpException(400, "error", "Missing required fields");
       }
 
       // Call the service method for manual order creation
       const { order, transaction } =
-        await this.physicalCardOrderService.createManualOrder(
+        await this.manualCardOrderService.createManualOrder(
           userId,
           physicalCardId,
           cardTemplateId,

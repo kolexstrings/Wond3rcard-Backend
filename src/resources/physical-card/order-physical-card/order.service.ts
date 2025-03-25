@@ -43,7 +43,7 @@ class PhysicalCardOrderService {
       status: "pending",
     });
 
-    const { _id: orderId } = order; // Extract orderId
+    const orderId = order._id.toString();
 
     // **Now initialize payment with orderId**
     const paymentUrl =
