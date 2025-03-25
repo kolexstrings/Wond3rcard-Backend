@@ -58,7 +58,7 @@ class PhysicalCardService {
     name: string | undefined,
     priceNaira: number | undefined,
     priceUsd: number | undefined,
-    design: string | undefined
+    file: Express.Multer.File | undefined
   ): Promise<CardTemplate> {
     try {
       // Fetch the existing card template
@@ -77,10 +77,13 @@ class PhysicalCardService {
       if (priceUsd) {
         existingTemplate.priceUsd = priceUsd;
       }
-      if (design) {
-        existingTemplate.design = design;
+
+      // Handle file upload if a new file is provided (used as the 'design')
+      if (file) {
+        existingTemplate.design = file.path; // Assuming 'design' is where the file path is stored
       }
 
+      // Save the updated template
       const updatedTemplate = await existingTemplate.save();
       return updatedTemplate;
     } catch (error) {

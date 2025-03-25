@@ -9,11 +9,12 @@ import validationMiddleware from "../../middlewares/validation.middleware";
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import { UserRole } from "../user/user.protocol";
 import validate from "./physical-card.validation";
+import { uploadCardTemplateMiddleware } from "../../multer-config/card-templates";
 
 const upload = multer({ dest: "uploads/templates/" });
 
 class PhysicalCardController implements GeneralController {
-  public path = "/cards";
+  public path = "/phy-cards";
   public router = Router();
   private physicalCardService = new PhysicalCardService();
 
@@ -29,7 +30,7 @@ class PhysicalCardController implements GeneralController {
         verifyRolesMiddleware([UserRole.Admin]),
         validationMiddleware(validate.validateCardTemplate),
       ],
-      upload.single("svg"),
+      uploadCardTemplateMiddleware,
       this.createTemplate
     );
 
@@ -51,6 +52,7 @@ class PhysicalCardController implements GeneralController {
     this.router.put(
       `${this.path}/template/:templateId`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      uploadCardTemplateMiddleware,
       this.updateCardTemplate
     );
 
@@ -193,6 +195,7 @@ class PhysicalCardController implements GeneralController {
     }
   };
 
+  // Define the update card template route
   private updateCardTemplate = async (
     req: Request,
     res: Response,
@@ -200,19 +203,22 @@ class PhysicalCardController implements GeneralController {
   ): Promise<void> => {
     try {
       const { templateId } = req.params;
-      const { name, priceNaira, priceUsd, design } = req.body;
+      const { name, priceNaira, priceUsd } = req.body;
 
-      // Validate required fields
-      if (!name && !priceNaira && !priceUsd && !design) {
-        return next(new HttpException(400, "error", "No fields to update"));
+      // Validate required fields (file is mandatory for design)
+      if (!name && !priceNaira && !priceUsd && !req.file) {
+        return next(
+          new HttpException(400, "error", "No fields or file to update")
+        );
       }
 
+      // Call service method to handle the update
       const updatedTemplate = await this.physicalCardService.updateCardTemplate(
         templateId,
         name,
         priceNaira,
         priceUsd,
-        design
+        req.file // Pass the file (design) as part of the update
       );
 
       res.status(200).json({
