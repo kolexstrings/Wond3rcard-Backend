@@ -57,28 +57,29 @@ class PhysicalCardService {
     userId: string,
     cardId: string,
     templateId: string,
-    templateName: string,
-    priceNaira: number,
-    priceUsd: number,
+    finalDesign: string,
     primaryColor: string,
-    secondaryColor: string,
-    svg: string
+    secondaryColor: string
   ): Promise<PhysicalCard> {
     try {
+      // Create the physical card
       const newPhysicalCard = await this.physicalCard.create({
-        userId,
+        user: userId,
         cardId,
-        templateId,
-        templateName,
-        priceNaira,
-        priceUsd,
+        cardTemplate: templateId,
         primaryColor,
         secondaryColor,
-        svg,
-        status: "pending", // Default status
+        finalDesign,
+        isCustom: false,
+        status: "pending",
       });
 
-      return newPhysicalCard;
+      // Populate the template details
+      const populatedPhysicalCard = await this.physicalCard
+        .findById(newPhysicalCard._id)
+        .populate("cardTemplate", "name priceNaira priceUsd");
+
+      return populatedPhysicalCard;
     } catch (error) {
       throw new HttpException(500, "error", "Failed to create physical card");
     }
@@ -90,26 +91,28 @@ class PhysicalCardService {
     templateId: string,
     primaryColor: string,
     secondaryColor: string,
-    photo: string
-  ): Promise<any> {
+    finalDesign: string
+  ): Promise<PhysicalCard> {
     try {
-      const newCustomCard = await PhysicalCardModel.create({
-        userId,
+      const newPhysicalCard = await this.physicalCard.create({
+        user: userId,
         cardId,
-        templateId,
+        cardTemplate: templateId,
         primaryColor,
         secondaryColor,
-        photo,
+        finalDesign,
+        isCustom: true,
         status: "pending",
       });
 
-      return newCustomCard;
+      // Populate the template details
+      const populatedPhysicalCard = await this.physicalCard
+        .findById(newPhysicalCard._id)
+        .populate("cardTemplate", "name priceNaira priceUsd");
+
+      return populatedPhysicalCard;
     } catch (error) {
-      throw new HttpException(
-        500,
-        "error",
-        "Failed to create custom physical card"
-      );
+      throw new HttpException(500, "error", "Failed to create physical card");
     }
   }
 }

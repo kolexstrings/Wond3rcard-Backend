@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { PhysicalCardStatus } from "./physical-card.protocol";
 
 const CardTemplateSchema = new Schema(
   {
@@ -14,25 +15,25 @@ const CardTemplateSchema = new Schema(
 const PhysicalCardSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    cardId: { type: String, required: true },
     cardTemplate: {
       type: Schema.Types.ObjectId,
       ref: "CardTemplate",
       required: true,
     },
-    quantity: { type: Number, required: true, min: 1 },
     primaryColor: { type: String, required: true },
     secondaryColor: { type: String, required: true },
-    isCustom: { type: Boolean, required: true }, // New field to differentiate
+    isCustom: { type: Boolean, default: false, required: true },
     finalDesign: {
       type: String,
       required: true,
       validate: {
         validator: function (value: string) {
           if (this.isCustom) {
-            // Check if finalDesign is a file path (PNG/JPG/JPEG)
+            // If custom, must be an image file (PNG, JPG, JPEG)
             return /\.(png|jpg|jpeg)$/i.test(value);
           } else {
-            // Check if finalDesign is an SVG string
+            // If not custom, must be a valid SVG string
             return value.startsWith("<svg") && value.endsWith("</svg>");
           }
         },
@@ -44,8 +45,8 @@ const PhysicalCardSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "processing", "shipped", "delivered"],
-      default: "pending",
+      enum: Object.values(PhysicalCardStatus),
+      default: PhysicalCardStatus.Pending,
     },
   },
   { timestamps: true }

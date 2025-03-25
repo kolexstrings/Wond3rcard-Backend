@@ -5,6 +5,7 @@ import GeneralController from "../../protocols/global.controller";
 import PhysicalCardService from "./physical-card.service";
 import multer from "multer";
 import { parsePrice } from "../../utils/parsePrice";
+import { template } from "lodash";
 
 const upload = multer({ dest: "uploads/templates/" });
 
@@ -140,8 +141,14 @@ class PhysicalCardController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { userId, cardId, templateId, primaryColor, secondaryColor, svg } =
-        req.body;
+      const {
+        userId,
+        cardId,
+        templateId,
+        primaryColor,
+        secondaryColor,
+        finalDesign,
+      } = req.body;
 
       // Validate required fields
       if (
@@ -149,8 +156,7 @@ class PhysicalCardController implements GeneralController {
         !cardId ||
         !templateId ||
         !primaryColor ||
-        !secondaryColor ||
-        !svg
+        !secondaryColor
       ) {
         return next(new HttpException(400, "error", "Missing required fields"));
       }
@@ -168,12 +174,9 @@ class PhysicalCardController implements GeneralController {
         userId,
         cardId,
         templateId,
-        template.name,
-        template.priceNaira,
-        template.priceUsd,
         primaryColor,
         secondaryColor,
-        svg
+        finalDesign
       );
 
       res.status(201).json({
@@ -195,6 +198,7 @@ class PhysicalCardController implements GeneralController {
       const { userId, cardId, templateId, primaryColor, secondaryColor } =
         req.body;
 
+      // Validate required fields
       if (
         !userId ||
         !cardId ||
@@ -205,12 +209,23 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(400, "error", "Missing required fields"));
       }
 
+      // Validate photo upload
       if (!req.file) {
         return next(new HttpException(400, "error", "Photo is required"));
       }
 
-      const photoPath = req.file.path;
+      // Fetch template details
+      const template = await this.physicalCardService.getTemplateById(
+        templateId
+      );
+      if (!template) {
+        return next(new HttpException(404, "error", "Template not found"));
+      }
 
+      // Get photo path safely
+      const photoPath = this.getPhotoUrl(req.file);
+
+      // Create custom physical card
       const customCard =
         await this.physicalCardService.createCustomPhysicalCard(
           userId,
@@ -230,6 +245,11 @@ class PhysicalCardController implements GeneralController {
       next(error);
     }
   };
+
+  // Utility function for getting the correct photo URL
+  private getPhotoUrl(file: Express.Multer.File): string {
+    return file.path; // Modify if using S3/Cloudinary
+  }
 }
 
 export default PhysicalCardController;
