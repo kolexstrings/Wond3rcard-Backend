@@ -4,6 +4,10 @@ import authenticatedMiddleware from "../../../middlewares/authenticated.middlewa
 import GeneralController from "../../../protocols/global.controller";
 import PhysicalCardOrderService from "./order.service";
 import ManualOrderService from "./manual/manual.service";
+import validationMiddleware from "../../../middlewares/validation.middleware";
+import verifyOrgRolesMiddleware from "../../../middlewares/orgnizationRoles.middleware";
+import { UserRole } from "../../user/user.protocol";
+import validate from "./order.validation";
 
 class PhysicalCardOrderController implements GeneralController {
   public path = "/card-orders";
@@ -18,13 +22,21 @@ class PhysicalCardOrderController implements GeneralController {
   initializeRoute(): void {
     this.router.post(
       `${this.path}/create`,
-      authenticatedMiddleware,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validate.validateCreateOrder),
+      ],
       this.createOrder
     );
 
     this.router.post(
       `${this.path}/create-manual`,
-      authenticatedMiddleware,
+      [
+        authenticatedMiddleware,
+        verifyOrgRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validate.validateCreateManualOrder),
+      ],
+
       this.createManualOrder
     );
   }

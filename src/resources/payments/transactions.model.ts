@@ -13,7 +13,7 @@ const TransactionSchema = new mongoose.Schema<ITransaction>(
     plan: { type: String },
     billingCycle: { type: String, enum: ["monthly", "yearly"] },
     amount: { type: Number, required: true },
-    transactionId: { type: String, required: true, unique: true },
+    transactionId: { type: String, required: false, unique: true },
     referenceId: { type: String, required: true },
     status: {
       type: String,
