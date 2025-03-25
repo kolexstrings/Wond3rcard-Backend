@@ -39,6 +39,24 @@ class PhysicalCardOrderController implements GeneralController {
 
       this.createManualOrder
     );
+
+    this.router.get(
+      `${this.path}/`,
+      [authenticatedMiddleware],
+      this.getAllOrders
+    );
+
+    this.router.get(
+      `${this.path}/order/:orderId`,
+      authenticatedMiddleware,
+      this.getOrderById
+    );
+
+    this.router.get(
+      `${this.path}/user/:userId/orders`,
+      authenticatedMiddleware,
+      this.getUserOrders
+    );
   }
 
   private createOrder = async (
@@ -134,6 +152,83 @@ class PhysicalCardOrderController implements GeneralController {
         statusCode: 201,
         status: "success",
         payload: { order, transaction },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private getAllOrders = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const orders = await this.physicalCardOrderService.getAllOrders();
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: orders,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private getOrderById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orderId } = req.params;
+
+      if (!orderId) {
+        return next(new HttpException(400, "error", "Order ID is required"));
+      }
+
+      const order = await this.physicalCardOrderService.getOrderById(orderId);
+
+      if (!order) {
+        return next(new HttpException(404, "error", "Order not found"));
+      }
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: order,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private getUserOrders = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        return next(new HttpException(400, "error", "User ID is required"));
+      }
+
+      const userOrders = await this.physicalCardOrderService.getUserOrders(
+        userId
+      );
+
+      if (!userOrders) {
+        return next(
+          new HttpException(404, "error", "No orders found for this user")
+        );
+      }
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: userOrders,
       });
     } catch (error) {
       next(error);

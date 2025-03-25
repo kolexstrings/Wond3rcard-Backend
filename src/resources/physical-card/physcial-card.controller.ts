@@ -5,7 +5,8 @@ import GeneralController from "../../protocols/global.controller";
 import PhysicalCardService from "./physical-card.service";
 import multer from "multer";
 import { parsePrice } from "../../utils/parsePrice";
-import { template } from "lodash";
+import verifyOrgRolesMiddleware from "../../middlewares/orgnizationRoles.middleware";
+import validationMiddleware from "../../middlewares/validation.middleware";
 
 const upload = multer({ dest: "uploads/templates/" });
 

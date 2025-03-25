@@ -2,7 +2,8 @@ import HttpException from "../../../exceptions/http.exception";
 import PhysicalCardService from "../physical-card.service";
 import PaystackService from "./paystack/paystack.service";
 import StripeService from "./stripe/stripe.service";
-import PhysicalCardOrder from "./order.model"; // Import order model for saving order
+import PhysicalCardOrder from "./order.model";
+import { IPhysicalCardOrder } from "./order.protocol";
 
 class PhysicalCardOrderService {
   private physicalCardService = new PhysicalCardService();
@@ -74,6 +75,22 @@ class PhysicalCardOrderService {
       currency,
     };
   }
+
+  public getAllOrders = async (): Promise<IPhysicalCardOrder[]> => {
+    return await PhysicalCardOrder.find();
+  };
+
+  public getOrderById = async (
+    orderId: string
+  ): Promise<IPhysicalCardOrder | null> => {
+    return await PhysicalCardOrder.findById(orderId);
+  };
+
+  public getUserOrders = async (
+    userId: string
+  ): Promise<IPhysicalCardOrder[]> => {
+    return await PhysicalCardOrder.find({ userId });
+  };
 }
 
 export default PhysicalCardOrderService;
