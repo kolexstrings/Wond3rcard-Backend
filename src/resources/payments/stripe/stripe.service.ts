@@ -2,6 +2,7 @@ import stripe from "../../../config/stripe";
 import tierModel from "../../admin/subscriptionTier/tier.model";
 import userModel from "../../user/user.model";
 import TransactionModel from "../transactions.model";
+import { generateTransactionId } from "../../../utils/generateTransactionId";
 
 class StripeService {
   async createCheckoutSession(
@@ -36,11 +37,6 @@ class StripeService {
     });
   }
 
-  generateTransactionId = (provider: "paystack" | "stripe" | "manual") => {
-    const uniquePart = Date.now().toString().slice(-6); // Last 6 digits of timestamp
-    return `${provider}-${uniquePart}`;
-  };
-
   public async handleSuccessfulPayment(session: any) {
     const { userId, plan, billingCycle, expiresAt } = session.metadata;
 
@@ -48,7 +44,7 @@ class StripeService {
     if (!user) throw new Error("User not found");
 
     const transactionId = session.id; // Stripe’s unique ID
-    const referenceId = this.generateTransactionId("stripe"); // Custom transaction ID
+    const referenceId = generateTransactionId("subscription", "stripe"); // Custom transaction ID
     const paymentMethod = session.payment_method_types?.[0] || "unknown";
     const paidAt = new Date(session.created * 1000); // Stripe timestamps in seconds
 

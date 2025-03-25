@@ -1,6 +1,7 @@
 import userModel from "../../user/user.model";
 import { UserTiers } from "../../user/user.protocol";
 import TransactionModel from "../transactions.model";
+import { generateTransactionId } from "../../../utils/generateTransactionId";
 
 class ManualPaymentService {
   public async createManualPayment({
@@ -20,7 +21,7 @@ class ManualPaymentService {
     if (!user) throw new Error("User not found");
 
     // Generate transaction & reference IDs
-    const transactionId = `manual-${Date.now().toString().slice(-6)}`;
+    const transactionId = generateTransactionId("subscription", "manual");
     const referenceId = transactionId;
 
     // Update user subscription (default 30 days)
@@ -42,6 +43,7 @@ class ManualPaymentService {
       amount,
       transactionId,
       referenceId,
+      transactionType: "subscription",
       paymentProvider: "manual",
       status: "success",
       paymentMethod,

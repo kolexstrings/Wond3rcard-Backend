@@ -123,8 +123,70 @@ const MailTemplates = {
     </div>
 </body>
 </html>
-
 `,
+
+  physicalCardOrderConfirmation: /*html*/ `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Order Successful!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            color: #4b32d0;
+        }
+        p {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #4b32d0;
+            color: #ffffff;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Thank You for Your Order, {{emailData.name}}! 🎉</h2>
+        <p>Your physical card order has been successfully placed.</p>
+        <p>Order ID: <strong>{{emailData.orderId}}</strong></p>
+        <p>Your card will be shipped to:</p>
+        <p><strong>{{emailData.shippingAddress}}</strong></p>
+        <p>Estimated delivery date: <strong>{{emailData.estimatedDelivery}}</strong></p>
+        <a href="{{trackingLink}}" class="cta-button">Track Your Order</a>
+        <p class="footer">If you have any questions, feel free to <a href="mailto:support@wond3rcard.com">contact us</a>.</p>
+        <p class="footer">— The WOND3R CARD Team</p>
+    </div>
+</body>
+</html>`,
 
   setup2faConfirmation: /*html*/ `<!DOCTYPE html>
 <html lang="en">

@@ -1,17 +1,13 @@
-import Stripe from "stripe";
+import stripe from "../../../../config/stripe";
 import HttpException from "../../../../exceptions/http.exception";
 
 class StripeService {
-  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-    apiVersion: "2023-10-16",
-  });
-
   public async createCheckoutSession(
     userId: string,
     amount: number
   ): Promise<string> {
     try {
-      const session = await this.stripe.checkout.sessions.create({
+      const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         line_items: [
           {

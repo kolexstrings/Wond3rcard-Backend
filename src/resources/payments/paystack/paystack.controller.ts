@@ -2,7 +2,8 @@ import { NextFunction, Request, Response, Router } from "express";
 import HttpException from "../../../exceptions/http.exception";
 import authenticatedMiddleware from "../../../middlewares/authenticated.middleware";
 import GeneralController from "../../../protocols/global.controller";
-import PaystackService from "./paystack.service";
+import PaystackSubscriptionService from "./paystack.service";
+import PaystackOrderService from "../../physical-card/order-physical-card/paystack/paystack.service";
 import userModel from "../../user/user.model";
 import validationMiddleware from "../../../middlewares/validation.middleware";
 import {
@@ -14,7 +15,8 @@ import crypto from "crypto";
 class PaystackController implements GeneralController {
   public path = "/paystack";
   public router = Router();
-  private paystackService = new PaystackService();
+  private paystackSubscriptionService = new PaystackSubscriptionService();
+  private paystackCardOrderService = new PaystackOrderService();
 
   constructor() {
     this.initializeRoute();
@@ -51,7 +53,7 @@ class PaystackController implements GeneralController {
       const user = await userModel.findById(userId);
       if (!user) return next(new HttpException(404, "error", "User not found"));
 
-      const checkout = await this.paystackService.initializePayment(
+      const checkout = await this.paystackSubscriptionService.initializePayment(
         userId,
         plan,
         billingCycle
@@ -96,9 +98,33 @@ class PaystackController implements GeneralController {
 
       if (event === "charge.success") {
         try {
-          const result = await this.paystackService.handleSuccessfulPayment(
-            data
-          );
+          const { metadata } = data;
+
+          if (!metadata || !metadata.transactionType) {
+            res.status(400).json({ message: "Missing transaction type" });
+          }
+
+          let result;
+
+          switch (metadata.transactionType) {
+            case "subscription":
+              result =
+                await this.paystackSubscriptionService.handleSuccessfulSubscription(
+                  data
+                );
+              break;
+
+            case "card_order":
+              result =
+                await this.paystackCardOrderService.handleSuccessfulCardOrder(
+                  data
+                );
+              break;
+
+            default:
+              res.status(400).json({ message: "Unknown transaction type" });
+          }
+
           res.status(200).json(result);
         } catch (error) {
           console.error("Error processing webhook:", error);
@@ -106,9 +132,9 @@ class PaystackController implements GeneralController {
             .status(200)
             .json({ message: "Webhook received but processing failed" });
         }
+      } else {
+        res.status(400).json({ message: "Unhandled event" });
       }
-
-      res.status(400).json({ message: "Unhandled event" });
     } catch (error) {
       console.error("Webhook error:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -128,9 +154,8 @@ class PaystackController implements GeneralController {
         );
       }
 
-      const verification = await this.paystackService.verifyTransaction(
-        reference
-      );
+      const verification =
+        await this.paystackSubscriptionService.verifyTransaction(reference);
 
       res.status(200).json({
         statusCode: 200,
