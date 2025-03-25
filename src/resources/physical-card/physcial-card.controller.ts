@@ -426,12 +426,10 @@ class PhysicalCardController implements GeneralController {
       const { cardId } = req.params;
       const { primaryColor, secondaryColor, finalDesign } = req.body;
 
-      // Validate the required fields
       if (!cardId) {
         return next(new HttpException(400, "error", "Card ID is required"));
       }
 
-      // Fetch the existing physical card to check if it exists
       const existingCard = await this.physicalCardService.getPhysicalCardById(
         cardId
       );
@@ -439,12 +437,30 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(404, "error", "Physical card not found"));
       }
 
-      // Update the physical card with the provided data
+      let updatedFinalDesign = finalDesign;
+      if (req.file) {
+        if (
+          ![".png", ".jpg", ".jpeg", ".svg"].includes(
+            path.extname(req.file.originalname).toLowerCase()
+          )
+        ) {
+          return next(
+            new HttpException(
+              400,
+              "error",
+              "Valid PNG/JPG/JPEG file is required for custom card"
+            )
+          );
+        }
+
+        updatedFinalDesign = req.file.path;
+      }
+
       const updatedCard = await this.physicalCardService.updatePhysicalCard(
         cardId,
         primaryColor,
         secondaryColor,
-        finalDesign
+        updatedFinalDesign
       );
 
       res.status(200).json({
@@ -465,12 +481,10 @@ class PhysicalCardController implements GeneralController {
     try {
       const { cardId } = req.params;
 
-      // Validate the required field
       if (!cardId) {
         return next(new HttpException(400, "error", "Card ID is required"));
       }
 
-      // Fetch the existing physical card to check if it exists
       const existingCard = await this.physicalCardService.getPhysicalCardById(
         cardId
       );
@@ -478,7 +492,6 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(404, "error", "Physical card not found"));
       }
 
-      // Call the service to delete the physical card
       await this.physicalCardService.deletePhysicalCard(cardId);
 
       res.status(200).json({
