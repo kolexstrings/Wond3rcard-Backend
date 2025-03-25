@@ -2,14 +2,10 @@ import HttpException from "../../exceptions/http.exception";
 import { CardTemplateModel, PhysicalCardModel } from "./physical-card.model";
 import { CardTemplate } from "./physical-card.protocol";
 import { PhysicalCard } from "./physical-card.protocol";
-import PaystackService from "./order-physical-card/paystack/paystack.service";
-import StripeService from "./order-physical-card/stripe/stripe.service";
 
 class PhysicalCardService {
   private cardTemplate = CardTemplateModel;
   private physicalCard = PhysicalCardModel;
-  private paystackService = new PaystackService();
-  private stripeService = new StripeService();
 
   public async createCardTemplate(
     name: string,
@@ -54,6 +50,54 @@ class PhysicalCardService {
       return template;
     } catch (error) {
       throw new HttpException(500, "error", "Failed to fetch template");
+    }
+  }
+
+  public async updateCardTemplate(
+    templateId: string,
+    name: string | undefined,
+    priceNaira: number | undefined,
+    priceUsd: number | undefined,
+    design: string | undefined
+  ): Promise<CardTemplate> {
+    try {
+      // Fetch the existing card template
+      const existingTemplate = await this.cardTemplate.findById(templateId);
+      if (!existingTemplate) {
+        throw new HttpException(404, "error", "Card template not found");
+      }
+
+      // Update the template properties if provided
+      if (name) {
+        existingTemplate.name = name;
+      }
+      if (priceNaira) {
+        existingTemplate.priceNaira = priceNaira;
+      }
+      if (priceUsd) {
+        existingTemplate.priceUsd = priceUsd;
+      }
+      if (design) {
+        existingTemplate.design = design;
+      }
+
+      const updatedTemplate = await existingTemplate.save();
+      return updatedTemplate;
+    } catch (error) {
+      throw new HttpException(500, "error", "Failed to update card template");
+    }
+  }
+
+  public async deleteCardTemplate(templateId: string): Promise<void> {
+    try {
+      const existingTemplate = await this.cardTemplate.findById(templateId);
+      if (!existingTemplate) {
+        throw new HttpException(404, "error", "Card template not found");
+      }
+
+      await this.cardTemplate.deleteOne({ _id: templateId });
+    } catch (error) {
+      throw new HttpException(500, "error", "Failed to delete card template");
     }
   }
 
@@ -135,6 +179,51 @@ class PhysicalCardService {
       return physicalCard;
     } catch (error) {
       throw new HttpException(500, "error", "Failed to fetch physical card");
+    }
+  }
+  public async updatePhysicalCard(
+    cardId: string,
+    primaryColor: string | undefined,
+    secondaryColor: string | undefined,
+    finalDesign: string | undefined
+  ): Promise<PhysicalCard> {
+    try {
+      // Fetch the existing physical card
+      const existingCard = await this.physicalCard.findById(cardId);
+      if (!existingCard) {
+        throw new HttpException(404, "error", "Physical card not found");
+      }
+
+      // Update the card properties if provided
+      if (primaryColor) {
+        existingCard.primaryColor = primaryColor;
+      }
+      if (secondaryColor) {
+        existingCard.secondaryColor = secondaryColor;
+      }
+      if (finalDesign) {
+        existingCard.finalDesign = finalDesign;
+      }
+
+      // Save the updated card
+      const updatedCard = await existingCard.save();
+      return updatedCard;
+    } catch (error) {
+      throw new HttpException(500, "error", "Failed to update physical card");
+    }
+  }
+
+  // Delete Physical Card
+  public async deletePhysicalCard(cardId: string): Promise<void> {
+    try {
+      const existingCard = await this.physicalCard.findById(cardId);
+      if (!existingCard) {
+        throw new HttpException(404, "error", "Physical card not found");
+      }
+
+      await this.physicalCard.deleteOne({ _id: cardId });
+    } catch (error) {
+      throw new HttpException(500, "error", "Failed to delete physical card");
     }
   }
 }

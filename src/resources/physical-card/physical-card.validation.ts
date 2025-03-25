@@ -42,10 +42,21 @@ const validateTemplateId = Joi.object({
   templateId: Joi.string().required(),
 });
 
+const validatePhysicalCardUpdate = Joi.object({
+  primaryColor: Joi.string()
+    .pattern(/^#([0-9A-Fa-f]{6})$/)
+    .optional(),
+  secondaryColor: Joi.string()
+    .pattern(/^#([0-9A-Fa-f]{6})$/)
+    .optional(),
+  finalDesign: Joi.string().optional(),
+});
+
 export default {
   validateCardTemplate,
   validatePhysicalCard,
   validateCustomPhysicalCard,
   validateGetPhysicalCardById,
   validateTemplateId,
+  validatePhysicalCardUpdate,
 };

@@ -48,6 +48,18 @@ class PhysicalCardController implements GeneralController {
       this.getTemplateById
     );
 
+    this.router.put(
+      `${this.path}/template/:templateId`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.updateCardTemplate
+    );
+
+    this.router.delete(
+      `${this.path}/template/:templateId`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.deleteCardTemplate
+    );
+
     this.router.post(
       `${this.path}/create-physical-card`,
       [
@@ -74,6 +86,19 @@ class PhysicalCardController implements GeneralController {
         validationMiddleware(validate.validateGetPhysicalCardById),
       ],
       this.getPhysicalCardById
+    );
+
+    this.router.put(
+      `${this.path}/update-physical-card/:cardId`,
+      authenticatedMiddleware,
+      validationMiddleware(validate.validatePhysicalCardUpdate),
+      this.updatePhysicalCard
+    );
+
+    this.router.delete(
+      `${this.path}/delete-physical-card/:cardId`,
+      authenticatedMiddleware,
+      this.deletePhysicalCard
     );
   }
 
@@ -162,6 +187,60 @@ class PhysicalCardController implements GeneralController {
         statusCode: 200,
         status: "success",
         payload: template,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private updateCardTemplate = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { templateId } = req.params;
+      const { name, priceNaira, priceUsd, design } = req.body;
+
+      // Validate required fields
+      if (!name && !priceNaira && !priceUsd && !design) {
+        return next(new HttpException(400, "error", "No fields to update"));
+      }
+
+      const updatedTemplate = await this.physicalCardService.updateCardTemplate(
+        templateId,
+        name,
+        priceNaira,
+        priceUsd,
+        design
+      );
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: updatedTemplate,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Delete Card Template
+  private deleteCardTemplate = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { templateId } = req.params;
+
+      // Delete the template using the service
+      await this.physicalCardService.deleteCardTemplate(templateId);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Card template deleted successfully",
       });
     } catch (error) {
       next(error);
@@ -309,6 +388,80 @@ class PhysicalCardController implements GeneralController {
         statusCode: 200,
         status: "success",
         payload: physicalCard,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private updatePhysicalCard = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { cardId } = req.params;
+      const { primaryColor, secondaryColor, finalDesign } = req.body;
+
+      // Validate the required fields
+      if (!cardId) {
+        return next(new HttpException(400, "error", "Card ID is required"));
+      }
+
+      // Fetch the existing physical card to check if it exists
+      const existingCard = await this.physicalCardService.getPhysicalCardById(
+        cardId
+      );
+      if (!existingCard) {
+        return next(new HttpException(404, "error", "Physical card not found"));
+      }
+
+      // Update the physical card with the provided data
+      const updatedCard = await this.physicalCardService.updatePhysicalCard(
+        cardId,
+        primaryColor,
+        secondaryColor,
+        finalDesign
+      );
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: updatedCard,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private deletePhysicalCard = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { cardId } = req.params;
+
+      // Validate the required field
+      if (!cardId) {
+        return next(new HttpException(400, "error", "Card ID is required"));
+      }
+
+      // Fetch the existing physical card to check if it exists
+      const existingCard = await this.physicalCardService.getPhysicalCardById(
+        cardId
+      );
+      if (!existingCard) {
+        return next(new HttpException(404, "error", "Physical card not found"));
+      }
+
+      // Call the service to delete the physical card
+      await this.physicalCardService.deletePhysicalCard(cardId);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Physical card deleted successfully",
       });
     } catch (error) {
       next(error);
