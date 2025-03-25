@@ -22,7 +22,26 @@ const PhysicalCardSchema = new Schema(
     quantity: { type: Number, required: true, min: 1 },
     primaryColor: { type: String, required: true },
     secondaryColor: { type: String, required: true },
-    finalDesign: { type: String, required: true }, // SVG string after customization
+    isCustom: { type: Boolean, required: true }, // New field to differentiate
+    finalDesign: {
+      type: String,
+      required: true,
+      validate: {
+        validator: function (value: string) {
+          if (this.isCustom) {
+            // Check if finalDesign is a file path (PNG/JPG/JPEG)
+            return /\.(png|jpg|jpeg)$/i.test(value);
+          } else {
+            // Check if finalDesign is an SVG string
+            return value.startsWith("<svg") && value.endsWith("</svg>");
+          }
+        },
+        message: (props) =>
+          props.instance.isCustom
+            ? "Final design must be a PNG, JPG, or JPEG file path"
+            : "Final design must be a valid SVG string",
+      },
+    },
     status: {
       type: String,
       enum: ["pending", "processing", "shipped", "delivered"],
