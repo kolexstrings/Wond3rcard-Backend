@@ -2,6 +2,7 @@ import HttpException from "../../exceptions/http.exception";
 import { CardTemplateModel, PhysicalCardModel } from "./physical-card.model";
 import { CardTemplate } from "./physical-card.protocol";
 import { PhysicalCard } from "./physical-card.protocol";
+import path from "path";
 
 class PhysicalCardService {
   private cardTemplate = CardTemplateModel;
@@ -194,7 +195,8 @@ class PhysicalCardService {
     cardId: string,
     primaryColor: string | undefined,
     secondaryColor: string | undefined,
-    finalDesign: string | undefined
+    finalDesign: string | undefined,
+    file: Express.Multer.File | undefined
   ): Promise<PhysicalCard> {
     try {
       // Fetch the existing physical card
@@ -210,7 +212,21 @@ class PhysicalCardService {
       if (secondaryColor) {
         existingCard.secondaryColor = secondaryColor;
       }
-      if (finalDesign) {
+
+      // Handle file update for finalDesign
+      if (file) {
+        // Validate the file extension (support PNG, JPG, JPEG, SVG)
+        const validExtensions = [".png", ".jpg", ".jpeg", ".svg"];
+        const fileExtension = path.extname(file.originalname).toLowerCase();
+        if (!validExtensions.includes(fileExtension)) {
+          throw new HttpException(
+            400,
+            "error",
+            "Invalid file type for finalDesign"
+          );
+        }
+        existingCard.finalDesign = file.path; // Save the new file's path
+      } else if (finalDesign) {
         existingCard.finalDesign = finalDesign;
       }
 

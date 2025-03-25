@@ -20,6 +20,8 @@ import TransactionsController from "./resources/payments/transactions.controller
 import GoogleMeetController from "./resources/cloud-meeting/google-meet/meet.controller";
 import ZoomController from "./resources/cloud-meeting/zoom/zoom.controller";
 import TeamController from "./resources/organization/team/team.controller";
+import PhysicalCardController from "./resources/physical-card/physcial-card.controller";
+import PhysicalCardOrderController from "./resources/physical-card/order-physical-card/order.controller";
 
 validateEnv();
 
@@ -44,6 +46,8 @@ const app = new App(
     new GoogleMeetController(),
     new ZoomController(),
     new TeamController(),
+    new PhysicalCardController(),
+    new PhysicalCardOrderController(),
   ],
   Number(process.env.PORT)
 );

@@ -3,7 +3,7 @@ import PhysicalCardService from "../physical-card.service";
 import PaystackService from "./paystack/paystack.service";
 import StripeService from "./stripe/stripe.service";
 import PhysicalCardOrder from "./order.model";
-import { IPhysicalCardOrder } from "./order.protocol";
+import IPhysicalCardOrder from "./order.protocol";
 
 class PhysicalCardOrderService {
   private physicalCardService = new PhysicalCardService();

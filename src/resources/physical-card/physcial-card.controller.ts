@@ -219,7 +219,7 @@ class PhysicalCardController implements GeneralController {
         name,
         priceNaira,
         priceUsd,
-        req.file // Pass the file (design) as part of the update
+        req.file
       );
 
       res.status(200).json({
@@ -460,7 +460,8 @@ class PhysicalCardController implements GeneralController {
         cardId,
         primaryColor,
         secondaryColor,
-        updatedFinalDesign
+        updatedFinalDesign,
+        req.file
       );
 
       res.status(200).json({
