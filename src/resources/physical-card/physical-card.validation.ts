@@ -2,7 +2,7 @@ import Joi from "joi";
 
 const validateCardTemplate = Joi.object({
   name: Joi.string().required(),
-  design: Joi.string().required(), // Assuming SVG as a string
+  design: Joi.string().optional(), // Assuming SVG as a string
   price: Joi.number().min(0).required(),
   createdBy: Joi.string().required(), // User ID as a string
 });

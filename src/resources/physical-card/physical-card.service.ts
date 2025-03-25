@@ -10,13 +10,15 @@ class PhysicalCardService {
   public async createCardTemplate(
     name: string,
     design: string,
-    price: number
+    priceNaira: number,
+    priceUsd: number
   ): Promise<CardTemplate> {
     try {
       const newTemplate = await this.cardTemplate.create({
         name,
         design,
-        price,
+        priceNaira,
+        priceUsd,
       });
       return newTemplate;
     } catch (error) {
@@ -24,32 +26,89 @@ class PhysicalCardService {
     }
   }
 
-  public async orderPhysicalCard(
+  public async getTemplates(): Promise<CardTemplate[]> {
+    try {
+      const templates = await this.cardTemplate.find();
+      return templates;
+    } catch (error) {
+      throw new HttpException(500, "error", "Failed to fetch card templates");
+    }
+  }
+
+  public async getTemplateById(
+    templateId: string
+  ): Promise<CardTemplate | null> {
+    try {
+      const template = await this.cardTemplate.findOne({
+        where: { id: templateId },
+      });
+
+      if (!template) {
+        return null;
+      }
+
+      return template;
+    } catch (error) {
+      throw new HttpException(500, "error", "Failed to fetch template");
+    }
+  }
+
+  public async createPhysicalCard(
     userId: string,
     cardId: string,
     templateId: string,
-    quantity: number,
+    templateName: string,
+    priceNaira: number,
+    priceUsd: number,
     primaryColor: string,
     secondaryColor: string,
-    finalSvg: string
+    svg: string
   ): Promise<PhysicalCard> {
     try {
-      const newOrder = await this.physicalCard.create({
+      const newPhysicalCard = await this.physicalCard.create({
         userId,
         cardId,
         templateId,
-        quantity,
+        templateName,
+        priceNaira,
+        priceUsd,
         primaryColor,
         secondaryColor,
-        finalSvg,
+        svg,
+        status: "pending", // Default status
+      });
+
+      return newPhysicalCard;
+    } catch (error) {
+      throw new HttpException(500, "error", "Failed to create physical card");
+    }
+  }
+
+  public async createCustomPhysicalCard(
+    userId: string,
+    cardId: string,
+    templateId: string,
+    primaryColor: string,
+    secondaryColor: string,
+    photo: string
+  ): Promise<any> {
+    try {
+      const newCustomCard = await PhysicalCardModel.create({
+        userId,
+        cardId,
+        templateId,
+        primaryColor,
+        secondaryColor,
+        photo,
         status: "pending",
       });
-      return newOrder;
+
+      return newCustomCard;
     } catch (error) {
       throw new HttpException(
         500,
         "error",
-        "Failed to place order for physical card"
+        "Failed to create custom physical card"
       );
     }
   }

@@ -3,7 +3,8 @@ import { Document, Types } from "mongoose";
 interface CardTemplate extends Document {
   name: string;
   design: string; // SVG string or file reference
-  price: number;
+  priceNaira: number;
+  priceUsd: number;
   createdBy: Types.ObjectId; // Reference to the admin who created it
 }
 

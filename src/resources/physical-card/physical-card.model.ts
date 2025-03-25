@@ -4,7 +4,8 @@ const CardTemplateSchema = new Schema(
   {
     name: { type: String, required: true, unique: true },
     design: { type: String, required: true }, // SVG string or file reference
-    price: { type: Number, required: true },
+    priceNaira: { type: Number, required: true },
+    priceUsd: { type: Number, required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }
