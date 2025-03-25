@@ -19,6 +19,12 @@ class PhysicalCardOrderController implements GeneralController {
       authenticatedMiddleware,
       this.createOrder
     );
+
+    this.router.post(
+      `${this.path}/create-manual`,
+      authenticatedMiddleware,
+      this.createManualOrder
+    );
   }
 
   private createOrder = async (
@@ -66,6 +72,58 @@ class PhysicalCardOrderController implements GeneralController {
         statusCode: 201,
         status: "success",
         payload: order,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private createManualOrder = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const {
+        userId,
+        physicalCardId,
+        cardTemplateId,
+        quantity,
+        region,
+        address,
+      } = req.body;
+
+      // Validate required fields
+      if (
+        !userId ||
+        !physicalCardId ||
+        !cardTemplateId ||
+        !quantity ||
+        !region ||
+        !address
+      ) {
+        res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: "Missing required fields",
+        });
+      }
+
+      // Call the service method for manual order creation
+      const { order, transaction } =
+        await this.physicalCardOrderService.createManualOrder(
+          userId,
+          physicalCardId,
+          cardTemplateId,
+          quantity,
+          region,
+          address
+        );
+
+      res.status(201).json({
+        statusCode: 201,
+        status: "success",
+        payload: { order, transaction },
       });
     } catch (error) {
       next(error);
