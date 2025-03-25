@@ -5,8 +5,10 @@ import GeneralController from "../../protocols/global.controller";
 import PhysicalCardService from "./physical-card.service";
 import multer from "multer";
 import { parsePrice } from "../../utils/parsePrice";
-import verifyOrgRolesMiddleware from "../../middlewares/orgnizationRoles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
+import verifyRolesMiddleware from "../../middlewares/roles.middleware";
+import { UserRole } from "../user/user.protocol";
+import validate from "./physical-card.validation";
 
 const upload = multer({ dest: "uploads/templates/" });
 
@@ -22,29 +24,57 @@ class PhysicalCardController implements GeneralController {
   initializeRoute(): void {
     this.router.post(
       `${this.path}/create-template`,
-      authenticatedMiddleware,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validate.validateCardTemplate),
+      ],
       upload.single("svg"),
       this.createTemplate
     );
 
-    this.router.get(`${this.path}/templates`, this.getTemplates);
+    this.router.get(
+      `${this.path}/templates`,
+      authenticatedMiddleware,
+      this.getTemplates
+    );
 
-    this.router.get(`${this.path}/template/:templateId`, this.getTemplateById);
+    this.router.get(
+      `${this.path}/template/:templateId`,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validate.validateTemplateId),
+      ],
+      this.getTemplateById
+    );
 
     this.router.post(
       `${this.path}/create-physical-card`,
-      authenticatedMiddleware,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validate.validateCustomPhysicalCard),
+      ],
       this.createPhysicalCard
     );
 
     this.router.post(
       `${this.path}/create-custom`,
-      authenticatedMiddleware,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validate.validateCustomPhysicalCard),
+      ],
       upload.single("photo"),
       this.createCustomPhysicalCard
     );
 
-    this.router.get(`${this.path}/physical/:cardId`, this.getPhysicalCardById);
+    this.router.get(
+      `${this.path}/physical/:cardId`,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validate.validateGetPhysicalCardById),
+      ],
+      this.getPhysicalCardById
+    );
   }
 
   private createTemplate = async (
