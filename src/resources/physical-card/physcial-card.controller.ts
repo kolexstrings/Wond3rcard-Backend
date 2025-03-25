@@ -42,6 +42,8 @@ class PhysicalCardController implements GeneralController {
       upload.single("photo"),
       this.createCustomPhysicalCard
     );
+
+    this.router.get(`${this.path}/physical/:cardId`, this.getPhysicalCardById);
   }
 
   private createTemplate = async (
@@ -250,6 +252,37 @@ class PhysicalCardController implements GeneralController {
   private getPhotoUrl(file: Express.Multer.File): string {
     return file.path; // Modify if using S3/Cloudinary
   }
+
+  private getPhysicalCardById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { cardId } = req.params;
+
+      // Validate cardId
+      if (!cardId) {
+        return next(new HttpException(400, "error", "Card ID is required"));
+      }
+
+      const physicalCard = await this.physicalCardService.getPhysicalCardById(
+        cardId
+      );
+
+      if (!physicalCard) {
+        return next(new HttpException(404, "error", "Physical card not found"));
+      }
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: physicalCard,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export default PhysicalCardController;

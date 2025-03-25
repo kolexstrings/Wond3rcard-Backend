@@ -2,10 +2,14 @@ import HttpException from "../../exceptions/http.exception";
 import { CardTemplateModel, PhysicalCardModel } from "./physical-card.model";
 import { CardTemplate } from "./physical-card.protocol";
 import { PhysicalCard } from "./physical-card.protocol";
+import PaystackService from "./order-physical-card/paystack/paystack.service";
+import StripeService from "./order-physical-card/stripe/stripe.service";
 
 class PhysicalCardService {
   private cardTemplate = CardTemplateModel;
   private physicalCard = PhysicalCardModel;
+  private paystackService = new PaystackService();
+  private stripeService = new StripeService();
 
   public async createCardTemplate(
     name: string,
@@ -113,6 +117,24 @@ class PhysicalCardService {
       return populatedPhysicalCard;
     } catch (error) {
       throw new HttpException(500, "error", "Failed to create physical card");
+    }
+  }
+
+  public async getPhysicalCardById(
+    cardId: string
+  ): Promise<PhysicalCard | null> {
+    try {
+      const physicalCard = await this.physicalCard
+        .findById(cardId)
+        .populate("cardTemplate", "name priceNaira priceUsd");
+
+      if (!physicalCard) {
+        return null;
+      }
+
+      return physicalCard;
+    } catch (error) {
+      throw new HttpException(500, "error", "Failed to fetch physical card");
     }
   }
 }

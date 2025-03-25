@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import { PhysicalCardStatus } from "./physical-card.protocol";
+import { Types } from "mongoose";
 
 const CardTemplateSchema = new Schema(
   {
