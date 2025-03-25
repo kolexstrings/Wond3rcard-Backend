@@ -42,7 +42,7 @@ class PhysicalCardOrderController implements GeneralController {
 
     this.router.get(
       `${this.path}/`,
-      [authenticatedMiddleware],
+      [authenticatedMiddleware, verifyOrgRolesMiddleware([UserRole.Admin])],
       this.getAllOrders
     );
 

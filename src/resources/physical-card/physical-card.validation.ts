@@ -1,29 +1,51 @@
 import Joi from "joi";
 
+// Validation for creating a card template
 const validateCardTemplate = Joi.object({
   name: Joi.string().required(),
-  design: Joi.string().optional(), // Assuming SVG as a string
-  price: Joi.number().min(0).required(),
-  createdBy: Joi.string().required(), // User ID as a string
+  priceNaira: Joi.string().required(),
+  priceUsd: Joi.string().required(),
 });
 
-const validatePhysicalCardOrder = Joi.object({
-  user: Joi.string().required(), // User ID
-  cardTemplate: Joi.string().required(), // Template ID
-  quantity: Joi.number().integer().min(1).required(),
+// Validation for creating a physical card
+const validatePhysicalCard = Joi.object({
+  userId: Joi.string().required(),
+  cardId: Joi.string().required(),
+  templateId: Joi.string().required(),
   primaryColor: Joi.string()
     .pattern(/^#([0-9A-Fa-f]{6})$/)
     .required(),
   secondaryColor: Joi.string()
     .pattern(/^#([0-9A-Fa-f]{6})$/)
     .required(),
-  finalDesign: Joi.string().required(), // Final SVG string
-  status: Joi.string()
-    .valid("pending", "processing", "shipped", "delivered")
+  finalDesign: Joi.string().required(),
+});
+
+const validateCustomPhysicalCard = Joi.object({
+  userId: Joi.string().required(),
+  cardId: Joi.string().required(),
+  templateId: Joi.string().required(),
+  primaryColor: Joi.string()
+    .pattern(/^#([0-9A-Fa-f]{6})$/)
     .required(),
+  secondaryColor: Joi.string()
+    .pattern(/^#([0-9A-Fa-f]{6})$/)
+    .required(),
+  photo: Joi.string().required(),
+});
+
+const validateGetPhysicalCardById = Joi.object({
+  cardId: Joi.string().required(),
+});
+
+const validateTemplateId = Joi.object({
+  templateId: Joi.string().required(),
 });
 
 export default {
   validateCardTemplate,
-  validatePhysicalCardOrder,
+  validatePhysicalCard,
+  validateCustomPhysicalCard,
+  validateGetPhysicalCardById,
+  validateTemplateId,
 };
