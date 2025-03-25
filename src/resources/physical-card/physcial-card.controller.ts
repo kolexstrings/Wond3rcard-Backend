@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response, Router } from "express";
+import path from "path";
 import HttpException from "../../exceptions/http.exception";
 import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
 import GeneralController from "../../protocols/global.controller";
@@ -10,8 +11,7 @@ import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import { UserRole } from "../user/user.protocol";
 import validate from "./physical-card.validation";
 import { uploadCardTemplateMiddleware } from "../../multer-config/card-templates";
-
-const upload = multer({ dest: "uploads/templates/" });
+import { uploadPhysicalCardMiddleware } from "../../multer-config/physica-cards";
 
 class PhysicalCardController implements GeneralController {
   public path = "/phy-cards";
@@ -68,6 +68,7 @@ class PhysicalCardController implements GeneralController {
         authenticatedMiddleware,
         validationMiddleware(validate.validateCustomPhysicalCard),
       ],
+      uploadPhysicalCardMiddleware,
       this.createPhysicalCard
     );
 
@@ -77,7 +78,7 @@ class PhysicalCardController implements GeneralController {
         authenticatedMiddleware,
         validationMiddleware(validate.validateCustomPhysicalCard),
       ],
-      upload.single("photo"),
+      uploadPhysicalCardMiddleware,
       this.createCustomPhysicalCard
     );
 
@@ -240,7 +241,6 @@ class PhysicalCardController implements GeneralController {
     try {
       const { templateId } = req.params;
 
-      // Delete the template using the service
       await this.physicalCardService.deleteCardTemplate(templateId);
 
       res.status(200).json({
@@ -259,14 +259,8 @@ class PhysicalCardController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const {
-        userId,
-        cardId,
-        templateId,
-        primaryColor,
-        secondaryColor,
-        finalDesign,
-      } = req.body;
+      const { userId, cardId, templateId, primaryColor, secondaryColor } =
+        req.body;
 
       // Validate required fields
       if (
@@ -279,6 +273,20 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(400, "error", "Missing required fields"));
       }
 
+      // Validate SVG file upload for physical card
+      if (
+        !req.file ||
+        path.extname(req.file.originalname).toLowerCase() !== ".svg"
+      ) {
+        return next(
+          new HttpException(
+            400,
+            "error",
+            "SVG file is required for physical card"
+          )
+        );
+      }
+
       // Fetch template details
       const template = await this.physicalCardService.getTemplateById(
         templateId
@@ -287,14 +295,17 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(404, "error", "Template not found"));
       }
 
-      // Call the service to create the physical card
+      // Get the photo path (from Multer storage)
+      const photoPath = req.file.path; // Multer stores the file in the 'path' field
+
+      // Create physical card
       const physicalCard = await this.physicalCardService.createPhysicalCard(
         userId,
         cardId,
         templateId,
         primaryColor,
         secondaryColor,
-        finalDesign
+        photoPath
       );
 
       res.status(201).json({
@@ -327,9 +338,20 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(400, "error", "Missing required fields"));
       }
 
-      // Validate photo upload
-      if (!req.file) {
-        return next(new HttpException(400, "error", "Photo is required"));
+      // Validate image upload for custom card
+      if (
+        !req.file ||
+        ![".png", ".jpg", ".jpeg"].includes(
+          path.extname(req.file.originalname).toLowerCase()
+        )
+      ) {
+        return next(
+          new HttpException(
+            400,
+            "error",
+            "Valid PNG/JPG/JPEG file is required for custom card"
+          )
+        );
       }
 
       // Fetch template details
@@ -340,8 +362,8 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(404, "error", "Template not found"));
       }
 
-      // Get photo path safely
-      const photoPath = this.getPhotoUrl(req.file);
+      // Get the photo path (from Multer storage)
+      const photoPath = req.file.path; // Multer stores the file in the 'path' field
 
       // Create custom physical card
       const customCard =
@@ -363,11 +385,6 @@ class PhysicalCardController implements GeneralController {
       next(error);
     }
   };
-
-  // Utility function for getting the correct photo URL
-  private getPhotoUrl(file: Express.Multer.File): string {
-    return file.path; // Modify if using S3/Cloudinary
-  }
 
   private getPhysicalCardById = async (
     req: Request,

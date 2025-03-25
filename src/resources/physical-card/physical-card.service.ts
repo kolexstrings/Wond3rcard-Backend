@@ -108,19 +108,24 @@ class PhysicalCardService {
     userId: string,
     cardId: string,
     templateId: string,
-    finalDesign: string,
+    finalDesign: string, // This will be the file path (from Multer)
     primaryColor: string,
     secondaryColor: string
   ): Promise<PhysicalCard> {
     try {
-      // Create the physical card
+      // Ensure the finalDesign is provided
+      if (!finalDesign) {
+        throw new HttpException(400, "error", "Design file is required");
+      }
+
+      // Create the physical card with the uploaded final design file path
       const newPhysicalCard = await this.physicalCard.create({
         user: userId,
         cardId,
         cardTemplate: templateId,
         primaryColor,
         secondaryColor,
-        finalDesign,
+        finalDesign, // Save the path of the uploaded design file
         isCustom: false,
         status: "pending",
       });
@@ -145,6 +150,7 @@ class PhysicalCardService {
     finalDesign: string
   ): Promise<PhysicalCard> {
     try {
+      // Create the physical card with the provided details
       const newPhysicalCard = await this.physicalCard.create({
         user: userId,
         cardId,
