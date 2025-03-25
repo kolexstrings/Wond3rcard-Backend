@@ -4,7 +4,7 @@ import userModel from "../../user/user.model";
 import TransactionModel from "../transactions.model";
 import { generateTransactionId } from "../../../utils/generateTransactionId";
 
-class StripeService {
+class StripeSubscriptionService {
   async createCheckoutSession(
     userId: string,
     plan: string,
@@ -37,7 +37,7 @@ class StripeService {
     });
   }
 
-  public async handleSuccessfulPayment(session: any) {
+  public async handleSuccessfulSubscription(session: any) {
     const { userId, plan, billingCycle, expiresAt } = session.metadata;
 
     const user = await userModel.findById(userId);
@@ -78,4 +78,4 @@ class StripeService {
   }
 }
 
-export default new StripeService();
+export default StripeSubscriptionService;

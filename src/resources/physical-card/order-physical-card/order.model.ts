@@ -1,15 +1,6 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model } from "mongoose";
 import { PhysicalCardStatus } from "../physical-card.protocol";
-
-interface IPhysicalCardOrder extends Document {
-  userId: string;
-  cardId: string;
-  quantity: number;
-  region: string;
-  price: number;
-  status: "pending" | "paid" | "shipped";
-  createdAt: Date;
-}
+import { IPhysicalCardOrder } from "./order.protocol";
 
 const PhysicalCardOrderSchema = new Schema<IPhysicalCardOrder>(
   {
@@ -17,6 +8,7 @@ const PhysicalCardOrderSchema = new Schema<IPhysicalCardOrder>(
     cardId: { type: String, required: true },
     quantity: { type: Number, required: true },
     region: { type: String, required: true },
+    address: { type: String, required: true },
     price: { type: Number, required: true },
     status: {
       type: String,

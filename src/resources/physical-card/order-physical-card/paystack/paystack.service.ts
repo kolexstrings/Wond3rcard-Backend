@@ -6,6 +6,7 @@ import TransactionModel from "../../../payments/transactions.model";
 import { PhysicalCardModel } from "../../physical-card.model";
 import { generateTransactionId } from "../../../../utils/generateTransactionId";
 import MailTemplates from "../../../mails/mail.templates";
+import { PhysicalCardStatus } from "../../physical-card.protocol";
 
 class PaystackOrderService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY;
@@ -13,7 +14,9 @@ class PaystackOrderService {
   private mailer = new NodeMailerService();
   public async initializePayment(
     userId: string,
-    amount: number
+    amount: number,
+    orderId: string,
+    address: string
   ): Promise<string> {
     try {
       const user = await userModel.findById(userId);
@@ -27,6 +30,9 @@ class PaystackOrderService {
           callback_url: `${process.env.FRONTEND_URL}/payment-success`,
           metadata: {
             transactionType: "card_order",
+            userId,
+            orderId,
+            address,
           },
         },
         {
@@ -63,7 +69,7 @@ class PaystackOrderService {
   }
 
   public async handleSuccessfulCardOrder(data: any) {
-    const { userId, cardId, quantity, region, price } = data.metadata;
+    const { userId, orderId, transactionType, address } = data.metadata;
 
     // Fetch the user
     const user = await userModel.findById(userId);
@@ -77,6 +83,10 @@ class PaystackOrderService {
       return { message: "Transaction already processed" };
     }
 
+    // Find the existing order
+    const order = await PhysicalCardModel.findById(orderId);
+    if (!order) throw new HttpException(404, "error", "Order not found");
+
     // Extract payment details
     const transactionId = data.id;
     const referenceId = generateTransactionId("card_order", "paystack");
@@ -84,16 +94,9 @@ class PaystackOrderService {
     const paymentMethod = data.channel;
     const paidAt = new Date(data.paid_at);
 
-    // Create a new order
-    const newOrder = await PhysicalCardModel.create({
-      userId,
-      cardId,
-      quantity,
-      region,
-      price,
-      status: "paid",
-      createdAt: paidAt,
-    });
+    // Update order status to "paid"
+    order.status = PhysicalCardStatus.Paid;
+    await order.save();
 
     // Save transaction log
     await TransactionModel.create({
@@ -103,7 +106,7 @@ class PaystackOrderService {
       amount,
       transactionId,
       referenceId,
-      transactionType: "card_order",
+      transactionType,
       status: "success",
       paymentProvider: "paystack",
       paymentMethod,
@@ -115,11 +118,10 @@ class PaystackOrderService {
     const email = user.email;
     const emailData = {
       name: user.username,
-      cardId,
-      quantity,
-      region,
-      price,
+      address,
+      price: String(amount),
       paidAt: paidAt.toDateString(),
+      orderId,
     };
 
     await this.mailer.sendMail(
@@ -130,7 +132,7 @@ class PaystackOrderService {
       emailData
     );
 
-    return { message: "Order placed successfully", orderId: newOrder._id };
+    return { message: "Order placed successfully", orderId: orderId };
   }
 }
 

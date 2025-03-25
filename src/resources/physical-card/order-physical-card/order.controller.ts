@@ -27,8 +27,14 @@ class PhysicalCardOrderController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { userId, physicalCardId, cardTemplateId, quantity, region } =
-        req.body;
+      const {
+        userId,
+        physicalCardId,
+        cardTemplateId,
+        quantity,
+        region,
+        address,
+      } = req.body;
 
       // Validate required fields
       if (
@@ -36,7 +42,8 @@ class PhysicalCardOrderController implements GeneralController {
         !physicalCardId ||
         !cardTemplateId ||
         !quantity ||
-        !region
+        !region ||
+        !address
       ) {
         res.status(400).json({
           statusCode: 400,
@@ -51,7 +58,8 @@ class PhysicalCardOrderController implements GeneralController {
         physicalCardId,
         cardTemplateId,
         quantity,
-        region
+        region,
+        address
       );
 
       res.status(201).json({

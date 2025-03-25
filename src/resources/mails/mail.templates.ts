@@ -179,9 +179,8 @@ const MailTemplates = {
         <p>Your physical card order has been successfully placed.</p>
         <p>Order ID: <strong>{{emailData.orderId}}</strong></p>
         <p>Your card will be shipped to:</p>
-        <p><strong>{{emailData.shippingAddress}}</strong></p>
+        <p><strong>{{emailData.address}}</strong></p>
         <p>Estimated delivery date: <strong>{{emailData.estimatedDelivery}}</strong></p>
-        <a href="{{trackingLink}}" class="cta-button">Track Your Order</a>
         <p class="footer">If you have any questions, feel free to <a href="mailto:support@wond3rcard.com">contact us</a>.</p>
         <p class="footer">— The WOND3R CARD Team</p>
     </div>

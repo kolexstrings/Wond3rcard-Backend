@@ -14,7 +14,8 @@ class PhysicalCardOrderService {
     physicalCardId: string,
     cardTemplateId: string,
     quantity: number,
-    region: string
+    region: string,
+    address: string
   ) {
     // Fetch card template details (includes price)
     const cardTemplate = await this.physicalCardService.getTemplateById(
@@ -25,42 +26,49 @@ class PhysicalCardOrderService {
     }
 
     const { priceNaira, priceUsd } = cardTemplate;
+    const totalPrice =
+      region.toLowerCase() === "nigeria"
+        ? quantity * priceNaira
+        : quantity * priceUsd;
+    const currency = region.toLowerCase() === "nigeria" ? "NGN" : "USD";
 
-    let totalPrice: number;
-    let paymentUrl: string;
-    let currency: string;
-
-    // Determine pricing and payment gateway
-    if (region.toLowerCase() === "nigeria") {
-      totalPrice = quantity * priceNaira;
-      paymentUrl = await this.paystackService.initializePayment(
-        userId,
-        totalPrice
-      );
-      currency = "NGN";
-    } else {
-      totalPrice = quantity * priceUsd;
-      paymentUrl = await this.stripeService.createCheckoutSession(
-        userId,
-        totalPrice
-      );
-      currency = "USD";
-    }
-
-    // Save order to database
+    // **Create the order first**
     const order = await PhysicalCardOrder.create({
       userId,
       cardId: physicalCardId,
       quantity,
       region,
-      totalPrice,
+      address,
+      price: totalPrice,
       status: "pending",
     });
+
+    const { _id: orderId } = order; // Extract orderId
+
+    // **Now initialize payment with orderId**
+    const paymentUrl =
+      region.toLowerCase() === "nigeria"
+        ? await this.paystackService.initializePayment(
+            userId,
+            totalPrice,
+            orderId,
+            address
+          )
+        : await this.stripeService.createCheckoutSession(
+            userId,
+            totalPrice,
+            orderId,
+            address
+          );
+
+    // **Update the order with the paymentUrl**
+    await PhysicalCardOrder.findByIdAndUpdate(orderId, { paymentUrl });
 
     // Populate the physicalCard details before returning
     const populatedOrder = await order.populate("cardId");
 
     return {
+      orderId,
       ...populatedOrder.toObject(),
       paymentUrl, // Include the generated payment link
       currency,

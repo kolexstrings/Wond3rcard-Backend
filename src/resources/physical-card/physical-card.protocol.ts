@@ -2,6 +2,7 @@ import { Document, Types } from "mongoose";
 
 enum PhysicalCardStatus {
   Pending = "pending",
+  Paid = "paid",
   Processing = "processing",
   Shipped = "shipped",
   Delivered = "delivered",
