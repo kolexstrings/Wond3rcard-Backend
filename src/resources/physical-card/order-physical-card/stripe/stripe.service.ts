@@ -2,10 +2,11 @@ import stripe from "../../../../config/stripe";
 import HttpException from "../../../../exceptions/http.exception";
 import userModel from "../../../user/user.model";
 import TransactionModel from "../../../payments/transactions.model";
-import { PhysicalCardModel } from "../../physical-card.model";
+import PhysicalCardOrder from "../order.model";
 import { generateTransactionId } from "../../../../utils/generateTransactionId";
 import NodeMailerService from "../../../mails/nodemailer.service";
 import MailTemplates from "../../../mails/mail.templates";
+import { PhysicalCardStatus } from "../../physical-card.protocol";
 
 class StripeOrderService {
   private mailer = new NodeMailerService();
@@ -31,8 +32,8 @@ class StripeOrderService {
           },
         ],
         mode: "payment",
-        success_url: `${process.env.FRONTEND_URL}/payment-success`,
-        cancel_url: `${process.env.FRONTEND_URL}/payment-failed`,
+        success_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
+        cancel_url: `${process.env.FRONTEND_BASE_URL}/payment-failed`,
         metadata: {
           userId,
           transactionType: "card_order",
@@ -71,8 +72,11 @@ class StripeOrderService {
     }
 
     // Find the existing order
-    const order = await PhysicalCardModel.findById(orderId);
+    const order = await PhysicalCardOrder.findById(orderId);
     if (!order) throw new HttpException(404, "error", "Order not found");
+
+    order.status = PhysicalCardStatus.Paid;
+    await order.save();
 
     // Store transaction details
     await TransactionModel.create({

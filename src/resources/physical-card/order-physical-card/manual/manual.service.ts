@@ -3,14 +3,11 @@ import HttpException from "../../../../exceptions/http.exception";
 import NodeMailerService from "../../../mails/nodemailer.service";
 import userModel from "../../../user/user.model";
 import TransactionModel from "../../../payments/transactions.model";
-import { PhysicalCardModel } from "../../physical-card.model";
 import { generateTransactionId } from "../../../../utils/generateTransactionId";
 import MailTemplates from "../../../mails/mail.templates";
 import PhysicalCardService from "../../physical-card.service";
-
+import PhysicalCardOrder from "../order.model";
 class ManualOrderService {
-  private secretKey = process.env.PAYSTACK_SECRET_KEY;
-  private baseUrl = "https://api.paystack.co";
   private mailer = new NodeMailerService();
   private physicalCardService = new PhysicalCardService();
   public async createManualOrder(
@@ -32,7 +29,7 @@ class ManualOrderService {
       throw new HttpException(404, "error", "Card template not found");
     }
 
-    const referenceId = generateTransactionId("card_order", "paystack");
+    const referenceId = generateTransactionId("card_order", "manual");
     const paidAt = new Date();
     const { priceNaira, priceUsd } = cardTemplate;
 
@@ -45,14 +42,14 @@ class ManualOrderService {
     }
 
     // Save the order in PhysicalCardOrder
-    const order = await PhysicalCardModel.create({
+    const order = await PhysicalCardOrder.create({
       userId,
       cardId: physicalCardId,
       quantity,
       region,
       address,
       price: totalPrice,
-      status: "success",
+      status: "paid",
     });
     const orderId = order._id.toString();
 

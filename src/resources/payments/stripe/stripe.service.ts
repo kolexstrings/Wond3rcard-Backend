@@ -31,9 +31,9 @@ class StripeSubscriptionService {
         },
       ],
       mode: "subscription",
-      metadata: { userId, plan, billingCycle },
-      success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/payment-failed`,
+      metadata: { userId, plan, billingCycle, transactionType: "subscription" },
+      success_url: `${process.env.FRONTEND_BASE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_BASE_URL}/payment-failed`,
     });
   }
 
