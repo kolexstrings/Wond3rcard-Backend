@@ -26,24 +26,6 @@ class TransactionsController {
     );
   }
 
-  // private async getTransactions(
-  //   req: Request,
-  //   res: Response,
-  //   next: NextFunction
-  // ): Promise<void> {
-  //   try {
-  //     const { provider } = req.query;
-  //     const filter = provider ? { paymentProvider: provider } : {};
-  //     const transactions = await TransactionModel.find(filter).sort({
-  //       createdAt: -1,
-  //     });
-
-  //     res.status(200).json({ status: "success", transactions });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // }
-
   private async getTransactions(
     req: Request,
     res: Response,
@@ -63,7 +45,8 @@ class TransactionsController {
       if (req.query.transactionId)
         filter.transactionId = req.query.transactionId;
       if (req.query.referenceId) filter.referenceId = req.query.referenceId;
-
+      if (req.query.transactionType)
+        filter.transactionType = req.query.transactionType;
       // Handle date range filtering dynamically
       if (req.query.startDate || req.query.endDate) {
         filter.createdAt = {};

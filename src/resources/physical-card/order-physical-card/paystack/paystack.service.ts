@@ -7,6 +7,7 @@ import { PhysicalCardModel } from "../../physical-card.model";
 import { generateTransactionId } from "../../../../utils/generateTransactionId";
 import MailTemplates from "../../../mails/mail.templates";
 import { PhysicalCardStatus } from "../../physical-card.protocol";
+import PhysicalCardOrder from "../order.model";
 
 class PaystackOrderService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY;
@@ -27,7 +28,7 @@ class PaystackOrderService {
           email: user.email,
           amount: amount * 100, // Convert to kobo
           currency: "NGN",
-          callback_url: `${process.env.FRONTEND_URL}/payment-success`,
+          callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
           metadata: {
             transactionType: "card_order",
             userId,
@@ -84,7 +85,7 @@ class PaystackOrderService {
     }
 
     // Find the existing order
-    const order = await PhysicalCardModel.findById(orderId);
+    const order = await PhysicalCardOrder.findById(orderId);
     if (!order) throw new HttpException(404, "error", "Order not found");
 
     // Extract payment details

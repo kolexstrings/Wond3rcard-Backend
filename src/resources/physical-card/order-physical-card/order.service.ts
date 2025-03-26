@@ -25,20 +25,20 @@ class PhysicalCardOrderService {
     if (!cardTemplate) {
       throw new HttpException(404, "error", "Card template not found");
     }
-
+    const formattedRegion = region.toLowerCase();
     const { priceNaira, priceUsd } = cardTemplate;
     const totalPrice =
-      region.toLowerCase() === "nigeria"
+      formattedRegion === "nigeria"
         ? quantity * priceNaira
         : quantity * priceUsd;
-    const currency = region.toLowerCase() === "nigeria" ? "NGN" : "USD";
+    const currency = formattedRegion === "nigeria" ? "NGN" : "USD";
 
     // **Create the order first**
     const order = await PhysicalCardOrder.create({
       userId,
       cardId: physicalCardId,
       quantity,
-      region,
+      region: formattedRegion,
       address,
       price: totalPrice,
       status: "pending",

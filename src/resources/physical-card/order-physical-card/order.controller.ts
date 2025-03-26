@@ -5,7 +5,7 @@ import GeneralController from "../../../protocols/global.controller";
 import PhysicalCardOrderService from "./order.service";
 import ManualOrderService from "./manual/manual.service";
 import validationMiddleware from "../../../middlewares/validation.middleware";
-import verifyOrgRolesMiddleware from "../../../middlewares/orgnizationRoles.middleware";
+import verifyRolesMiddleware from "../../../middlewares/roles.middleware";
 import { UserRole } from "../../user/user.protocol";
 import validate from "./order.validation";
 
@@ -33,7 +33,7 @@ class PhysicalCardOrderController implements GeneralController {
       `${this.path}/create-manual`,
       [
         authenticatedMiddleware,
-        verifyOrgRolesMiddleware([UserRole.Admin]),
+        verifyRolesMiddleware([UserRole.Admin]),
         validationMiddleware(validate.validateCreateManualOrder),
       ],
 
@@ -42,7 +42,7 @@ class PhysicalCardOrderController implements GeneralController {
 
     this.router.get(
       `${this.path}/`,
-      [authenticatedMiddleware, verifyOrgRolesMiddleware([UserRole.Admin])],
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getAllOrders
     );
 
