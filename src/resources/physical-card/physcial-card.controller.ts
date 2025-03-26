@@ -34,6 +34,16 @@ class PhysicalCardController implements GeneralController {
       this.createTemplate
     );
 
+    this.router.post(
+      `${this.path}/create-custom-template`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        validationMiddleware(validate.validateCardTemplate),
+      ],
+      this.createCustomTemplate
+    );
+
     this.router.get(
       `${this.path}/templates`,
       authenticatedMiddleware,
@@ -47,13 +57,23 @@ class PhysicalCardController implements GeneralController {
     );
 
     this.router.put(
-      `${this.path}/template/:templateId`,
+      `${this.path}/update-card-template/:templateId`,
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
         uploadCardTemplateMiddleware,
       ],
       this.updateCardTemplate
+    );
+
+    this.router.put(
+      `${this.path}/update-custom-card-template/:templateId`,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        uploadCardTemplateMiddleware,
+      ],
+      this.updateCustomCardTemplate
     );
 
     this.router.delete(
@@ -104,6 +124,12 @@ class PhysicalCardController implements GeneralController {
       authenticatedMiddleware,
       validationMiddleware(validate.validatePhysicalCardUpdate),
       this.updatePhysicalCard
+    );
+
+    this.router.put(
+      `${this.path}/update-custom-physical-card/:cardId`,
+      [authenticatedMiddleware, uploadPhysicalCardMiddleware],
+      this.updateCustomPhysicalCard
     );
 
     this.router.delete(

@@ -31,7 +31,6 @@ const validateCustomPhysicalCard = Joi.object({
   secondaryColor: Joi.string()
     .pattern(/^#([0-9A-Fa-f]{6})$/)
     .required(),
-  photo: Joi.string().required(),
 });
 
 // const validateGetPhysicalCardById = Joi.object({

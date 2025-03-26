@@ -4,7 +4,7 @@ import { PhysicalCardStatus } from "./physical-card.protocol";
 const CardTemplateSchema = new Schema(
   {
     name: { type: String, required: true, unique: true },
-    design: { type: String, required: true }, // SVG string or file reference
+    design: { type: String, required: false }, // SVG string or file reference
     priceNaira: { type: Number, required: true },
     priceUsd: { type: Number, required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },

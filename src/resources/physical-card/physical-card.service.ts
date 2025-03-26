@@ -63,7 +63,7 @@ class PhysicalCardService {
     name?: string,
     priceNaira?: number,
     priceUsd?: number,
-    file?: Express.Multer.File // Make file optional
+    file?: Express.Multer.File
   ): Promise<CardTemplate> {
     try {
       // Fetch the existing template

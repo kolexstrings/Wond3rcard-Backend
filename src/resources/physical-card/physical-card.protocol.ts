@@ -10,7 +10,7 @@ enum PhysicalCardStatus {
 
 interface CardTemplate extends Document {
   name: string;
-  design: string; // SVG string or file reference
+  design?: string; // SVG string or file reference
   priceNaira: number;
   priceUsd: number;
   createdBy: Types.ObjectId; // Reference to the admin who created it
