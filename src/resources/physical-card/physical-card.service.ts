@@ -2,7 +2,7 @@ import HttpException from "../../exceptions/http.exception";
 import { CardTemplateModel, PhysicalCardModel } from "./physical-card.model";
 import { CardTemplate } from "./physical-card.protocol";
 import { PhysicalCard } from "./physical-card.protocol";
-import path from "path";
+import { Types } from "mongoose";
 
 class PhysicalCardService {
   private cardTemplate = CardTemplateModel;
@@ -13,7 +13,7 @@ class PhysicalCardService {
     design: string,
     priceNaira: number,
     priceUsd: number,
-    createdBy: string // Add createdBy parameter
+    createdBy: string
   ): Promise<CardTemplate> {
     try {
       const newTemplate = await this.cardTemplate.create({
@@ -21,7 +21,7 @@ class PhysicalCardService {
         design,
         priceNaira,
         priceUsd,
-        createdBy, // Include createdBy field
+        createdBy,
       });
       return newTemplate;
     } catch (error) {
@@ -42,8 +42,10 @@ class PhysicalCardService {
     templateId: string
   ): Promise<CardTemplate | null> {
     try {
+      console.log("Template in service: ", templateId);
+
       const template = await this.cardTemplate.findOne({
-        where: { id: templateId },
+        _id: new Types.ObjectId(templateId),
       });
 
       if (!template) {
@@ -52,38 +54,32 @@ class PhysicalCardService {
 
       return template;
     } catch (error) {
-      throw new HttpException(500, "error", "Failed to fetch template");
+      throw new HttpException(500, "Failed to fetch template: ", error);
     }
   }
 
   public async updateCardTemplate(
     templateId: string,
-    name: string | undefined,
-    priceNaira: number | undefined,
-    priceUsd: number | undefined,
-    file: Express.Multer.File | undefined
+    name?: string,
+    priceNaira?: number,
+    priceUsd?: number,
+    file?: Express.Multer.File // Make file optional
   ): Promise<CardTemplate> {
     try {
-      // Fetch the existing card template
+      // Fetch the existing template
       const existingTemplate = await this.cardTemplate.findById(templateId);
       if (!existingTemplate) {
-        throw new HttpException(404, "error", "Card template not found");
+        throw new HttpException(404, "error", "Template not found");
       }
 
-      // Update the template properties if provided
-      if (name) {
-        existingTemplate.name = name;
-      }
-      if (priceNaira) {
-        existingTemplate.priceNaira = priceNaira;
-      }
-      if (priceUsd) {
-        existingTemplate.priceUsd = priceUsd;
-      }
+      // Update only provided fields
+      if (name) existingTemplate.name = name;
+      if (priceNaira !== undefined) existingTemplate.priceNaira = priceNaira;
+      if (priceUsd !== undefined) existingTemplate.priceUsd = priceUsd;
 
-      // Handle file upload if a new file is provided (used as the 'design')
+      // Update the design only if a file is provided
       if (file) {
-        existingTemplate.design = file.path; // Assuming 'design' is where the file path is stored
+        existingTemplate.design = file.path;
       }
 
       // Save the updated template
@@ -111,24 +107,23 @@ class PhysicalCardService {
     userId: string,
     cardId: string,
     templateId: string,
-    finalDesign: string, // This will be the file path (from Multer)
+    finalDesign: string,
     primaryColor: string,
     secondaryColor: string
   ): Promise<PhysicalCard> {
     try {
-      // Ensure the finalDesign is provided
       if (!finalDesign) {
         throw new HttpException(400, "error", "Design file is required");
       }
 
-      // Create the physical card with the uploaded final design file path
+      // Create the physical card with the SVG string
       const newPhysicalCard = await this.physicalCard.create({
         user: userId,
         cardId,
         cardTemplate: templateId,
         primaryColor,
         secondaryColor,
-        finalDesign, // Save the path of the uploaded design file
+        finalDesign,
         isCustom: false,
         status: "pending",
       });
@@ -176,12 +171,44 @@ class PhysicalCardService {
     }
   }
 
+  public async getAllPhysicalCards() {
+    try {
+      return await PhysicalCardModel.find().populate(
+        "cardTemplate",
+        "name priceNaira priceUsd"
+      );
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "error",
+        "Failed to retrieve physical cards"
+      );
+    }
+  }
+
+  public async getUserPhysicalCards(userId: string) {
+    try {
+      return await PhysicalCardModel.find({ user: userId }).populate(
+        "cardTemplate",
+        "name priceNaira priceUsd"
+      );
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "error",
+        "Failed to retrieve user's physical cards"
+      );
+    }
+  }
+
   public async getPhysicalCardById(
     cardId: string
   ): Promise<PhysicalCard | null> {
     try {
+      console.log("CardId: ", cardId);
+      const objectId = new Types.ObjectId(cardId);
       const physicalCard = await this.physicalCard
-        .findById(cardId)
+        .findOne({ _id: objectId })
         .populate("cardTemplate", "name priceNaira priceUsd");
 
       if (!physicalCard) {
@@ -193,12 +220,12 @@ class PhysicalCardService {
       throw new HttpException(500, "error", "Failed to fetch physical card");
     }
   }
+
   public async updatePhysicalCard(
     cardId: string,
     primaryColor: string | undefined,
     secondaryColor: string | undefined,
-    finalDesign: string | undefined,
-    file: Express.Multer.File | undefined
+    finalDesign: string | undefined
   ): Promise<PhysicalCard> {
     try {
       // Fetch the existing physical card
@@ -215,20 +242,14 @@ class PhysicalCardService {
         existingCard.secondaryColor = secondaryColor;
       }
 
-      // Handle file update for finalDesign
-      if (file) {
-        // Validate the file extension (support PNG, JPG, JPEG, SVG)
-        const validExtensions = [".png", ".jpg", ".jpeg", ".svg"];
-        const fileExtension = path.extname(file.originalname).toLowerCase();
-        if (!validExtensions.includes(fileExtension)) {
-          throw new HttpException(
-            400,
-            "error",
-            "Invalid file type for finalDesign"
-          );
+      // Validate and update finalDesign as an SVG string
+      if (finalDesign) {
+        if (
+          !finalDesign.startsWith("<svg") ||
+          !finalDesign.endsWith("</svg>")
+        ) {
+          throw new HttpException(400, "error", "Invalid SVG format");
         }
-        existingCard.finalDesign = file.path; // Save the new file's path
-      } else if (finalDesign) {
         existingCard.finalDesign = finalDesign;
       }
 
@@ -240,6 +261,36 @@ class PhysicalCardService {
     }
   }
 
+  public async updateCustomPhysicalCard(
+    cardId: string,
+    primaryColor?: string,
+    secondaryColor?: string,
+    imagePath?: string
+  ): Promise<PhysicalCard> {
+    try {
+      const existingCard = await this.physicalCard.findById(cardId);
+      if (!existingCard) {
+        throw new HttpException(404, "error", "Custom physical card not found");
+      }
+
+      if (primaryColor) existingCard.primaryColor = primaryColor;
+      if (secondaryColor) existingCard.secondaryColor = secondaryColor;
+
+      if (imagePath) {
+        existingCard.finalDesign = imagePath;
+      }
+
+      const updatedCard = await existingCard.save();
+      return updatedCard;
+    } catch (error) {
+      throw new HttpException(
+        500,
+        "error",
+        "Failed to update custom physical card"
+      );
+    }
+  }
+
   // Delete Physical Card
   public async deletePhysicalCard(cardId: string): Promise<void> {
     try {
@@ -247,8 +298,8 @@ class PhysicalCardService {
       if (!existingCard) {
         throw new HttpException(404, "error", "Physical card not found");
       }
-
-      await this.physicalCard.deleteOne({ _id: cardId });
+      const objectId = new Types.ObjectId(cardId);
+      await this.physicalCard.deleteOne({ _id: objectId });
     } catch (error) {
       throw new HttpException(500, "error", "Failed to delete physical card");
     }

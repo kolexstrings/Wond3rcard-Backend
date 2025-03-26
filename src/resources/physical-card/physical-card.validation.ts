@@ -34,13 +34,9 @@ const validateCustomPhysicalCard = Joi.object({
   photo: Joi.string().required(),
 });
 
-const validateGetPhysicalCardById = Joi.object({
-  cardId: Joi.string().required(),
-});
-
-const validateTemplateId = Joi.object({
-  templateId: Joi.string().required(),
-});
+// const validateGetPhysicalCardById = Joi.object({
+//   cardId: Joi.string().required(),
+// });
 
 const validatePhysicalCardUpdate = Joi.object({
   primaryColor: Joi.string()
@@ -56,7 +52,6 @@ export default {
   validateCardTemplate,
   validatePhysicalCard,
   validateCustomPhysicalCard,
-  validateGetPhysicalCardById,
-  validateTemplateId,
+  // validateGetPhysicalCardById,
   validatePhysicalCardUpdate,
 };

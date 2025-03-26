@@ -11,7 +11,7 @@ import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import { UserRole } from "../user/user.protocol";
 import validate from "./physical-card.validation";
 import { uploadCardTemplateMiddleware } from "../../multer-config/card-templates";
-import { uploadPhysicalCardMiddleware } from "../../multer-config/physica-cards";
+import { uploadPhysicalCardMiddleware } from "../../multer-config/physical-cards";
 
 class PhysicalCardController implements GeneralController {
   public path = "/phy-cards";
@@ -28,8 +28,8 @@ class PhysicalCardController implements GeneralController {
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
-        // validationMiddleware(validate.validateCardTemplate),
         uploadCardTemplateMiddleware,
+        validationMiddleware(validate.validateCardTemplate),
       ],
       this.createTemplate
     );
@@ -42,17 +42,17 @@ class PhysicalCardController implements GeneralController {
 
     this.router.get(
       `${this.path}/template/:templateId`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validate.validateTemplateId),
-      ],
+      [authenticatedMiddleware],
       this.getTemplateById
     );
 
     this.router.put(
       `${this.path}/template/:templateId`,
-      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
-      uploadCardTemplateMiddleware,
+      [
+        authenticatedMiddleware,
+        verifyRolesMiddleware([UserRole.Admin]),
+        uploadCardTemplateMiddleware,
+      ],
       this.updateCardTemplate
     );
 
@@ -66,9 +66,8 @@ class PhysicalCardController implements GeneralController {
       `${this.path}/create-physical-card`,
       [
         authenticatedMiddleware,
-        validationMiddleware(validate.validateCustomPhysicalCard),
+        validationMiddleware(validate.validatePhysicalCard),
       ],
-      uploadPhysicalCardMiddleware,
       this.createPhysicalCard
     );
 
@@ -76,18 +75,27 @@ class PhysicalCardController implements GeneralController {
       `${this.path}/create-custom`,
       [
         authenticatedMiddleware,
+        uploadPhysicalCardMiddleware,
         validationMiddleware(validate.validateCustomPhysicalCard),
       ],
-      uploadPhysicalCardMiddleware,
       this.createCustomPhysicalCard
     );
 
     this.router.get(
+      `${this.path}/physical-cards`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getAllPhysicalCards
+    );
+
+    this.router.get(
+      `${this.path}/physical/:userId`,
+      authenticatedMiddleware,
+      this.getUserPhysicalCards
+    );
+
+    this.router.get(
       `${this.path}/physical/:cardId`,
-      [
-        authenticatedMiddleware,
-        validationMiddleware(validate.validateGetPhysicalCardById),
-      ],
+      [authenticatedMiddleware],
       this.getPhysicalCardById
     );
 
@@ -117,10 +125,6 @@ class PhysicalCardController implements GeneralController {
 
       const { name, priceNaira, priceUsd } = req.body;
 
-      console.log("Name: ", name);
-      console.log("Price Naira : ", priceNaira);
-      console.log("Price USD: ", priceUsd);
-
       if (!req.user || !req.user.id) {
         return next(new HttpException(401, "error", "User not authenticated"));
       }
@@ -144,7 +148,7 @@ class PhysicalCardController implements GeneralController {
         req.file.path,
         parsedPriceNaira,
         parsedPriceUsd,
-        req.user.id // Pass the user ID
+        req.user.id
       );
 
       res.status(201).json({
@@ -186,6 +190,8 @@ class PhysicalCardController implements GeneralController {
       if (!templateId) {
         return next(new HttpException(400, "error", "Template ID is required"));
       }
+
+      console.log("Template Id: ", templateId);
 
       const template = await this.physicalCardService.getTemplateById(
         templateId
@@ -241,6 +247,100 @@ class PhysicalCardController implements GeneralController {
     }
   };
 
+  private createCustomTemplate = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { name, priceNaira, priceUsd } = req.body;
+
+      if (!req.user || !req.user.id) {
+        return next(new HttpException(401, "error", "User not authenticated"));
+      }
+
+      let parsedPriceNaira: number;
+      try {
+        parsedPriceNaira = parsePrice(priceNaira);
+      } catch (error) {
+        return next(error);
+      }
+
+      let parsedPriceUsd: number;
+      try {
+        parsedPriceUsd = parsePrice(priceUsd);
+      } catch (error) {
+        return next(error);
+      }
+
+      // No file needed, so design can be null or an empty string
+      const template = await this.physicalCardService.createCardTemplate(
+        name,
+        "", // No SVG file
+        parsedPriceNaira,
+        parsedPriceUsd,
+        req.user.id
+      );
+
+      res.status(201).json({
+        statusCode: 201,
+        status: "success",
+        payload: template,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private updateCustomCardTemplate = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { templateId } = req.params;
+      const { name, priceNaira, priceUsd } = req.body;
+
+      if (!name && !priceNaira && !priceUsd) {
+        return next(new HttpException(400, "error", "No fields to update"));
+      }
+
+      let parsedPriceNaira: number | undefined;
+      if (priceNaira) {
+        try {
+          parsedPriceNaira = parsePrice(priceNaira);
+        } catch (error) {
+          return next(error);
+        }
+      }
+
+      let parsedPriceUsd: number | undefined;
+      if (priceUsd) {
+        try {
+          parsedPriceUsd = parsePrice(priceUsd);
+        } catch (error) {
+          return next(error);
+        }
+      }
+
+      const updatedTemplate = await this.physicalCardService.updateCardTemplate(
+        templateId,
+        name,
+        parsedPriceNaira,
+        parsedPriceUsd,
+        undefined // we don't need svg here
+      );
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: updatedTemplate,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Delete Card Template
   private deleteCardTemplate = async (
     req: Request,
@@ -268,8 +368,14 @@ class PhysicalCardController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { userId, cardId, templateId, primaryColor, secondaryColor } =
-        req.body;
+      const {
+        userId,
+        cardId,
+        templateId,
+        primaryColor,
+        secondaryColor,
+        finalDesign,
+      } = req.body;
 
       // Validate required fields
       if (
@@ -277,22 +383,16 @@ class PhysicalCardController implements GeneralController {
         !cardId ||
         !templateId ||
         !primaryColor ||
-        !secondaryColor
+        !secondaryColor ||
+        !finalDesign
       ) {
         return next(new HttpException(400, "error", "Missing required fields"));
       }
 
-      // Validate SVG file upload for physical card
-      if (
-        !req.file ||
-        path.extname(req.file.originalname).toLowerCase() !== ".svg"
-      ) {
+      // Ensure finalDesign is a valid SVG string
+      if (!finalDesign.startsWith("<svg")) {
         return next(
-          new HttpException(
-            400,
-            "error",
-            "SVG file is required for physical card"
-          )
+          new HttpException(400, "error", "Invalid SVG design format")
         );
       }
 
@@ -304,17 +404,14 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(404, "error", "Template not found"));
       }
 
-      // Get the photo path (from Multer storage)
-      const photoPath = req.file.path; // Multer stores the file in the 'path' field
-
       // Create physical card
       const physicalCard = await this.physicalCardService.createPhysicalCard(
         userId,
         cardId,
         templateId,
+        finalDesign,
         primaryColor,
-        secondaryColor,
-        photoPath
+        secondaryColor
       );
 
       res.status(201).json({
@@ -395,6 +492,49 @@ class PhysicalCardController implements GeneralController {
     }
   };
 
+  public getAllPhysicalCards = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const physicalCards =
+        await this.physicalCardService.getAllPhysicalCards();
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: physicalCards,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getUserPhysicalCards = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        return next(new HttpException(400, "error", "User ID is required"));
+      }
+
+      const userCards = await this.physicalCardService.getUserPhysicalCards(
+        userId
+      );
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: userCards,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   private getPhysicalCardById = async (
     req: Request,
     res: Response,
@@ -446,32 +586,83 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(404, "error", "Physical card not found"));
       }
 
-      let updatedFinalDesign = finalDesign;
-      if (req.file) {
-        if (
-          ![".png", ".jpg", ".jpeg", ".svg"].includes(
-            path.extname(req.file.originalname).toLowerCase()
-          )
-        ) {
-          return next(
-            new HttpException(
-              400,
-              "error",
-              "Valid PNG/JPG/JPEG file is required for custom card"
-            )
-          );
-        }
-
-        updatedFinalDesign = req.file.path;
+      // Validate finalDesign as an SVG string (if provided)
+      if (
+        finalDesign &&
+        (!finalDesign.startsWith("<svg") || !finalDesign.endsWith("</svg>"))
+      ) {
+        return next(new HttpException(400, "error", "Invalid SVG format"));
       }
 
       const updatedCard = await this.physicalCardService.updatePhysicalCard(
         cardId,
         primaryColor,
         secondaryColor,
-        updatedFinalDesign,
-        req.file
+        finalDesign
       );
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: updatedCard,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private updateCustomPhysicalCard = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { cardId } = req.params;
+      const { primaryColor, secondaryColor } = req.body;
+      const file = req.file; // File upload (JPG, PNG, or JPEG)
+
+      if (!cardId) {
+        return next(new HttpException(400, "error", "Card ID is required"));
+      }
+
+      const existingCard = await this.physicalCardService.getPhysicalCardById(
+        cardId
+      );
+      if (!existingCard) {
+        return next(
+          new HttpException(404, "error", "Custom physical card not found")
+        );
+      }
+
+      // Ensure a file is uploaded and check if it's an image
+      if (!file) {
+        return next(
+          new HttpException(
+            400,
+            "error",
+            "Image file (JPG, PNG, JPEG) is required"
+          )
+        );
+      }
+
+      if (!["image/jpeg", "image/png", "image/jpg"].includes(file.mimetype)) {
+        return next(
+          new HttpException(
+            400,
+            "error",
+            "Invalid file format. Only JPG, PNG, and JPEG are allowed"
+          )
+        );
+      }
+
+      // Update the card with the new image file path
+      const updatedCard =
+        await this.physicalCardService.updateCustomPhysicalCard(
+          cardId,
+          primaryColor,
+          secondaryColor,
+          file.path // Save the uploaded image path
+        );
 
       res.status(200).json({
         statusCode: 200,
