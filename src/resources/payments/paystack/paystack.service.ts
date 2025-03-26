@@ -6,8 +6,9 @@ import profileModel from "../../profile/profile.model";
 import TransactionModel from "../transactions.model";
 import MailTemplates from "../../mails/mail.templates";
 import NodeMailerService from "../../mails/nodemailer.service";
+import { generateTransactionId } from "../../../utils/generateTransactionId";
 
-class PaystackService {
+class PaystackSubscriptionService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY;
   private baseUrl = "https://api.paystack.co";
   private mailer = new NodeMailerService();
@@ -36,6 +37,7 @@ class PaystackService {
           plan,
           billingCycle,
           durationInDays,
+          transactionType: "subscription",
         },
       },
       {
@@ -57,12 +59,7 @@ class PaystackService {
     return response.data;
   }
 
-  generateTransactionId = (provider: "paystack" | "stripe" | "manual") => {
-    const uniquePart = Date.now().toString().slice(-6); // Last 6 digits of timestamp
-    return `${provider}-${uniquePart}`;
-  };
-
-  public async handleSuccessfulPayment(data: any) {
+  public async handleSuccessfulSubscription(data: any) {
     const { userId, plan, billingCycle, durationInDays } = data.metadata;
 
     const user = await userModel.findById(userId);
@@ -79,7 +76,7 @@ class PaystackService {
     }
 
     const transactionId = data.id;
-    const referenceId = this.generateTransactionId("paystack");
+    const referenceId = generateTransactionId("subscription", "paystack");
     const amount = data.amount / 100;
     const paymentMethod = data.channel;
     const paidAt = new Date(data.paid_at);
@@ -107,6 +104,7 @@ class PaystackService {
       amount,
       transactionId,
       referenceId,
+      transactionType: "subscription",
       status: "success",
       paymentProvider: "paystack",
       paymentMethod,
@@ -136,4 +134,4 @@ class PaystackService {
   }
 }
 
-export default PaystackService;
+export default PaystackSubscriptionService;
