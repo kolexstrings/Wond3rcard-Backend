@@ -58,14 +58,14 @@ class PhysicalCardOrderController implements GeneralController {
       this.getUserOrders
     );
 
-    this.router.put(
-      `${this.path}/order/:orderId/status`,
+    this.router.patch(
+      `${this.path}/:orderId/status`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.updateOrderStatus
     );
 
     this.router.delete(
-      `${this.path}/order/:orderId`,
+      `${this.path}/:orderId`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.deleteOrder
     );
