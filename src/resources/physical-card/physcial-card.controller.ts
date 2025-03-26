@@ -28,9 +28,9 @@ class PhysicalCardController implements GeneralController {
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
-        validationMiddleware(validate.validateCardTemplate),
+        // validationMiddleware(validate.validateCardTemplate),
+        uploadCardTemplateMiddleware,
       ],
-      uploadCardTemplateMiddleware,
       this.createTemplate
     );
 
@@ -117,6 +117,14 @@ class PhysicalCardController implements GeneralController {
 
       const { name, priceNaira, priceUsd } = req.body;
 
+      console.log("Name: ", name);
+      console.log("Price Naira : ", priceNaira);
+      console.log("Price USD: ", priceUsd);
+
+      if (!req.user || !req.user.id) {
+        return next(new HttpException(401, "error", "User not authenticated"));
+      }
+
       let parsedPriceNaira: number;
       try {
         parsedPriceNaira = parsePrice(priceNaira);
@@ -135,7 +143,8 @@ class PhysicalCardController implements GeneralController {
         name,
         req.file.path,
         parsedPriceNaira,
-        parsedPriceUsd
+        parsedPriceUsd,
+        req.user.id // Pass the user ID
       );
 
       res.status(201).json({

@@ -12,7 +12,8 @@ class PhysicalCardService {
     name: string,
     design: string,
     priceNaira: number,
-    priceUsd: number
+    priceUsd: number,
+    createdBy: string // Add createdBy parameter
   ): Promise<CardTemplate> {
     try {
       const newTemplate = await this.cardTemplate.create({
@@ -20,6 +21,7 @@ class PhysicalCardService {
         design,
         priceNaira,
         priceUsd,
+        createdBy, // Include createdBy field
       });
       return newTemplate;
     } catch (error) {

@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 import { PhysicalCardStatus } from "../physical-card.protocol";
-import { IPhysicalCardOrder } from "./order.protocol";
+import IPhysicalCardOrder from "./order.protocol";
 
 const PhysicalCardOrderSchema = new Schema<IPhysicalCardOrder>(
   {
