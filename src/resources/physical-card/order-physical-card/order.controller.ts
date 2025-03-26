@@ -57,6 +57,18 @@ class PhysicalCardOrderController implements GeneralController {
       authenticatedMiddleware,
       this.getUserOrders
     );
+
+    this.router.put(
+      `${this.path}/order/:orderId/status`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.updateOrderStatus
+    );
+
+    this.router.delete(
+      `${this.path}/order/:orderId`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.deleteOrder
+    );
   }
 
   private createOrder = async (
@@ -229,6 +241,57 @@ class PhysicalCardOrderController implements GeneralController {
         statusCode: 200,
         status: "success",
         payload: userOrders,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private deleteOrder = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orderId } = req.params;
+      if (!orderId) {
+        return next(new HttpException(400, "error", "Order ID is required"));
+      }
+
+      await this.physicalCardOrderService.deleteOrder(orderId);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Order deleted successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private updateOrderStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { orderId } = req.params;
+      const { status } = req.body;
+
+      if (!orderId || !status) {
+        return next(
+          new HttpException(400, "error", "Order ID and status are required")
+        );
+      }
+
+      const updatedOrder =
+        await this.physicalCardOrderService.updateOrderStatus(orderId, status);
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: updatedOrder,
       });
     } catch (error) {
       next(error);

@@ -6,6 +6,7 @@ enum PhysicalCardStatus {
   Processing = "processing",
   Shipped = "shipped",
   Delivered = "delivered",
+  Cancelled = "cancelled",
 }
 
 interface CardTemplate extends Document {

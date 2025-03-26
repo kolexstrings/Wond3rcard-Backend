@@ -4,6 +4,7 @@ import PaystackService from "./paystack/paystack.service";
 import StripeService from "./stripe/stripe.service";
 import PhysicalCardOrder from "./order.model";
 import IPhysicalCardOrder from "./order.protocol";
+import { PhysicalCardStatus } from "../physical-card.protocol";
 
 class PhysicalCardOrderService {
   private physicalCardService = new PhysicalCardService();
@@ -91,6 +92,34 @@ class PhysicalCardOrderService {
   ): Promise<IPhysicalCardOrder[]> => {
     return await PhysicalCardOrder.find({ userId });
   };
+
+  public async updateOrderStatus(
+    orderId: string,
+    status: string
+  ): Promise<IPhysicalCardOrder | null> {
+    if (
+      !Object.values(PhysicalCardStatus).includes(status as PhysicalCardStatus)
+    ) {
+      throw new HttpException(400, "error", "Invalid order status");
+    }
+    const order = await PhysicalCardOrder.findByIdAndUpdate(
+      orderId,
+      { status },
+      { new: true }
+    );
+    if (!order) {
+      throw new HttpException(404, "error", "Order not found");
+    }
+    return order;
+  }
+
+  public async deleteOrder(orderId: string): Promise<void> {
+    const order = await PhysicalCardOrder.findById(orderId);
+    if (!order) {
+      throw new HttpException(404, "error", "Order not found");
+    }
+    await PhysicalCardOrder.findByIdAndDelete(orderId);
+  }
 }
 
 export default PhysicalCardOrderService;
