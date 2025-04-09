@@ -3,7 +3,6 @@ import HttpException from "../../../../exceptions/http.exception";
 import NodeMailerService from "../../../mails/nodemailer.service";
 import userModel from "../../../user/user.model";
 import TransactionModel from "../../../payments/transactions.model";
-import { PhysicalCardModel } from "../../physical-card.model";
 import { generateTransactionId } from "../../../../utils/generateTransactionId";
 import MailTemplates from "../../../mails/mail.templates";
 import { PhysicalCardStatus } from "../../physical-card.protocol";
