@@ -22,6 +22,7 @@ import ZoomController from "./resources/cloud-meeting/zoom/zoom.controller";
 import TeamController from "./resources/organization/team/team.controller";
 import PhysicalCardController from "./resources/physical-card/physcial-card.controller";
 import PhysicalCardOrderController from "./resources/physical-card/order-physical-card/order.controller";
+import AnalyticsController from "./resources/analytics/analytics.controller";
 
 validateEnv();
 
@@ -48,6 +49,7 @@ const app = new App(
     new TeamController(),
     new PhysicalCardController(),
     new PhysicalCardOrderController(),
+    new AnalyticsController(),
   ],
   Number(process.env.PORT)
 );
