@@ -1,9 +1,12 @@
 import { Request, Response, Router } from "express";
 import GeneralController from "../../protocols/global.controller";
 import AnalyticService from "./analytics.service";
+import authenticatedMiddleware from "../../middlewares/authenticated.middleware";
+import verifyRolesMiddleware from "../../middlewares/roles.middleware";
+import { UserRole } from "../user/user.protocol";
 
 class AnalyticsController implements GeneralController {
-  public path = "analytics";
+  public path = "/analytics";
   public router = Router();
   private analyticsService = new AnalyticService();
 
@@ -12,11 +15,18 @@ class AnalyticsController implements GeneralController {
   }
 
   initializeRoute(): void {
-    this.router.post(`${this.path}/log`, this.logAnalytics),
-      this.router.get(`${this.path}/insights`, this.getAnalyticsInsights);
+    this.router.post(`${this.path}/log`, this.logAnalytics);
+    this.router.get(
+      `${this.path}/insights`,
+      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      this.getAnalyticsInsights
+    );
   }
 
-  public async logAnalytics(req: Request, res: Response): Promise<Response> {
+  private logAnalytics = async (
+    req: Request,
+    res: Response
+  ): Promise<Response> => {
     try {
       const analyticsData = {
         ipAddress: req.ip,
@@ -43,14 +53,16 @@ class AnalyticsController implements GeneralController {
       console.error("Error logging analytics:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
-  }
+  };
 
-  public async getAnalyticsInsights(
+  private getAnalyticsInsights = async (
     req: Request,
     res: Response
-  ): Promise<Response> {
+  ): Promise<Response> => {
     try {
+      console.log("Analytics Insights API hit");
       const insights = await this.analyticsService.getAnalyticsSummary();
+      console.log("Insights fetched:", insights);
       return res.status(200).json({
         message: "Analytics insights retrieved successfully",
         data: insights,
@@ -59,7 +71,7 @@ class AnalyticsController implements GeneralController {
       console.error("Error fetching analytics insights:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
-  }
+  };
 }
 
 export default AnalyticsController;
