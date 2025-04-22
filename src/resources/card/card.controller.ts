@@ -341,12 +341,30 @@ class CardController implements GlobalController {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
+    const cardPhoto = req.files?.["cardPhoto"]?.[0];
+    const cardCoverPhoto = req.files?.["cardCoverPhoto"]?.[0];
+    const cardVideo = req.files?.["cardVideo"]?.[0];
+
     try {
       const { cardId } = req.body;
-      const card = await this.cardService.updateCard(cardId, req.body);
+      let cardAddresses: AddressInfo[] = [];
+      if (req.body.addresses) {
+        cardAddresses = JSON.parse(req.body.addresses.toString());
+      }
+
+      const data = {
+        ...req.body,
+        cardPictureUrl: cardPhoto?.path,
+        cardCoverUrl: cardCoverPhoto?.path,
+        videoUrl: cardVideo?.path,
+      };
+
+      const card = await this.cardService.updateCard(cardId, data);
+
       if (!card) {
         res.status(404).json({ message: "Card not found" });
       }
+
       res.json(card);
     } catch (error) {
       next(error);
