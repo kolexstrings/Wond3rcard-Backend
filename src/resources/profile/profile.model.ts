@@ -1,6 +1,6 @@
 import { model, Schema } from "mongoose";
 import { Profile } from "./profile.protocol";
-
+import { UserTiers } from "../user/user.protocol";
 
 const profileShema = new Schema<Profile>(
   {
@@ -14,8 +14,13 @@ const profileShema = new Schema<Profile>(
     designation: { type: String, required: false, default: "" },
     profileUrl: { type: String, required: false, default: "" },
     coverUrl: { type: String, required: false, default: "" },
-    contacts: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
-    connections: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
+    contacts: [{ type: Schema.Types.ObjectId, ref: "Profile" }],
+    connections: [{ type: Schema.Types.ObjectId, ref: "Profile" }],
+    plan: {
+      type: String,
+      enum: Object.values(UserTiers),
+      default: UserTiers.Basic,
+    },
   },
   {
     timestamps: true,
