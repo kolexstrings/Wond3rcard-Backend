@@ -36,6 +36,24 @@ class PaystackController implements GeneralController {
     );
 
     this.router.get(`${this.path}/verify/:reference`, this.verifyTransaction);
+
+    this.router.post(
+      `${this.path}/cancel-subscription`,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validateCancelSubscription),
+      ],
+      this.cancelSubscription
+    );
+
+    this.router.post(
+      `${this.path}/change-subscription`,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validateChangeSubscription),
+      ],
+      this.changeSubscription
+    );
   }
 
   private initializePayment = async (
@@ -161,6 +179,56 @@ class PaystackController implements GeneralController {
         statusCode: 200,
         status: "success",
         payload: verification.data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private cancelSubscription = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { userId } = req.body;
+
+      const result = await this.paystackSubscriptionService.cancelSubscription(
+        userId
+      );
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private changeSubscription = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { userId, newPlan, billingCycle } = req.body;
+
+      if (!["monthly", "yearly"].includes(billingCycle)) {
+        return next(new HttpException(400, "error", "Invalid billing cycle"));
+      }
+
+      const result = await this.paystackSubscriptionService.changeSubscription(
+        userId,
+        newPlan,
+        billingCycle
+      );
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: result,
       });
     } catch (error) {
       next(error);

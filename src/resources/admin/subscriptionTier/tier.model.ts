@@ -3,8 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ITier extends Document {
   name: string;
   billingCycle: {
-    monthly: { price: number; durationInDays: number };
-    yearly: { price: number; durationInDays: number };
+    monthly: { price: number; durationInDays: number; planCode: string };
+    yearly: { price: number; durationInDays: number; planCode: string };
   };
   description: string;
   trialPeriod: number;

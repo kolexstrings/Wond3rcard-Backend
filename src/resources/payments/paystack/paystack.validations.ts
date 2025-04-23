@@ -50,3 +50,30 @@ export const validateWebhookPayload = Joi.object({
     }).required(),
   }).required(),
 });
+
+export const validateCancelSubscription = Joi.object({
+  userId: Joi.string().required().messages({
+    "any.required": "User ID is required to cancel the subscription",
+    "string.base": "User ID must be a string",
+  }),
+  subscriptionId: Joi.string().required().messages({
+    "any.required": "Subscription ID is required",
+    "string.base": "Subscription ID must be a string",
+  }),
+});
+
+export const validateChangeSubscription = Joi.object({
+  userId: Joi.string().required().messages({
+    "any.required": "User ID is required to change the subscription",
+    "string.base": "User ID must be a string",
+  }),
+  newPlan: Joi.string().required().messages({
+    "any.required": "New subscription plan is required",
+    "string.base": "New plan must be a string",
+  }),
+  billingCycle: Joi.string().valid("monthly", "yearly").required().messages({
+    "any.required": "Billing cycle is required",
+    "string.base": "Billing cycle must be a string",
+    "any.only": "Billing cycle must be either 'monthly' or 'yearly'",
+  }),
+});
