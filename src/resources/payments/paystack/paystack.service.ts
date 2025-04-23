@@ -106,8 +106,8 @@ class PaystackSubscriptionService {
       plan,
       billingCycle,
       amount,
-      transactionId,
       referenceId,
+      transactionId,
       transactionType: "subscription",
       subscriptionCode,
       status: "success",
@@ -213,11 +213,7 @@ class PaystackSubscriptionService {
       );
     }
 
-    const paymentResponse = await this.initializePayment(
-      userId,
-      newPlan,
-      newBillingCycle
-    );
+    await this.initializePayment(userId, newPlan, newBillingCycle);
 
     // Set new subscription data (active or inactive depending on your logic)
     user.userTier = {

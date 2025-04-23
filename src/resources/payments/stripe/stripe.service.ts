@@ -5,6 +5,38 @@ import TransactionModel from "../transactions.model";
 import { generateTransactionId } from "../../../utils/generateTransactionId";
 
 class StripeSubscriptionService {
+  // async createCheckoutSession(
+  //   userId: string,
+  //   plan: string,
+  //   billingCycle: string
+  // ) {
+  //   const tier = await tierModel.findOne({ name: plan }).lean();
+  //   if (!tier) throw new Error("Invalid plan selected");
+
+  //   const selectedBilling =
+  //     billingCycle === "yearly"
+  //       ? tier.billingCycle.yearly
+  //       : tier.billingCycle.monthly;
+
+  //   return await stripe.checkout.sessions.create({
+  //     payment_method_types: ["card"],
+  //     line_items: [
+  //       {
+  //         price_data: {
+  //           currency: "usd",
+  //           product_data: { name: plan },
+  //           unit_amount: selectedBilling.price * 100,
+  //         },
+  //         quantity: 1,
+  //       },
+  //     ],
+  //     mode: "subscription",
+  //     metadata: { userId, plan, billingCycle, transactionType: "subscription" },
+  //     success_url: `${process.env.FRONTEND_BASE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+  //     cancel_url: `${process.env.FRONTEND_BASE_URL}/payment-failed`,
+  //   });
+  // }
+
   async createCheckoutSession(
     userId: string,
     plan: string,
@@ -18,15 +50,15 @@ class StripeSubscriptionService {
         ? tier.billingCycle.yearly
         : tier.billingCycle.monthly;
 
+    // Use planCode as Stripe price ID
+    const planCode = selectedBilling.planCode;
+    if (!planCode) throw new Error("PlanCode not configured for this plan");
+
     return await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: { name: plan },
-            unit_amount: selectedBilling.price * 100,
-          },
+          price: planCode, // Use planCode as Stripe Price ID
           quantity: 1,
         },
       ],
@@ -44,6 +76,7 @@ class StripeSubscriptionService {
     if (!user) throw new Error("User not found");
 
     const transactionId = session.id; // Stripe’s unique ID
+    const subscriptionCode = session.subscription; // Extract the subscription ID
     const referenceId = generateTransactionId("subscription", "stripe"); // Custom transaction ID
     const paymentMethod = session.payment_method_types?.[0] || "unknown";
     const paidAt = new Date(session.created * 1000); // Stripe timestamps in seconds
@@ -53,6 +86,7 @@ class StripeSubscriptionService {
       plan,
       status: "active",
       transactionId,
+      subscriptionCode,
       expiresAt: new Date(expiresAt),
     };
     await user.save();
@@ -67,6 +101,8 @@ class StripeSubscriptionService {
       amount: session.amount_total / 100,
       referenceId, // Custom transaction ID
       transactionId, // Stripe's ID
+      transactionType: "subscription",
+      subscriptionCode,
       paymentProvider: "stripe",
       status: "success",
       paymentMethod,
