@@ -33,6 +33,7 @@ const TransactionSchema = new mongoose.Schema<ITransaction>(
       enum: Object.values(TransactionType),
       required: true,
     },
+    subscriptionCode: { type: String },
   },
   { timestamps: true }
 );

@@ -7,6 +7,8 @@ import PaystackOrderService from "../../physical-card/order-physical-card/paysta
 import userModel from "../../user/user.model";
 import validationMiddleware from "../../../middlewares/validation.middleware";
 import {
+  validateCancelSubscription,
+  validateChangeSubscription,
   validatePaystackPayment,
   validateWebhookPayload,
 } from "./paystack.validations";

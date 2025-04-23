@@ -7,6 +7,7 @@ import TransactionModel from "../transactions.model";
 import MailTemplates from "../../mails/mail.templates";
 import NodeMailerService from "../../mails/nodemailer.service";
 import { generateTransactionId } from "../../../utils/generateTransactionId";
+import { UserTiers } from "../../user/user.protocol";
 
 class PaystackSubscriptionService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY;
@@ -77,6 +78,7 @@ class PaystackSubscriptionService {
     }
 
     const transactionId = data.id;
+    const subscriptionCode = data.subscription.code;
     const referenceId = generateTransactionId("subscription", "paystack");
     const amount = data.amount / 100;
     const paymentMethod = data.channel;
@@ -90,6 +92,7 @@ class PaystackSubscriptionService {
       plan,
       status: "active",
       transactionId,
+      subscriptionCode,
       expiresAt,
     };
 
@@ -106,6 +109,7 @@ class PaystackSubscriptionService {
       transactionId,
       referenceId,
       transactionType: "subscription",
+      subscriptionCode,
       status: "success",
       paymentProvider: "paystack",
       paymentMethod,
@@ -134,48 +138,15 @@ class PaystackSubscriptionService {
     return { message: "Subscription activated" };
   }
 
-  public async renewSubscription(userId: string) {
-    const user = await userModel.findById(userId);
-
-    if (!user || user.userTier.status !== "active")
-      throw new HttpException(404, "User not found or subscription inactive");
-
-    // Find the tier plan for renewal (can use a similar process as the initial subscription)
-    const tier = await tierModel.findOne({ name: user.userTier.plan });
-
-    if (!tier) throw new HttpException(404, "Subscription plan not found");
-
-    const { price, durationInDays, planCode } =
-      tier.billingCycle[user.userTier.billingCycle];
-
-    // Call Paystack to initiate the renewal payment
-    const response = await axios.post(
-      `${this.baseUrl}/subscription`,
-      {
-        email: user.email,
-        amount: price * 100, // Convert to kobo
-        plan: planCode,
-        callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
-        metadata: {
-          userId,
-          plan: user.userTier.plan,
-          billingCycle: user.userTier.billingCycle,
-          durationInDays,
-          transactionType: "renewal",
-        },
-      },
-      {
-        headers: { Authorization: `Bearer ${this.secretKey}` },
-      }
-    );
-    return response.data;
-  }
-
   public async cancelSubscription(userId: string) {
     const user = await userModel.findById(userId);
 
     if (!user || user.userTier.status !== "active")
-      throw new HttpException(404, "User not found or subscription inactive");
+      throw new HttpException(
+        404,
+        "error",
+        "User not found or subscription inactive"
+      );
 
     // Update the user's subscription to canceled
     user.userTier.status = "inactive";
@@ -203,18 +174,18 @@ class PaystackSubscriptionService {
 
   public async changeSubscription(
     userId: string,
-    newPlan: string,
+    newPlan: UserTiers,
     newBillingCycle: "monthly" | "yearly"
   ) {
     const user = await userModel.findById(userId);
 
-    if (!user) throw new HttpException(404, "User not found");
+    if (!user) throw new HttpException(404, "error", "User not found");
 
     const currentTier = await tierModel.findOne({ name: user.userTier.plan });
     const newTier = await tierModel.findOne({ name: newPlan });
 
     if (!newTier)
-      throw new HttpException(404, "New subscription plan not found");
+      throw new HttpException(404, "error", "New subscription plan not found");
 
     // Get pricing details for the new plan and billing cycle
     const { price, durationInDays, planCode } =
@@ -224,7 +195,6 @@ class PaystackSubscriptionService {
     user.userTier = {
       plan: newPlan,
       status: "active", // Make it active immediately upon change
-      billingCycle: newBillingCycle,
       transactionId: "", // Clear previous transaction ID
       expiresAt: new Date(Date.now() + durationInDays * 24 * 60 * 60 * 1000),
     };
@@ -247,35 +217,6 @@ class PaystackSubscriptionService {
     });
 
     return { message: "Subscription plan updated successfully" };
-  }
-
-  public async handlePaymentFailure(transactionReference: string) {
-    const response = await this.verifyTransaction(transactionReference);
-
-    if (response.status === "failed") {
-      const userId = response.metadata.userId;
-      const user = await userModel.findById(userId);
-
-      if (user) {
-        const template = MailTemplates.paymentFailed;
-        const email = user.email;
-        const profile = await profileModel.findById(userId);
-        const emailData = {
-          name: profile.firstname,
-          transactionReference,
-        };
-
-        await this.mailer.sendMail(
-          email,
-          "Payment Failed",
-          template,
-          "Payment Failure",
-          emailData
-        );
-      }
-    }
-
-    return { message: "Payment failure processed" };
   }
 }
 
