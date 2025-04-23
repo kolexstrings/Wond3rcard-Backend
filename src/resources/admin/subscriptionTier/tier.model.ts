@@ -16,10 +16,12 @@ const BillingCycleSchema = new Schema({
   monthly: {
     price: { type: Number, required: true },
     durationInDays: { type: Number, required: true, default: 30 },
+    planCode: { type: String, required: true },
   },
   yearly: {
     price: { type: Number, required: true },
     durationInDays: { type: Number, required: true, default: 365 },
+    planCode: { type: String, required: true },
   },
 });
 
