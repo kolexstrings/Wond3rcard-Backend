@@ -37,6 +37,7 @@ interface User extends Document {
     plan: UserTiers;
     status: "active" | "inactive";
     transactionId: string | null;
+    subscriptionCode: string | null;
     expiresAt: Date | null;
   };
   organizations: OrganizationMember[];

@@ -29,6 +29,7 @@ class ManualPaymentService {
       plan,
       status: "active",
       transactionId,
+      subscriptionCode: "manual",
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     };
     await user.save();

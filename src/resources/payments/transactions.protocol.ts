@@ -14,10 +14,11 @@ export interface ITransaction extends Document {
   amount: number;
   transactionId: string;
   referenceId: string;
+  transactionType: TransactionType;
+  subscriptionCode: string;
   status: "success" | "pending" | "failed";
   paymentProvider: "paystack" | "stripe" | "manual";
   paymentMethod?: string;
   paidAt: Date;
   expiresAt?: Date;
-  transactionType: TransactionType;
 }

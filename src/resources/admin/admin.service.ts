@@ -326,6 +326,89 @@ class AdminService {
     });
   }
 
+  // public async createSubscriptionTier(
+  //   tierData: CreateSubscriptionTier
+  // ): Promise<ITier> {
+  //   try {
+  //     const {
+  //       name,
+  //       billingCycle,
+  //       description,
+  //       trialPeriod,
+  //       autoRenew,
+  //       features,
+  //     } = tierData;
+
+  //     // Normalize input to lowercase to match enum values
+  //     const normalizedTierName = name.toLowerCase();
+
+  //     // Validate if the tier name is in the allowed UserTiers enum
+  //     if (!Object.values(UserTiers).includes(normalizedTierName as UserTiers)) {
+  //       throw new HttpException(
+  //         400,
+  //         "bad_request",
+  //         `Invalid subscription tier. Allowed tiers: ${Object.values(
+  //           UserTiers
+  //         ).join(", ")}`
+  //       );
+  //     }
+
+  //     // Ensuring billingCycle exists before checking its properties
+  //     if (!billingCycle || !billingCycle.monthly || !billingCycle.yearly) {
+  //       throw new HttpException(
+  //         400,
+  //         "bad_request",
+  //         "Billing cycle with both monthly and yearly options is required."
+  //       );
+  //     }
+
+  //     // Extract prices and ensure valid values
+  //     const { monthly, yearly } = billingCycle;
+  //     if (!monthly.price || !yearly.price) {
+  //       throw new HttpException(
+  //         400,
+  //         "bad_request",
+  //         "Both monthly and yearly pricing must be provided."
+  //       );
+  //     }
+
+  //     // Checking if a tier with the same normalized name already exists
+  //     const existingTier = await this.tier.findOne({
+  //       name: normalizedTierName,
+  //     });
+  //     if (existingTier) {
+  //       throw new HttpException(
+  //         409,
+  //         "conflict",
+  //         "Subscription tier already exists."
+  //       );
+  //     }
+
+  //     // Create and save the new subscription tier
+  //     const newTier = new this.tier({
+  //       name: normalizedTierName as UserTiers,
+  //       billingCycle: {
+  //         monthly: {
+  //           price: monthly.price,
+  //           durationInDays: monthly.durationInDays || 30, // Default to 30 days if not provided
+  //         },
+  //         yearly: {
+  //           price: yearly.price,
+  //           durationInDays: yearly.durationInDays || 365, // Default to 365 days if not provided
+  //         },
+  //       },
+  //       description,
+  //       trialPeriod,
+  //       autoRenew,
+  //       features,
+  //     });
+
+  //     return await newTier.save();
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
   public async createSubscriptionTier(
     tierData: CreateSubscriptionTier
   ): Promise<ITier> {
@@ -339,10 +422,8 @@ class AdminService {
         features,
       } = tierData;
 
-      // Normalize input to lowercase to match enum values
       const normalizedTierName = name.toLowerCase();
 
-      // Validate if the tier name is in the allowed UserTiers enum
       if (!Object.values(UserTiers).includes(normalizedTierName as UserTiers)) {
         throw new HttpException(
           400,
@@ -353,7 +434,6 @@ class AdminService {
         );
       }
 
-      // Ensuring billingCycle exists before checking its properties
       if (!billingCycle || !billingCycle.monthly || !billingCycle.yearly) {
         throw new HttpException(
           400,
@@ -362,17 +442,21 @@ class AdminService {
         );
       }
 
-      // Extract prices and ensure valid values
       const { monthly, yearly } = billingCycle;
-      if (!monthly.price || !yearly.price) {
+
+      if (
+        !monthly.price ||
+        !monthly.planCode ||
+        !yearly.price ||
+        !yearly.planCode
+      ) {
         throw new HttpException(
           400,
           "bad_request",
-          "Both monthly and yearly pricing must be provided."
+          "Both monthly and yearly pricing and Paystack plan codes must be provided."
         );
       }
 
-      // Checking if a tier with the same normalized name already exists
       const existingTier = await this.tier.findOne({
         name: normalizedTierName,
       });
@@ -384,17 +468,18 @@ class AdminService {
         );
       }
 
-      // Create and save the new subscription tier
       const newTier = new this.tier({
         name: normalizedTierName as UserTiers,
         billingCycle: {
           monthly: {
             price: monthly.price,
-            durationInDays: monthly.durationInDays || 30, // Default to 30 days if not provided
+            durationInDays: monthly.durationInDays || 30,
+            planCode: monthly.planCode,
           },
           yearly: {
             price: yearly.price,
-            durationInDays: yearly.durationInDays || 365, // Default to 365 days if not provided
+            durationInDays: yearly.durationInDays || 365,
+            planCode: yearly.planCode,
           },
         },
         description,

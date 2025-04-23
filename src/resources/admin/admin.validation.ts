@@ -36,6 +36,9 @@ export const validateSubscriptionTier = Joi.object({
         "number.base": "Duration must be a number",
         "number.positive": "Duration must be a positive number",
       }),
+      planCode: Joi.string().required().messages({
+        "string.empty": "Monthly planCode is required",
+      }),
     }).required(),
     yearly: Joi.object({
       price: Joi.number().positive().required().messages({
@@ -46,6 +49,9 @@ export const validateSubscriptionTier = Joi.object({
       durationInDays: Joi.number().positive().default(365).messages({
         "number.base": "Duration must be a number",
         "number.positive": "Duration must be a positive number",
+      }),
+      planCode: Joi.string().required().messages({
+        "string.empty": "Yearly planCode is required",
       }),
     }).required(),
   })
@@ -85,6 +91,9 @@ export const validateSubscriptionTierUpdate = Joi.object({
         "number.base": "Monthly duration must be a number",
         "number.positive": "Monthly duration must be a positive number",
       }),
+      planCode: Joi.string().required().messages({
+        "string.empty": "Monthly planCode is required",
+      }),
     }),
     yearly: Joi.object({
       price: Joi.number().positive().messages({
@@ -94,6 +103,9 @@ export const validateSubscriptionTierUpdate = Joi.object({
       durationInDays: Joi.number().integer().positive().messages({
         "number.base": "Yearly duration must be a number",
         "number.positive": "Yearly duration must be a positive number",
+      }),
+      planCode: Joi.string().required().messages({
+        "string.empty": "Yearly planCode is required",
       }),
     }),
   }),

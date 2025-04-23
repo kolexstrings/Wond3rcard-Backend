@@ -26,13 +26,14 @@ const TransactionSchema = new mongoose.Schema<ITransaction>(
       required: true,
     },
     paymentMethod: { type: String },
-    paidAt: { type: Date, default: Date.now },
     expiresAt: { type: Date },
     transactionType: {
       type: String,
       enum: Object.values(TransactionType),
       required: true,
     },
+    subscriptionCode: { type: String },
+    paidAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
