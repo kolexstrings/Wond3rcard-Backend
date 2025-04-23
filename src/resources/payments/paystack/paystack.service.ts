@@ -140,7 +140,6 @@ class PaystackSubscriptionService {
 
   public async cancelSubscription(userId: string) {
     const user = await userModel.findById(userId);
-
     if (!user || user.userTier.status !== "active")
       throw new HttpException(
         404,
@@ -148,21 +147,34 @@ class PaystackSubscriptionService {
         "User not found or subscription inactive"
       );
 
-    // Update the user's subscription to canceled
+    // Disable Paystack subscription if a subscriptionCode exists
+    if (user.userTier.subscriptionCode) {
+      await axios.post(
+        `https://api.paystack.co/subscription/${user.userTier.subscriptionCode}/disable`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Update the user's subscription locally
     user.userTier.status = "inactive";
     await user.save();
 
-    // Optionally, notify the user via email
+    // Notify user via email
     const profile = await profileModel.findById(userId);
     const template = MailTemplates.subscriptionCancelled;
-    const email = user.email;
     const emailData = {
       name: profile.firstname,
       plan: user.userTier.plan,
     };
 
     await this.mailer.sendMail(
-      email,
+      user.email,
       "Subscription Canceled",
       template,
       "Subscription",
@@ -178,30 +190,46 @@ class PaystackSubscriptionService {
     newBillingCycle: "monthly" | "yearly"
   ) {
     const user = await userModel.findById(userId);
-
     if (!user) throw new HttpException(404, "error", "User not found");
 
-    const currentTier = await tierModel.findOne({ name: user.userTier.plan });
     const newTier = await tierModel.findOne({ name: newPlan });
-
     if (!newTier)
       throw new HttpException(404, "error", "New subscription plan not found");
 
-    // Get pricing details for the new plan and billing cycle
     const { price, durationInDays, planCode } =
       newTier.billingCycle[newBillingCycle];
 
-    // Update the user subscription details
+    // Disable old Paystack subscription if exists
+    if (user.userTier.subscriptionCode) {
+      await axios.post(
+        `https://api.paystack.co/subscription/${user.userTier.subscriptionCode}/disable`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const paymentResponse = await this.initializePayment(
+      userId,
+      newPlan,
+      newBillingCycle
+    );
+
+    // Set new subscription data (active or inactive depending on your logic)
     user.userTier = {
       plan: newPlan,
-      status: "active", // Make it active immediately upon change
-      transactionId: "", // Clear previous transaction ID
+      status: "inactive", // or 'active' depending on your intended workflow
+      transactionId: "",
+      subscriptionCode: "",
       expiresAt: new Date(Date.now() + durationInDays * 24 * 60 * 60 * 1000),
     };
 
     await user.save();
 
-    // Create new transaction log (similar to the payment flow)
     await TransactionModel.create({
       userId,
       userName: user.username,
@@ -211,7 +239,7 @@ class PaystackSubscriptionService {
       amount: price,
       transactionType: "upgrade/downgrade",
       status: "success",
-      paymentProvider: "paystack", // Assuming Paystack again
+      paymentProvider: "paystack",
       paidAt: new Date(),
       expiresAt: new Date(Date.now() + durationInDays * 24 * 60 * 60 * 1000),
     });

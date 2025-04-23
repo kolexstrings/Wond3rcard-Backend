@@ -125,6 +125,67 @@ const MailTemplates = {
 </html>
 `,
 
+  subscriptionCancelled: /*html*/ `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Subscription Canceled</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    h2 {
+      color: #e63946;
+    }
+    p {
+      font-size: 16px;
+      color: #555;
+      line-height: 1.6;
+    }
+    .cta-button {
+      display: inline-block;
+      background-color: #4b32d0;
+      color: #ffffff;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Hi {{emailData.name}},</h2>
+    <p>We're reaching out to let you know that your subscription for the <strong>{{emailData.plan}}</strong> plan has been successfully canceled.</p>
+    <p>You’ll continue to have access to your current features until the end of your current billing cycle.</p>
+    <p>If you change your mind, you can easily reactivate your subscription at any time.</p>
+    <a href="{{dashboardLink}}" class="cta-button">Manage Your Account</a>
+    <p class="footer">Need help? Reach out to us anytime at <a href="mailto:support@wond3rcard.com">support@wond3rcard.com</a>.</p>
+    <p class="footer">— The WOND3R CARD Team</p>
+  </div>
+</body>
+</html>
+`,
   physicalCardOrderConfirmation: /*html*/ `<!DOCTYPE html>
 <html>
 <head>
