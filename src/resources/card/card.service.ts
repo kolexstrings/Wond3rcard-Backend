@@ -22,6 +22,7 @@ import {
   CardTestimony,
   CardType,
   SocialMediaLink,
+  UpdateCardInput,
 } from "./card.protocol";
 
 class CardService {
@@ -194,7 +195,7 @@ class CardService {
     return card;
   }
 
-  async updateCard(id: string, data: Partial<Card>): Promise<Card | null> {
+  async updateCard(id: string, data: UpdateCardInput): Promise<Card | null> {
     return await cardModel.findByIdAndUpdate(id, data, { new: true });
   }
 

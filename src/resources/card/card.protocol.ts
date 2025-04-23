@@ -108,6 +108,12 @@ export interface Card extends Document {
   updatedAt: Date;
 }
 
+interface UpdateCardInput extends Partial<Card> {
+  cardPictureUrl?: string;
+  cardCoverUrl?: string;
+  videoUrl?: string;
+}
+
 export {
   AddressInfo,
   CardCatelog,
@@ -117,4 +123,5 @@ export {
   CardTestimony,
   SharedWith,
   SocialMediaLink,
+  UpdateCardInput,
 };
