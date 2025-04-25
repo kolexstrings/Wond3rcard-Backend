@@ -186,6 +186,7 @@ const MailTemplates = {
 </body>
 </html>
 `,
+
   physicalCardOrderConfirmation: /*html*/ `<!DOCTYPE html>
 <html>
 <head>
