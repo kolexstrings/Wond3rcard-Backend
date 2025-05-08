@@ -10,21 +10,8 @@ import validationMiddleware from "../../middlewares/validation.middleware";
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import { UserRole } from "../user/user.protocol";
 import validate from "./physical-card.validation";
-// import { uploadCardTemplateMiddleware } from "../../multer-config/card-templates";
-// import { uploadPhysicalCardMiddleware } from "../../multer-config/physical-cards";
-import { createUploader } from "../../middlewares/uploadToCloudinary";
-
-const uploadCardTemplateMiddleware = createUploader({
-  folder: "card-templates",
-  allowedFormats: ["image/jpeg", "image/jpg", "image/png", "image/svg+xml"],
-  fileSizeLimitMB: 5,
-});
-
-const uploadPhysicalCardMiddleware = createUploader({
-  folder: "physical-cards",
-  allowedFormats: ["image/jpeg", "image/jpg", "image/png", "image/svg+xml"],
-  fileSizeLimitMB: 5,
-});
+import { uploadPhysicalCardMiddleware } from "../../middlewares/uploaders/uploadPhysicalCard";
+import { uploadCardTemplateMiddleware } from "../../middlewares/uploaders/uploadCardTemplate";
 
 class PhysicalCardController implements GeneralController {
   public path = "/phy-cards";
@@ -41,7 +28,7 @@ class PhysicalCardController implements GeneralController {
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
-        uploadCardTemplateMiddleware.single("svg"),
+        uploadCardTemplateMiddleware,
         validationMiddleware(validate.validateCardTemplate),
       ],
       this.createTemplate
@@ -74,7 +61,7 @@ class PhysicalCardController implements GeneralController {
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
-        uploadCardTemplateMiddleware.single("svg"),
+        uploadCardTemplateMiddleware,
       ],
       this.updateCardTemplate
     );
@@ -108,7 +95,7 @@ class PhysicalCardController implements GeneralController {
       `${this.path}/create-custom`,
       [
         authenticatedMiddleware,
-        uploadPhysicalCardMiddleware.single("finalDesign"),
+        uploadPhysicalCardMiddleware,
         validationMiddleware(validate.validateCustomPhysicalCard),
       ],
       this.createCustomPhysicalCard
@@ -141,10 +128,7 @@ class PhysicalCardController implements GeneralController {
 
     this.router.put(
       `${this.path}/update-custom-physical-card/:cardId`,
-      [
-        authenticatedMiddleware,
-        uploadPhysicalCardMiddleware.single("finalDesign"),
-      ],
+      [authenticatedMiddleware, uploadPhysicalCardMiddleware],
       this.updateCustomPhysicalCard
     );
 
