@@ -10,8 +10,21 @@ import validationMiddleware from "../../middlewares/validation.middleware";
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import { UserRole } from "../user/user.protocol";
 import validate from "./physical-card.validation";
-import { uploadCardTemplateMiddleware } from "../../multer-config/card-templates";
-import { uploadPhysicalCardMiddleware } from "../../multer-config/physical-cards";
+// import { uploadCardTemplateMiddleware } from "../../multer-config/card-templates";
+// import { uploadPhysicalCardMiddleware } from "../../multer-config/physical-cards";
+import { createUploader } from "../../middlewares/uploadToCloudinary";
+
+const uploadCardTemplateMiddleware = createUploader({
+  folder: "card-templates",
+  allowedFormats: ["image/jpeg", "image/jpg", "image/png", "image/svg+xml"],
+  fileSizeLimitMB: 5,
+});
+
+const uploadPhysicalCardMiddleware = createUploader({
+  folder: "physical-cards",
+  allowedFormats: ["image/jpeg", "image/jpg", "image/png", "image/svg+xml"],
+  fileSizeLimitMB: 5,
+});
 
 class PhysicalCardController implements GeneralController {
   public path = "/phy-cards";
@@ -28,7 +41,7 @@ class PhysicalCardController implements GeneralController {
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
-        uploadCardTemplateMiddleware,
+        uploadCardTemplateMiddleware.single("svg"),
         validationMiddleware(validate.validateCardTemplate),
       ],
       this.createTemplate
@@ -61,7 +74,7 @@ class PhysicalCardController implements GeneralController {
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
-        uploadCardTemplateMiddleware,
+        uploadCardTemplateMiddleware.single("svg"),
       ],
       this.updateCardTemplate
     );
@@ -71,7 +84,7 @@ class PhysicalCardController implements GeneralController {
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
-        uploadCardTemplateMiddleware,
+        // uploadCardTemplateMiddleware,
       ],
       this.updateCustomCardTemplate
     );
@@ -95,7 +108,7 @@ class PhysicalCardController implements GeneralController {
       `${this.path}/create-custom`,
       [
         authenticatedMiddleware,
-        uploadPhysicalCardMiddleware,
+        uploadPhysicalCardMiddleware.single("finalDesign"),
         validationMiddleware(validate.validateCustomPhysicalCard),
       ],
       this.createCustomPhysicalCard
@@ -128,7 +141,10 @@ class PhysicalCardController implements GeneralController {
 
     this.router.put(
       `${this.path}/update-custom-physical-card/:cardId`,
-      [authenticatedMiddleware, uploadPhysicalCardMiddleware],
+      [
+        authenticatedMiddleware,
+        uploadPhysicalCardMiddleware.single("finalDesign"),
+      ],
       this.updateCustomPhysicalCard
     );
 
@@ -148,6 +164,10 @@ class PhysicalCardController implements GeneralController {
       if (!req.file) {
         return next(new HttpException(400, "error", "SVG file is required"));
       }
+
+      console.log("Uploaded file details:", req.file);
+      console.log("Request body:", req.body);
+      console.log("Authenticated user:", req.user);
 
       const { name, priceNaira, priceUsd } = req.body;
 
@@ -177,12 +197,15 @@ class PhysicalCardController implements GeneralController {
         req.user.id
       );
 
+      console.log("Template created successfully:", template);
+
       res.status(201).json({
         statusCode: 201,
         status: "success",
         payload: template,
       });
     } catch (error) {
+      console.error("Unexpected error in createTemplate:", error);
       next(error);
     }
   };
@@ -269,6 +292,7 @@ class PhysicalCardController implements GeneralController {
         payload: updatedTemplate,
       });
     } catch (error) {
+      console.error("Error creating card template:", error);
       next(error);
     }
   };

@@ -3,6 +3,7 @@ import fs from "fs";
 import multer from "multer";
 import path from "path";
 import HttpException from "../exceptions/http.exception";
+import { createUploader } from "../middlewares/uploadToCloudinary";
 
 // Configure multer to store files in memory as Buffers
 const storage = multer.memoryStorage();
@@ -24,7 +25,7 @@ export const uploadMediaFiles = upload.fields([
   { name: "documents", maxCount: 10 }, // Up to 10 document files
 ]);
 
-// const uploadFont = multer({ fontStroage, fontFilter });
+// const uploadFont = multer({ fontStorage, fontFilter });
 
 // export const uploadFontMiddleware = uploadFont.single('font'); // Middleware for single file upload
 
@@ -182,26 +183,35 @@ const fileFilter = (req: any, file: any, cb: any) => {
   cb(null, true);
 };
 
-export const uploadProfileAndCoverMiddleware = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadPath =
-        file.fieldname === "profilePhoto" ? "uploads/profile" : "uploads/cover";
-      ensureDirectoryExists(uploadPath);
-      cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-      const uniqueName = `${file.fieldname}_${Date.now()}${path.extname(
-        file.originalname
-      )}`;
-      cb(null, uniqueName);
-    },
-  }),
-  fileFilter,
+export const uploadProfileAndCoverMiddleware = createUploader({
+  folder: "user-media",
+  allowedFormats: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
+  fileSizeLimitMB: 5,
 }).fields([
   { name: "profilePhoto", maxCount: 1 },
   { name: "coverPhoto", maxCount: 1 },
 ]);
+
+// export const uploadProfileAndCoverMiddleware = multer({
+//   storage: multer.diskStorage({
+//     destination: (req, file, cb) => {
+//       const uploadPath =
+//         file.fieldname === "profilePhoto" ? "uploads/profile" : "uploads/cover";
+//       ensureDirectoryExists(uploadPath);
+//       cb(null, uploadPath);
+//     },
+//     filename: (req, file, cb) => {
+//       const uniqueName = `${file.fieldname}_${Date.now()}${path.extname(
+//         file.originalname
+//       )}`;
+//       cb(null, uniqueName);
+//     },
+//   }),
+//   fileFilter,
+// }).fields([
+//   { name: "profilePhoto", maxCount: 1 },
+//   { name: "coverPhoto", maxCount: 1 },
+// ]);
 
 // Helper function to check file size
 const fileSizeLimit = (file: any, maxSize: number, cb: any) => {
@@ -269,53 +279,71 @@ const cardFileFilter = (req: any, file: any, cb: any) => {
 };
 
 // Configure Multer for card uploads
-export const uploadCardMediaMiddleware = multer({
-  storage: cardStorage,
-  fileFilter: cardFileFilter,
+// export const uploadCardMediaMiddleware = multer({
+//   storage: cardStorage,
+//   fileFilter: cardFileFilter,
+// }).fields([
+//   { name: "cardPhoto", maxCount: 1 },
+//   { name: "cardCoverPhoto", maxCount: 1 },
+//   { name: "cardVideo", maxCount: 1 },
+// ]);
+
+// // Configure storage for social media uploads
+// const catelogueStorage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     const uploadPath = "uploads/cards/catelogue";
+//     try {
+//       ensureDirectoryExists(uploadPath);
+//       cb(null, uploadPath);
+//     } catch (error) {
+//       cb(
+//         new HttpException(
+//           500,
+//           "Storage Error",
+//           "Failed to create upload directory."
+//         ),
+//         null
+//       );
+//     }
+//   },
+//   filename: (req, file, cb) => {
+//     try {
+//       const uploadPath = "uploads/cards/catelogue";
+//       const cleanName = `cateloguePhoto_${Date.now()}`;
+//       const fileExt = path.extname(file.originalname); // Get file extension
+//       const uniqueName = `${cleanName}${fileExt}`; // Combine name with extension
+//       const filePath = path.join(uploadPath, uniqueName);
+
+//       // Check if the file exists and delete it
+//       deleteFileIfExists(filePath);
+
+//       cb(null, uniqueName); // Use the clean name as the file name
+//     } catch (error) {
+//       cb(
+//         new HttpException(400, "Invalid file", "Failed to generate file name"),
+//         null
+//       );
+//     }
+//   },
+// });
+
+// You could split images & videos if needed, but for now we'll use resource_type: "auto"
+export const uploadCardMediaMiddleware = createUploader({
+  folder: "card-media",
+  allowedFormats: [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "video/mp4",
+    "video/mpeg",
+  ],
+  fileSizeLimitMB: 20, // assuming max video size 20MB
 }).fields([
   { name: "cardPhoto", maxCount: 1 },
   { name: "cardCoverPhoto", maxCount: 1 },
   { name: "cardVideo", maxCount: 1 },
 ]);
-
-// Configure storage for social media uploads
-const catelogueStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = "uploads/cards/catelogue";
-    try {
-      ensureDirectoryExists(uploadPath);
-      cb(null, uploadPath);
-    } catch (error) {
-      cb(
-        new HttpException(
-          500,
-          "Storage Error",
-          "Failed to create upload directory."
-        ),
-        null
-      );
-    }
-  },
-  filename: (req, file, cb) => {
-    try {
-      const uploadPath = "uploads/cards/catelogue";
-      const cleanName = `cateloguePhoto_${Date.now()}`;
-      const fileExt = path.extname(file.originalname); // Get file extension
-      const uniqueName = `${cleanName}${fileExt}`; // Combine name with extension
-      const filePath = path.join(uploadPath, uniqueName);
-
-      // Check if the file exists and delete it
-      deleteFileIfExists(filePath);
-
-      cb(null, uniqueName); // Use the clean name as the file name
-    } catch (error) {
-      cb(
-        new HttpException(400, "Invalid file", "Failed to generate file name"),
-        null
-      );
-    }
-  },
-});
 
 // File filter for social media images
 const catelogueFilter = (req: any, file: any, cb: any) => {
