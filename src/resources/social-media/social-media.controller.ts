@@ -3,7 +3,7 @@ import authenticatedMiddleware from "../../middlewares/authenticated.middleware"
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
-import { uploadSocialMediaMiddleware } from "../../services/multers.config";
+import { uploadSocialMediaMiddleware } from "../../middlewares/uploaders/uploadSocialMedia";
 import { UserRole } from "../user/user.protocol";
 import SocialMediaService from "./social-media.service";
 import validate from "./social-media.validations";

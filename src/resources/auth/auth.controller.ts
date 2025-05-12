@@ -4,7 +4,7 @@ import authenticatedMiddleware from "../../middlewares/authenticated.middleware"
 import passportMiddleware from "../../middlewares/passport.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
-import { uploadProfileAndCoverMiddleware } from "../../services/multers.config";
+import { uploadProfileAndCoverMiddleware } from "../../middlewares/uploaders/uploadProfileAndCover";
 import AuthService from "./auth.service";
 import validate from "./auth.validators";
 
