@@ -24,7 +24,7 @@ export const uploadMediaFiles = upload.fields([
   { name: "documents", maxCount: 10 }, // Up to 10 document files
 ]);
 
-// const uploadFont = multer({ fontStroage, fontFilter });
+// const uploadFont = multer({ fontStorage, fontFilter });
 
 // export const uploadFontMiddleware = uploadFont.single('font'); // Middleware for single file upload
 

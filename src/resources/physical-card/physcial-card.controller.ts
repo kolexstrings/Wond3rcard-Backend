@@ -10,8 +10,8 @@ import validationMiddleware from "../../middlewares/validation.middleware";
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import { UserRole } from "../user/user.protocol";
 import validate from "./physical-card.validation";
-import { uploadCardTemplateMiddleware } from "../../multer-config/card-templates";
-import { uploadPhysicalCardMiddleware } from "../../multer-config/physical-cards";
+import { uploadPhysicalCardMiddleware } from "../../middlewares/uploaders/uploadPhysicalCard";
+import { uploadCardTemplateMiddleware } from "../../middlewares/uploaders/uploadCardTemplate";
 
 class PhysicalCardController implements GeneralController {
   public path = "/phy-cards";
@@ -71,7 +71,7 @@ class PhysicalCardController implements GeneralController {
       [
         authenticatedMiddleware,
         verifyRolesMiddleware([UserRole.Admin]),
-        uploadCardTemplateMiddleware,
+        // uploadCardTemplateMiddleware,
       ],
       this.updateCustomCardTemplate
     );
@@ -149,6 +149,10 @@ class PhysicalCardController implements GeneralController {
         return next(new HttpException(400, "error", "SVG file is required"));
       }
 
+      console.log("Uploaded file details:", req.file);
+      console.log("Request body:", req.body);
+      console.log("Authenticated user:", req.user);
+
       const { name, priceNaira, priceUsd } = req.body;
 
       if (!req.user || !req.user.id) {
@@ -177,12 +181,15 @@ class PhysicalCardController implements GeneralController {
         req.user.id
       );
 
+      console.log("Template created successfully:", template);
+
       res.status(201).json({
         statusCode: 201,
         status: "success",
         payload: template,
       });
     } catch (error) {
+      console.error("Unexpected error in createTemplate:", error);
       next(error);
     }
   };
@@ -269,6 +276,7 @@ class PhysicalCardController implements GeneralController {
         payload: updatedTemplate,
       });
     } catch (error) {
+      console.error("Error creating card template:", error);
       next(error);
     }
   };

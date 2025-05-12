@@ -25,6 +25,7 @@ class PhysicalCardService {
       });
       return newTemplate;
     } catch (error) {
+      console.error("Error creating card template:", error);
       throw new HttpException(500, "error", "Failed to create card template");
     }
   }
