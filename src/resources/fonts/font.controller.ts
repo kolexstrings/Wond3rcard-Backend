@@ -4,7 +4,7 @@ import authenticatedMiddleware from "../../middlewares/authenticated.middleware"
 import verifyRolesMiddleware from "../../middlewares/roles.middleware";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GeneralController from "../../protocols/global.controller";
-import { uploadFontMiddleware } from "../../services/multers.config";
+import { uploadFontMiddleware } from "../../middlewares/uploaders/uploadFont";
 import { UserRole } from "../user/user.protocol";
 import FontsService from "./fonts.service";
 import validator from "./fonts.validation";

@@ -4,10 +4,8 @@ import authenticatedMiddleware from "../../middlewares/authenticated.middleware"
 import { canCreateCardMiddleware } from "../../middlewares/card.middlewares";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import GlobalController from "../../protocols/global.controller";
-import {
-  uploadCardMediaMiddleware,
-  uploadCatelogueMiddleware,
-} from "../../services/multers.config";
+import { uploadCatelogueMiddleware } from "../../middlewares/uploaders/uploadCatalogueImages";
+import { uploadCardMediaMiddleware } from "../../middlewares/uploaders/uploadCardMedia";
 import {
   AddressInfo,
   CardCatelog,
