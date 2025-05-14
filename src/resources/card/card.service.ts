@@ -36,11 +36,11 @@ class CardService {
     cardVideo?: Express.Multer.File
   ): Promise<Card> {
     try {
+      // Parse social media links
       let socialMediaLinks: CardSocialMediaLink[] = [];
       if (data.socialMediaLinks) {
         try {
           const parsedLinks = JSON.parse(data.socialMediaLinks.toString());
-
           socialMediaLinks = parsedLinks.map((link: any) => ({
             media: {
               iconUrl: link.media.iconUrl,
@@ -60,46 +60,28 @@ class CardService {
         }
       }
 
-      let newCardPhotoFileName = "";
-      if (cardCoverPhoto != null && cardCoverPhoto.destination != null) {
-        const cardPhotoDestination = cardPhoto.destination;
-        const cardPhotoFileName = cardPhoto.filename;
-        const cardFileExt = path.extname(cardPhoto.originalname);
-        newCardPhotoFileName = `cardPhoto_${user.id}${cardFileExt}`;
-        await renameUploadedFile(
-          cardPhotoFileName,
-          newCardPhotoFileName,
-          cardPhotoDestination
-        );
-      }
-      let newCardCoverPhotoFileName = "";
-      if (cardCoverPhoto != null && cardCoverPhoto.destination != null) {
-        const cardCoverPhotoDestination = cardCoverPhoto.destination;
-        const cardCoverFileName = cardCoverPhoto.filename;
-        const coverFileExt = path.extname(cardCoverPhoto.originalname);
-        newCardCoverPhotoFileName = `cardCoverPhoto_${user.id}${coverFileExt}`;
-        await renameUploadedFile(
-          cardCoverFileName,
-          newCardCoverPhotoFileName,
-          cardCoverPhotoDestination
-        );
-      }
-      let newCardVideoFileName = "";
-      if (cardVideo != null && cardVideo.destination != null) {
-        const cardVideoDestination = cardVideo.destination;
-        const cardVideoFileName = cardVideo.filename;
-        const videoFileExt = path.extname(cardVideo.originalname);
-        await renameUploadedFile(
-          cardVideoFileName,
-          newCardVideoFileName,
-          cardVideoDestination
-        );
+      // Grab Cloudinary uploaded URLs from multer file path
+      let cardPhotoUrl = "";
+      if (cardPhoto) {
+        cardPhotoUrl = cardPhoto.path; // Cloudinary secure_url lives in .path when configured this way
       }
 
-      data.cardPictureUrl = newCardPhotoFileName;
-      data.cardCoverUrl = newCardCoverPhotoFileName;
-      data.videoUrl = newCardVideoFileName;
+      let cardCoverPhotoUrl = "";
+      if (cardCoverPhoto) {
+        cardCoverPhotoUrl = cardCoverPhoto.path;
+      }
 
+      let cardVideoUrl = "";
+      if (cardVideo) {
+        cardVideoUrl = cardVideo.path;
+      }
+
+      // Assign the URLs to the card data
+      data.cardPictureUrl = cardPhotoUrl;
+      data.cardCoverUrl = cardCoverPhotoUrl;
+      data.videoUrl = cardVideoUrl;
+
+      // Prepare full card data object
       const cardData: Partial<Card> = {
         ...cardDefaultData,
         ...data,
