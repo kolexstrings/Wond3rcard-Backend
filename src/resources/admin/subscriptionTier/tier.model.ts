@@ -27,7 +27,7 @@ const BillingCycleSchema = new Schema({
 
 const TierSchema = new Schema<ITier>(
   {
-    name: { type: String, required: true, unique: true },
+    name: { type: String, required: true, unique: true, lowercase: true },
     billingCycle: { type: BillingCycleSchema, required: true },
     description: { type: String, required: true },
     trialPeriod: { type: Number, required: true },

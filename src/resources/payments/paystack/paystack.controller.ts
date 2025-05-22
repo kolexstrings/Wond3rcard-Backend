@@ -87,7 +87,8 @@ class PaystackController implements GeneralController {
           reference: checkout.data.reference,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Full Paystack error response:", error.response.data);
       next(error);
     }
   };

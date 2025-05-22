@@ -20,18 +20,47 @@ class PaystackSubscriptionService {
     billingCycle: "monthly" | "yearly"
   ) {
     const user = await userModel.findById(userId);
+    const profile = await profileModel.findById(userId);
 
     if (!user) throw new Error("User not found");
     const tier = await tierModel.findOne({ name: plan.toLowerCase() });
     if (!tier) throw new Error("Invalid subscription tier");
 
-    const { price, durationInDays, planCode } = tier.billingCycle[billingCycle];
+    const { durationInDays, planCode } = tier.billingCycle[billingCycle];
+
+    const planDetails = await axios.get(`${this.baseUrl}/plan/${planCode}`, {
+      headers: { Authorization: `Bearer ${this.secretKey}` },
+    });
+
+    const amount = planDetails.data.data.amount;
+
+    let customerCode = user.paystackCustomerId;
+
+    if (!customerCode) {
+      const customerResponse = await axios.post(
+        `${this.baseUrl}/customer`,
+        {
+          email: user.email,
+          first_name: profile.firstname,
+          last_name: profile.lastname,
+        },
+        {
+          headers: { Authorization: `Bearer ${this.secretKey}` },
+        }
+      );
+
+      customerCode = customerResponse.data.data.customer_code;
+
+      // Update user record with customerCode
+      user.paystackCustomerId = customerCode;
+      await user.save();
+    }
 
     const response = await axios.post(
       `${this.baseUrl}/subscription`,
       {
+        customer: customerCode,
         email: user.email,
-        amount: price * 100, // Convert to kobo
         plan: planCode,
         callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
         metadata: {
@@ -39,6 +68,7 @@ class PaystackSubscriptionService {
           plan,
           billingCycle,
           durationInDays,
+          amount,
           transactionType: "subscription",
         },
       },
@@ -62,7 +92,8 @@ class PaystackSubscriptionService {
   }
 
   public async handleSuccessfulSubscription(data: any) {
-    const { userId, plan, billingCycle, durationInDays } = data.metadata;
+    const { userId, plan, billingCycle, durationInDays, amount } =
+      data.metadata;
 
     const user = await userModel.findById(userId);
     const profile = await profileModel.findById(userId);
@@ -80,7 +111,6 @@ class PaystackSubscriptionService {
     const transactionId = data.id;
     const subscriptionCode = data.subscription.code;
     const referenceId = generateTransactionId("subscription", "paystack");
-    const amount = data.amount / 100;
     const paymentMethod = data.channel;
     const paidAt = new Date(data.paid_at);
     const expiresAt = new Date(
