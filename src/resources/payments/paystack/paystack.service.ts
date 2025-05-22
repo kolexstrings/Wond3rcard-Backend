@@ -20,9 +20,11 @@ class PaystackSubscriptionService {
     billingCycle: "monthly" | "yearly"
   ) {
     const user = await userModel.findById(userId);
-    const profile = await profileModel.findById(userId);
-
     if (!user) throw new Error("User not found");
+
+    const profile = await profileModel.findOne({ uid: userId });
+    if (!profile) throw new Error("User profile not found");
+
     const tier = await tierModel.findOne({ name: plan.toLowerCase() });
     if (!tier) throw new Error("Invalid subscription tier");
 

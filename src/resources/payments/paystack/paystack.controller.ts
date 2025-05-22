@@ -70,9 +70,6 @@ class PaystackController implements GeneralController {
         return next(new HttpException(400, "error", "Invalid billing cycle"));
       }
 
-      const user = await userModel.findById(userId);
-      if (!user) return next(new HttpException(404, "error", "User not found"));
-
       const checkout = await this.paystackSubscriptionService.initializePayment(
         userId,
         plan,
@@ -83,12 +80,11 @@ class PaystackController implements GeneralController {
         statusCode: 200,
         status: "success",
         payload: {
-          checkoutUrl: checkout.data.authorization_url,
-          reference: checkout.data.reference,
+          checkoutUrl: checkout.authorization_url,
+          reference: checkout.reference,
         },
       });
     } catch (error: any) {
-      console.error("Full Paystack error response:", error.response.data);
       next(error);
     }
   };
