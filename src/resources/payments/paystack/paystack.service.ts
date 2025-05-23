@@ -36,6 +36,7 @@ class PaystackSubscriptionService {
 
     const amount = planDetails.data.data.amount;
 
+    // Ensure customer exists
     let customerCode = user.paystackCustomerId;
 
     if (!customerCode) {
@@ -53,33 +54,76 @@ class PaystackSubscriptionService {
 
       customerCode = customerResponse.data.data.customer_code;
 
-      // Update user record with customerCode
       user.paystackCustomerId = customerCode;
       await user.save();
     }
 
-    const response = await axios.post(
-      `${this.baseUrl}/subscription`,
-      {
-        customer: customerCode,
-        email: user.email,
-        plan: planCode,
-        callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
-        metadata: {
-          userId,
-          plan,
-          billingCycle,
-          durationInDays,
-          amount,
-          transactionType: "subscription",
-        },
-      },
+    // Fetch customer's authorization history
+    const customerDetails = await axios.get(
+      `${this.baseUrl}/customer/${customerCode}`,
       {
         headers: { Authorization: `Bearer ${this.secretKey}` },
       }
     );
 
-    return response.data;
+    const authorizations = customerDetails.data.data.authorizations;
+    const savedAuthorization = authorizations?.[0]?.authorization_code;
+
+    if (savedAuthorization) {
+      // User already has a saved card: Create subscription directly
+      const subscriptionResponse = await axios.post(
+        `${this.baseUrl}/subscription`,
+        {
+          customer: customerCode,
+          plan: planCode,
+          authorization: savedAuthorization,
+          callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
+          metadata: {
+            userId,
+            plan,
+            billingCycle,
+            durationInDays,
+            amount,
+            transactionType: "subscription",
+          },
+        },
+        {
+          headers: { Authorization: `Bearer ${this.secretKey}` },
+        }
+      );
+
+      return {
+        type: "subscription",
+        subscriptionData: subscriptionResponse.data.data,
+      };
+    } else {
+      // No saved authorization: Initialize payment
+      const transactionResponse = await axios.post(
+        `${this.baseUrl}/transaction/initialize`,
+        {
+          email: user.email,
+          amount: amount,
+          callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
+          metadata: {
+            userId,
+            plan,
+            billingCycle,
+            durationInDays,
+            amount,
+            transactionType: "subscription",
+          },
+        },
+        {
+          headers: { Authorization: `Bearer ${this.secretKey}` },
+        }
+      );
+
+      return {
+        type: "payment",
+        checkoutUrl: transactionResponse.data.data.authorization_url,
+        reference: transactionResponse.data.data.reference,
+      };
+    }
   }
 
   public async verifyTransaction(reference: string) {

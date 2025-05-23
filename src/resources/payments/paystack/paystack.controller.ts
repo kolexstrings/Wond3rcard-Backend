@@ -70,20 +70,38 @@ class PaystackController implements GeneralController {
         return next(new HttpException(400, "error", "Invalid billing cycle"));
       }
 
-      const checkout = await this.paystackSubscriptionService.initializePayment(
+      const result = await this.paystackSubscriptionService.initializePayment(
         userId,
         plan,
         billingCycle
       );
 
-      res.status(200).json({
-        statusCode: 200,
-        status: "success",
-        payload: {
-          checkoutUrl: checkout.authorization_url,
-          reference: checkout.reference,
-        },
-      });
+      if (result.type === "payment") {
+        // User needs to make payment via checkout link
+        res.status(200).json({
+          statusCode: 200,
+          status: "success",
+          payload: {
+            checkoutUrl: result.checkoutUrl,
+            reference: result.reference,
+          },
+        });
+      } else if (result.type === "subscription") {
+        // Subscription already created using existing card
+        res.status(200).json({
+          statusCode: 200,
+          status: "success",
+          payload: {
+            subscription: result.subscriptionData,
+          },
+        });
+      } else {
+        res.status(500).json({
+          statusCode: 500,
+          status: "error",
+          message: "Unexpected response from payment service",
+        });
+      }
     } catch (error: any) {
       next(error);
     }
