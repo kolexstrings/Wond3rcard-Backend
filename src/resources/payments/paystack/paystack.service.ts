@@ -155,13 +155,42 @@ class PaystackSubscriptionService {
     }
 
     const transactionId = data.id;
-    const subscriptionCode = data.subscription.code;
     const referenceId = generateTransactionId("subscription", "paystack");
     const paymentMethod = data.channel;
     const paidAt = new Date(data.paid_at);
     const expiresAt = new Date(
       paidAt.getTime() + durationInDays * 24 * 60 * 60 * 1000
     );
+
+    let subscriptionCode = data.subscription?.subscription_code;
+
+    if (data.authorization?.authorization_code) {
+      const tier = await tierModel.findOne({ name: plan.toLowerCase() });
+      const planCode = tier.billingCycle[billingCycle].planCode;
+
+      const subscriptionResponse = await axios.post(
+        `${this.baseUrl}/subscription`,
+        {
+          customer: data.customer.customer_code,
+          plan: planCode,
+          authorization: data.authorization.authorization_code,
+          callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
+          metadata: {
+            userId,
+            plan,
+            billingCycle,
+            durationInDays,
+            amount,
+            transactionType: "subscription",
+          },
+        },
+        {
+          headers: { Authorization: `Bearer ${this.secretKey}` },
+        }
+      );
+
+      subscriptionCode = subscriptionResponse.data.data.subscription_code;
+    }
 
     // Update user subscription
     user.userTier = {
