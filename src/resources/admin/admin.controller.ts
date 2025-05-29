@@ -142,13 +142,13 @@ class AdminController implements GlobalController {
 
     this.router.get(
       `${this.path}/subscription-tiers`,
-      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      [authenticatedMiddleware],
       this.getSubscriptionTiers
     );
 
     this.router.get(
       `${this.path}/subscription-tiers/:id`,
-      [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
+      [authenticatedMiddleware],
       this.getSubscriptionTierById
     );
 
