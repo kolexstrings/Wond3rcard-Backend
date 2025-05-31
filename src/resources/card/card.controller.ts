@@ -54,11 +54,7 @@ class CardController implements GlobalController {
       this.createTeamMemberCard
     );
 
-    this.router.get(
-      `${this.path}/get-card/:cardId`,
-      [authenticatedMiddleware],
-      this.getCardById
-    );
+    this.router.get(`${this.path}/get-card/:cardId`, this.getCardById); // we can use an authentication token for guests for this later
 
     this.router.delete(
       `${this.path}/delete-all-cards`,
