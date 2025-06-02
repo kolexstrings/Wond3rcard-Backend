@@ -319,8 +319,7 @@ class CardController implements GlobalController {
       if (!cardId) {
         throw new HttpException(400, "missing", "Please provide id");
       }
-      const uid = req.user.id;
-      const card = await this.cardService.getUserCardById(cardId, uid);
+      const card = await this.cardService.getCardById(cardId);
       if (!card) {
         res.status(404).json({ message: "Card not found" });
       }

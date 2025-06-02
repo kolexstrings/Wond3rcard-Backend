@@ -92,6 +92,9 @@ class PaystackSubscriptionService {
         }
       );
 
+      // Update callback URL with reference after getting response
+      subscriptionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${subscriptionResponse.data.data.reference}`;
+
       return {
         type: "subscription",
         subscriptionData: subscriptionResponse.data.data,
@@ -117,6 +120,9 @@ class PaystackSubscriptionService {
           headers: { Authorization: `Bearer ${this.secretKey}` },
         }
       );
+
+      // Update callback URL with reference after getting response
+      transactionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${transactionResponse.data.data.reference}`;
 
       return {
         type: "payment",
@@ -174,7 +180,7 @@ class PaystackSubscriptionService {
           customer: data.customer.customer_code,
           plan: planCode,
           authorization: data.authorization.authorization_code,
-          callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
+          callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${data.reference}`,
           metadata: {
             userId,
             plan,
