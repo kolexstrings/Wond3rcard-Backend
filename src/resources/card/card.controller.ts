@@ -63,8 +63,8 @@ class CardController implements GlobalController {
     );
 
     this.router.patch(
-      `${this.path}/update-card`,
-      [authenticatedMiddleware, validationMiddleware(validator.updateCard)],
+      `${this.path}/update-card/:cardId`,
+      [authenticatedMiddleware, uploadCardMediaMiddleware],
       this.updateCard
     );
 
@@ -334,19 +334,59 @@ class CardController implements GlobalController {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    const cardPhoto = req.files?.["cardPhoto"]?.[0];
-    const cardCoverPhoto = req.files?.["cardCoverPhoto"]?.[0];
-    const cardVideo = req.files?.["cardVideo"]?.[0];
-
     try {
-      const { cardId } = req.body;
-      let cardAddresses: AddressInfo[] = [];
-      if (req.body.addresses) {
-        cardAddresses = JSON.parse(req.body.addresses.toString());
+      const { cardId } = req.params;
+      const cardPhoto = req.files?.["cardPhoto"]?.[0];
+      const cardCoverPhoto = req.files?.["cardCoverPhoto"]?.[0];
+      const cardVideo = req.files?.["cardVideo"]?.[0];
+
+      if (!cardId) {
+        throw new HttpException(400, "missing", "Card ID is required");
       }
+
+      // Handle contact info
+      const contactInfo: CardContactInfo = {
+        email: req.body.email || req.body["contactInfo[email]"],
+        phone: req.body.phone || req.body["contactInfo[phone]"],
+        website: req.body.website || req.body["contactInfo[website]"],
+        emailType:
+          req.body.emailType || req.body["contactInfo[emailType]"] || [],
+        addresses: [],
+      };
+
+      // Handle addresses if provided
+      if (req.body.addresses) {
+        try {
+          contactInfo.addresses = JSON.parse(req.body.addresses.toString());
+        } catch (error) {
+          throw new HttpException(422, "invalid", "Invalid addresses format");
+        }
+      }
+
+      // Handle card style
+      const cardStyle: CardStyle = {
+        fontSize: req.body.fontSize || "18px",
+        fontStyle: req.body.fontStyle || "normal",
+        fontWeight: req.body.fontWeight || "normal",
+        textAlign: req.body.textAlign || "left",
+        textColor: req.body.textColor || "#000000",
+        borderStyle: req.body.borderStyle || "none",
+        borderColor: req.body.borderColor || "#000000",
+        borderWidth: req.body.borderWidth || "0px",
+        borderRadius: req.body.borderRadius || "0px",
+        padding: req.body.padding || "10px",
+        margin: req.body.margin || "15px",
+        orientation: req.body.orientation || "horizontal",
+        alignment: req.body.alignment || "leading",
+        boxShadow: req.body.boxShadow || "none",
+        primaryColor: req.body.primaryColor || "#FFFFFF",
+        secondaryColor: req.body.secondaryColor || "#000000",
+      };
 
       const data = {
         ...req.body,
+        contactInfo,
+        cardStyle,
         cardPictureUrl: cardPhoto?.path,
         cardCoverUrl: cardCoverPhoto?.path,
         videoUrl: cardVideo?.path,
@@ -355,10 +395,15 @@ class CardController implements GlobalController {
       const card = await this.cardService.updateCard(cardId, data);
 
       if (!card) {
-        res.status(404).json({ message: "Card not found" });
+        throw new HttpException(404, "not found", "Card not found");
       }
 
-      res.json(card);
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "Card updated successfully",
+        payload: { card },
+      });
     } catch (error) {
       next(error);
     }
