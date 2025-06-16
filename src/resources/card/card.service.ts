@@ -178,7 +178,103 @@ class CardService {
   }
 
   async updateCard(id: string, data: UpdateCardInput): Promise<Card | null> {
-    return await cardModel.findByIdAndUpdate(id, data, { new: true });
+    try {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new HttpException(400, "invalid", "Invalid Card ID");
+      }
+
+      // Get the existing card
+      const existingCard = await cardModel.findById(id);
+      if (!existingCard) {
+        throw new HttpException(404, "not found", "Card not found");
+      }
+
+      // Prepare update data
+      const updateData: any = {};
+
+      // Handle basic fields - only update if explicitly provided
+      const basicFields = [
+        "cardType",
+        "cardName",
+        "firstName",
+        "lastName",
+        "otherName",
+        "designation",
+        "prefix",
+        "pronoun",
+      ];
+
+      basicFields.forEach((field) => {
+        if (field in data) {
+          updateData[field] = data[field];
+        }
+      });
+
+      // Handle contact info - preserve existing values
+      if (data.contactInfo) {
+        updateData.contactInfo = {
+          ...existingCard.contactInfo,
+          ...data.contactInfo,
+          // Only update addresses if explicitly provided
+          addresses:
+            data.contactInfo.addresses || existingCard.contactInfo.addresses,
+          // Only update emailType if explicitly provided
+          emailType:
+            data.contactInfo.emailType || existingCard.contactInfo.emailType,
+        };
+      }
+
+      // Handle card style - preserve existing values
+      if (data.cardStyle) {
+        updateData.cardStyle = {
+          ...existingCard.cardStyle,
+          ...data.cardStyle,
+        };
+      }
+
+      // Handle media files - only update if new files are provided
+      if (data.cardPictureUrl) {
+        updateData.cardPictureUrl = data.cardPictureUrl;
+      }
+      if (data.cardCoverUrl) {
+        updateData.cardCoverUrl = data.cardCoverUrl;
+      }
+      if (data.videoUrl) {
+        updateData.videoUrl = data.videoUrl;
+      }
+
+      // Handle social media links - preserve existing if not provided
+      if (data.socialMediaLinks) {
+        updateData.socialMediaLinks = data.socialMediaLinks;
+      }
+
+      // Handle testimonials - preserve existing if not provided
+      if (data.testimonials) {
+        updateData.testimonials = data.testimonials;
+      }
+
+      // Handle catalogue - preserve existing if not provided
+      if (data.catelogue) {
+        updateData.catelogue = data.catelogue;
+      }
+
+      // Remove undefined values to prevent accidental nulling
+      Object.keys(updateData).forEach((key) => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
+
+      const card = await cardModel.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true }
+      );
+
+      return card;
+    } catch (error) {
+      throw new HttpException(500, "update failed", error.message);
+    }
   }
 
   async deleteCard(cardId: string, uid: string): Promise<Card | null> {
