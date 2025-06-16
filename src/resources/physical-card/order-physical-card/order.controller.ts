@@ -8,12 +8,18 @@ import validationMiddleware from "../../../middlewares/validation.middleware";
 import verifyRolesMiddleware from "../../../middlewares/roles.middleware";
 import { UserRole } from "../../user/user.protocol";
 import validate from "./order.validation";
+import crypto from "crypto";
+import PaystackOrderService from "./paystack/paystack.service";
+import StripeOrderService from "./stripe/stripe.service";
+import stripe from "stripe";
 
 class PhysicalCardOrderController implements GeneralController {
   public path = "/card-orders";
   public router = Router();
   private physicalCardOrderService = new PhysicalCardOrderService();
   private manualCardOrderService = new ManualOrderService();
+  private paystackService = new PaystackOrderService();
+  private stripeService = new StripeOrderService();
 
   constructor() {
     this.initializeRoute();
@@ -36,9 +42,10 @@ class PhysicalCardOrderController implements GeneralController {
         verifyRolesMiddleware([UserRole.Admin]),
         validationMiddleware(validate.validateCreateManualOrder),
       ],
-
       this.createManualOrder
     );
+
+    this.router.post(`${this.path}/webhook/stripe`, this.handleStripeWebhook);
 
     this.router.get(
       `${this.path}/`,
@@ -293,6 +300,41 @@ class PhysicalCardOrderController implements GeneralController {
         status: "success",
         payload: updatedOrder,
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private handleStripeWebhook = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const sig = req.headers["stripe-signature"];
+      if (!sig) {
+        throw new HttpException(401, "error", "No Stripe signature found");
+      }
+
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+
+      // Handle the event
+      switch (event.type) {
+        case "checkout.session.completed":
+          const session = event.data.object;
+          if (session.metadata?.transactionType === "card_order") {
+            await this.stripeService.handleSuccessfulCardOrder(session);
+          }
+          break;
+        default:
+          console.log(`Unhandled event type ${event.type}`);
+      }
+
+      res.status(200).json({ received: true });
     } catch (error) {
       next(error);
     }
