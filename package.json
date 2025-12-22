@@ -39,6 +39,7 @@
     "dotenv": "^16.5.0",
     "envalid": "^8.0.0",
     "express": "^4.21.2",
+    "express-list-endpoints": "^6.1.0",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.4.1",
     "express-session": "^1.18.1",
@@ -67,6 +68,7 @@
     "speakeasy": "^2.0.0",
     "sqlite3": "^5.1.7",
     "stripe": "^17.2.1",
+    "swagger-ui-express": "^5.0.1",
     "useragent": "^2.3.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
@@ -76,6 +78,7 @@
     "@types/express-serve-static-core": "^4.19.6",
     "@types/lodash": "^4.17.13",
     "@types/node": "^22.9.0",
+    "@types/swagger-ui-express": "^4.1.6",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2"
   }
