@@ -23,6 +23,7 @@ import TeamController from "./resources/organization/team/team.controller";
 import PhysicalCardController from "./resources/physical-card/physcial-card.controller";
 import PhysicalCardOrderController from "./resources/physical-card/order-physical-card/order.controller";
 import AnalyticsController from "./resources/analytics/analytics.controller";
+import SubscriptionController from "./resources/subscription/subscription.controller";
 
 validateEnv();
 
@@ -50,6 +51,7 @@ const app = new App(
     new PhysicalCardController(),
     new PhysicalCardOrderController(),
     new AnalyticsController(),
+    new SubscriptionController(),
   ],
   Number(process.env.PORT)
 );
