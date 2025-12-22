@@ -1,9 +1,10 @@
 import HttpException from "../../exceptions/http.exception";
 import profileModel from "./profile.model";
 import { Profile } from "./profile.protocol";
+import userModel from "../user/user.model";
 
 class ProfileService {
-  private model = profileModel
+  private model = profileModel;
   public async createProfile(data: Profile): Promise<Profile> {
     try {
       const customer = await this.model.create(data);
@@ -22,7 +23,10 @@ class ProfileService {
     }
   }
 
-  public async getAllProfiles(page: number = 1, limit: number = 10): Promise<{ customers: Profile[]; total: number }> {
+  public async getAllProfiles(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ customers: Profile[]; total: number }> {
     try {
       const skip = (page - 1) * limit;
       const customers = await this.model.find().skip(skip).limit(limit);
@@ -33,9 +37,14 @@ class ProfileService {
     }
   }
 
-  public async updateProfile(id: number, data: Partial<Profile>): Promise<Profile | null> {
+  public async updateProfile(
+    id: number,
+    data: Partial<Profile>
+  ): Promise<Profile | null> {
     try {
-      const updatedCustomer = await this.model.findByIdAndUpdate(id, data, { new: true });
+      const updatedCustomer = await this.model.findByIdAndUpdate(id, data, {
+        new: true,
+      });
       return updatedCustomer;
     } catch (error) {
       throw new Error(`Error updating customer with ID ${id}: ${error}`);
@@ -54,13 +63,20 @@ class ProfileService {
   public async getContacts(userId: string): Promise<Profile[]> {
     const user = await this.model.findOne({ uid: userId }).populate("contacts");
     if (!user) {
-      throw new HttpException(404, 'not found', "User not found");
+      throw new HttpException(404, "not found", "User not found");
     }
     const contacts = await Promise.all(
       user.contacts.map(async (contactId) => {
-        const profile = await this.model.findById(contactId, { contacts: 0, connections: 0 }); // Fetch the full profile
+        const profile = await this.model.findById(contactId, {
+          contacts: 0,
+          connections: 0,
+        }); // Fetch the full profile
         if (!profile) {
-          throw new HttpException(404, 'not found', `Profile not found for contact ID ${contactId}`);
+          throw new HttpException(
+            404,
+            "not found",
+            `Profile not found for contact ID ${contactId}`
+          );
         }
         return profile;
       })
@@ -69,12 +85,15 @@ class ProfileService {
     return contacts;
   }
 
-  public async addContact(userId: string, contactEmail: string): Promise<Profile> {
+  public async addContact(
+    userId: string,
+    contactEmail: string
+  ): Promise<Profile> {
     const user = await this.model.findOne({ uid: userId });
     const contact = await this.model.findOne({ email: contactEmail });
 
     if (!user || !contact) {
-      throw new HttpException(404, 'not found', "User or contact not found");
+      throw new HttpException(404, "not found", "User or contact not found");
     }
 
     if (!user.contacts.includes(contact.id)) {
@@ -90,7 +109,7 @@ class ProfileService {
     const user = await this.model.findOne({ uid: uid });
 
     if (!user || !target) {
-      throw new HttpException(404, 'not found', "User or target not found");
+      throw new HttpException(404, "not found", "User or target not found");
     }
 
     if (!user.connections.includes(target.id)) {
@@ -104,18 +123,26 @@ class ProfileService {
     return user;
   }
 
-
   public async getConnections(userId: string): Promise<Profile[]> {
-    const profile = await this.model.findOne({ uid: userId }).populate("connections");
+    const profile = await this.model
+      .findOne({ uid: userId })
+      .populate("connections");
     if (!profile) {
-      throw new HttpException(404, 'not found', "User not found");
+      throw new HttpException(404, "not found", "User not found");
     }
 
     const connections = await Promise.all(
       profile.connections.map(async (id) => {
-        const profile = await this.model.findById(id, { contacts: 0, connections: 0 }); // Fetch the full profile
+        const profile = await this.model.findById(id, {
+          contacts: 0,
+          connections: 0,
+        }); // Fetch the full profile
         if (!profile) {
-          throw new HttpException(404, 'not found', `Profile not found for contact ID ${id}`);
+          throw new HttpException(
+            404,
+            "not found",
+            `Profile not found for contact ID ${id}`
+          );
         }
         return profile;
       })
@@ -123,65 +150,88 @@ class ProfileService {
     return connections;
   }
 
-
   public async suggestConnections(userId: string): Promise<Profile[]> {
     const user = await this.model.findOne({ uid: userId }).populate("contacts");
     if (!user) {
-      throw new HttpException(404, 'not found', "User not found");
+      throw new HttpException(404, "not found", "User not found");
     }
 
     // const contacts = user.contacts as Profile[];
     const contacts = await Promise.all(
       user.contacts.map(async (contactId) => {
-        const profile = await this.model.findById(contactId, { contacts: 0, connections: 0 }); // Fetch the full profile
+        const profile = await this.model.findById(contactId, {
+          contacts: 0,
+          connections: 0,
+        }); // Fetch the full profile
         if (!profile) {
-          throw new HttpException(404, 'not found', `Profile not found for contact ID ${contactId}`);
+          throw new HttpException(
+            404,
+            "not found",
+            `Profile not found for contact ID ${contactId}`
+          );
         }
         return profile;
       })
     );
 
+    const exclusionIds = [user._id, ...contacts.map((contact) => contact._id)];
+    const activeUserIds = await userModel
+      .find({ isSoftDeleted: false }, "_id")
+      .lean()
+      .then((users) => users.map((item) => item._id));
+
     const suggestions = await this.model.find({
-      _id: { $nin: [userId, ...contacts.map(c => c.id)] },
+      uid: { $in: activeUserIds },
+      _id: { $nin: exclusionIds },
     });
 
     return suggestions;
   }
 
-
   // Remove a contact from a user
-  public async removeContact(userId: string, contactId: string): Promise<Profile> {
+  public async removeContact(
+    userId: string,
+    contactId: string
+  ): Promise<Profile> {
     const user = await this.model.findOne({ uid: userId });
     const contact = await this.model.findById(contactId);
 
     if (!user || !contact) {
-      throw new HttpException(404, 'not found', "User or contact not found");
+      throw new HttpException(404, "not found", "User or contact not found");
     }
 
     // Remove the contact if it exists in the user's contacts
-    user.contacts = user.contacts.filter((id) => id.toString() !== contact.id.toString());
+    user.contacts = user.contacts.filter(
+      (id) => id.toString() !== contact.id.toString()
+    );
     await user.save();
 
     return user;
   }
 
-  public async removeConnection(userId: string, targetId: string): Promise<Profile> {
+  public async removeConnection(
+    userId: string,
+    targetId: string
+  ): Promise<Profile> {
     const user = await this.model.findOne({ uid: userId });
     const target = await this.model.findOne({ uid: targetId });
 
     if (!user || !target) {
-      throw new HttpException(404, 'not found', "User or target not found");
+      throw new HttpException(404, "not found", "User or target not found");
     }
 
-    user.connections = user.connections.filter((id) => id.toString() !== target.id.toString());
+    user.connections = user.connections.filter(
+      (id) => id.toString() !== target.id.toString()
+    );
     await user.save();
 
-    target.connections = target.connections.filter((id) => id.toString() !== user.id.toString());
+    target.connections = target.connections.filter(
+      (id) => id.toString() !== user.id.toString()
+    );
     await target.save();
 
     return user;
   }
-
 }
 
 export default ProfileService;
