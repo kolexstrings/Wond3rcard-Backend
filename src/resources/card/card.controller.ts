@@ -28,12 +28,56 @@ class CardController implements GlobalController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/cards:
+     *   get:
+     *     tags: [cards]
+     *     summary: Retrieve authenticated user's cards
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Cards retrieved
+     */
     this.router.get(
       `${this.path}`,
       authenticatedMiddleware,
       this.retrieveUserCards
     );
 
+    /**
+     * @openapi
+     * /api/cards/create:
+     *   put:
+     *     tags: [cards]
+     *     summary: Create a digital card for the authenticated user
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               cardPhoto:
+     *                 type: string
+     *                 format: binary
+     *               cardCoverPhoto:
+     *                 type: string
+     *                 format: binary
+     *               cardVideo:
+     *                 type: string
+     *                 format: binary
+     *               style:
+     *                 type: object
+     *               contactInfo:
+     *                 type: object
+     *     responses:
+     *       201:
+     *         description: Card created
+     */
     this.router.put(
       `${this.path}/create`,
       [
@@ -44,6 +88,29 @@ class CardController implements GlobalController {
       this.createCard
     );
 
+    /**
+     * @openapi
+     * /api/cards/create-team:
+     *   put:
+     *     tags: [cards]
+     *     summary: Create a card for an organization team member
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               ownerId:
+     *                 type: string
+     *               organizationInfo:
+     *                 type: object
+     *     responses:
+     *       201:
+     *         description: Team member card created
+     */
     this.router.put(
       `${this.path}/create-team`,
       [
@@ -54,38 +121,162 @@ class CardController implements GlobalController {
       this.createTeamMemberCard
     );
 
+    /**
+     * @openapi
+     * /api/cards/get-card/{cardId}:
+     *   get:
+     *     tags: [cards]
+     *     summary: Retrieve a card by id
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Card details
+     */
     this.router.get(`${this.path}/get-card/:cardId`, this.getCardById); // we can use an authentication token for guests for this later
 
+    /**
+     * @openapi
+     * /api/cards/delete-all-cards:
+     *   delete:
+     *     tags: [cards]
+     *     summary: Delete all cards belonging to the authenticated user
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Cards deleted
+     */
     this.router.delete(
       `${this.path}/delete-all-cards`,
       [authenticatedMiddleware],
       this.deleteAllUserCards
     );
 
+    /**
+     * @openapi
+     * /api/cards/update-card/{cardId}:
+     *   patch:
+     *     tags: [cards]
+     *     summary: Update a card
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *     responses:
+     *       200:
+     *         description: Card updated
+     */
     this.router.patch(
       `${this.path}/update-card/:cardId`,
       [authenticatedMiddleware, uploadCardMediaMiddleware],
       this.updateCard
     );
 
+    /**
+     * @openapi
+     * /api/cards/update-org-card:
+     *   patch:
+     *     tags: [cards]
+     *     summary: Update organization card
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *     responses:
+     *       200:
+     *         description: Organization card updated
+     */
     this.router.patch(
       `${this.path}/update-org-card`,
       [authenticatedMiddleware, validationMiddleware(validator.updateCard)],
       this.updateOrgCard
     );
 
+    /**
+     * @openapi
+     * /api/cards/update-user-org-card:
+     *   patch:
+     *     tags: [cards]
+     *     summary: Update a user's organization card
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *     responses:
+     *       200:
+     *         description: User organization card updated
+     */
     this.router.patch(
       `${this.path}/update-user-org-card`,
       [authenticatedMiddleware, validationMiddleware(validator.updateCard)],
       this.updateUserOrgCard
     );
 
+    /**
+     * @openapi
+     * /api/cards/delete-card/{cardId}:
+     *   delete:
+     *     tags: [cards]
+     *     summary: Delete a specific card
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Card deleted
+     */
     this.router.delete(
       `${this.path}/delete-card/:cardId`,
       [authenticatedMiddleware],
       this.deleteCard
     );
 
+    /**
+     * @openapi
+     * /api/cards/delete-user-org-card:
+     *   delete:
+     *     tags: [cards]
+     *     summary: Delete a user's organization card connection
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/DeleteUserOrgCard'
+     *     responses:
+     *       200:
+     *         description: User organization card deleted
+     */
     this.router.delete(
       `${this.path}/delete-user-org-card/`,
       [
@@ -95,12 +286,48 @@ class CardController implements GlobalController {
       this.deleteUserOrgCard
     );
 
+    /**
+     * @openapi
+     * /api/cards/toggle-card-status/{cardId}:
+     *   patch:
+     *     tags: [cards]
+     *     summary: Toggle card activation status
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Card status toggled
+     */
     this.router.patch(
       `${this.path}/toggle-card-status/:cardId`,
       [authenticatedMiddleware],
       this.toggleCardStatus
     );
 
+    /**
+     * @openapi
+     * /api/cards/add-social-media:
+     *   put:
+     *     tags: [cards]
+     *     summary: Add social media link to card
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CardSocialMediaLink'
+     *     responses:
+     *       200:
+     *         description: Social media link added
+     */
     this.router.put(
       `${this.path}/add-social-media`,
       [
@@ -110,60 +337,206 @@ class CardController implements GlobalController {
       this.addSocialMediaLink
     );
 
+    /**
+     * @openapi
+     * /api/cards/update-social-media:
+     *   patch:
+     *     tags: [cards]
+     *     summary: Update social media link
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Social media updated
+     */
     this.router.patch(
       `${this.path}/update-social-media`,
       [authenticatedMiddleware],
       this.updateSocialMediaLink
     );
 
+    /**
+     * @openapi
+     * /api/cards/delete-social-media:
+     *   delete:
+     *     tags: [cards]
+     *     summary: Delete social media link
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Social media deleted
+     */
     this.router.delete(
       `${this.path}/delete-social-media`,
       [authenticatedMiddleware],
       this.deleteSocialMediaLink
     );
 
+    /**
+     * @openapi
+     * /api/cards/toggle-social-media:
+     *   patch:
+     *     tags: [cards]
+     *     summary: Toggle visibility of social media link
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Social media visibility toggled
+     */
     this.router.patch(
       `${this.path}/toggle-social-media`,
       [authenticatedMiddleware],
       this.toggleSocialMediaStatus
     );
 
+    /**
+     * @openapi
+     * /api/cards/add-testimony:
+     *   put:
+     *     tags: [cards]
+     *     summary: Add testimony to card
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Testimony added
+     */
     this.router.put(
       `${this.path}/add-testimony`,
       [authenticatedMiddleware],
       this.addTestimony
     );
 
+    /**
+     * @openapi
+     * /api/cards/delete-testimony:
+     *   delete:
+     *     tags: [cards]
+     *     summary: Delete a testimony from card
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Testimony deleted
+     */
     this.router.delete(
       `${this.path}/delete-testimony`,
       [authenticatedMiddleware],
       this.deleteTestimony
     );
+    /**
+     * @openapi
+     * /api/cards/add-catelogue:
+     *   put:
+     *     tags: [cards]
+     *     summary: Add catalogue items
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *     responses:
+     *       200:
+     *         description: Catalogue items added
+     */
     this.router.put(
       `${this.path}/add-catelogue`,
       [authenticatedMiddleware, uploadCatelogueMiddleware],
       this.addcatelogue
     );
 
+    /**
+     * @openapi
+     * /api/cards/update-catelogue:
+     *   patch:
+     *     tags: [cards]
+     *     summary: Update catalogue details
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Catalogue updated
+     */
     this.router.patch(
       `${this.path}/update-catelogue`,
       [authenticatedMiddleware],
       this.updateCatelogue
     );
 
+    /**
+     * @openapi
+     * /api/cards/delete-catelogue:
+     *   delete:
+     *     tags: [cards]
+     *     summary: Delete catalogue entries
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Catalogue deleted
+     */
     this.router.delete(
       `${this.path}/delete-catelogue`,
       [authenticatedMiddleware],
       this.deleteCatelogue
     );
 
+    /**
+     * @openapi
+     * /api/cards/connection-request:
+     *   get:
+     *     tags: [cards]
+     *     summary: Get pending connection requests
+     *     responses:
+     *       200:
+     *         description: Connection requests returned
+     */
     this.router.get(`${this.path}/connection-request`, this.connectionRequest);
 
+    /**
+     * @openapi
+     * /api/cards/accept-connection-request:
+     *   get:
+     *     tags: [cards]
+     *     summary: Accept a connection request via tokenized link
+     *     responses:
+     *       200:
+     *         description: Connection accepted
+     */
     this.router.get(
       `${this.path}/accept-connection-request`,
       this.acceptConnectionRequest
     );
 
+    /**
+     * @openapi
+     * /api/cards/share/{cardId}:
+     *   post:
+     *     tags: [cards]
+     *     summary: Share card via email/SMS
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/ShareCardRequest'
+     *     responses:
+     *       200:
+     *         description: Card shared
+     */
     this.router.post(
       `${this.path}/share/:cardId`,
       [
@@ -173,12 +546,46 @@ class CardController implements GlobalController {
       this.shareCard
     );
 
+    /**
+     * @openapi
+     * /api/cards/qr/{cardId}:
+     *   post:
+     *     tags: [cards]
+     *     summary: Generate QR link for card
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: QR link generated
+     */
     this.router.post(
       `${this.path}/qr/:cardId`,
       authenticatedMiddleware,
       this.generateQrShareLink
     );
 
+    /**
+     * @openapi
+     * /api/cards/view-card/{cardId}:
+     *   get:
+     *     tags: [cards]
+     *     summary: View public card profile
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Card view returned
+     */
     this.router.get(`${this.path}/view-card/:cardId`, this.viewCard);
   }
 

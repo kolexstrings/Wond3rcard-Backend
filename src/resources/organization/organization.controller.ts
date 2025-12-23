@@ -23,12 +23,42 @@ class OrganizationController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/organizations/:
+     *   get:
+     *     tags: [organizations]
+     *     summary: Get all organizations (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Organizations retrieved
+     */
     this.router.get(
       `${this.path}/`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getAllOrganizations
     );
 
+    /**
+     * @openapi
+     * /api/organizations/create:
+     *   post:
+     *     tags: [organizations]
+     *     summary: Create a new organization
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CreateOrganization'
+     *     responses:
+     *       201:
+     *         description: Organization created
+     */
     this.router.post(
       `${this.path}/create`,
       validationMiddleware(validator.createOrgValidator),
@@ -36,12 +66,48 @@ class OrganizationController implements GeneralController {
       this.createNewOrganization
     );
 
+    /**
+     * @openapi
+     * /api/organizations/user-organizations:
+     *   get:
+     *     tags: [organizations]
+     *     summary: Get organizations for the authenticated user
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: User organizations retrieved
+     */
     this.router.get(
       `${this.path}/user-organizations`,
       authenticatedMiddleware,
       this.getUserOrganizations
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/add-member:
+     *   post:
+     *     tags: [organizations]
+     *     summary: Add a member to an organization (Admin/Lead only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/AddMember'
+     *     responses:
+     *       200:
+     *         description: Member added
+     */
     this.router.post(
       `${this.path}/:orgId/add-member`,
       authenticatedMiddleware,
@@ -50,12 +116,54 @@ class OrganizationController implements GeneralController {
       this.addMemberToOrganization
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/members:
+     *   get:
+     *     tags: [organizations]
+     *     summary: Get members of an organization
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Members retrieved
+     */
     this.router.get(
       `${this.path}/:orgId/members`,
       [authenticatedMiddleware],
       this.getOrganizationMembers
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/change-role:
+     *   patch:
+     *     tags: [organizations]
+     *     summary: Change a member's role in organization (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/ChangeRole'
+     *     responses:
+     *       200:
+     *         description: Member role changed
+     */
     this.router.patch(
       `${this.path}/:orgId/change-role`,
       [
@@ -66,6 +174,34 @@ class OrganizationController implements GeneralController {
       this.changeMemberRole
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/remove-member:
+     *   delete:
+     *     tags: [organizations]
+     *     summary: Remove a member from organization (Admin/Lead only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [memberId]
+     *             properties:
+     *               memberId:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Member removed
+     */
     this.router.delete(
       `${this.path}/:orgId/remove-member`,
       [
@@ -76,6 +212,24 @@ class OrganizationController implements GeneralController {
       this.removeMember
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/delete:
+     *   delete:
+     *     tags: [organizations]
+     *     summary: Delete an organization (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Organization deleted
+     */
     this.router.delete(
       `${this.path}/:orgId/delete`,
       [authenticatedMiddleware],
@@ -83,6 +237,30 @@ class OrganizationController implements GeneralController {
       this.deleteOrganization
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/update:
+     *   patch:
+     *     tags: [organizations]
+     *     summary: Update organization details
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateOrganization'
+     *     responses:
+     *       200:
+     *         description: Organization updated
+     */
     this.router.patch(
       `${this.path}/:orgId/update`,
       [
@@ -92,12 +270,48 @@ class OrganizationController implements GeneralController {
       this.updateOrganization
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}:
+     *   get:
+     *     tags: [organizations]
+     *     summary: Get organization by ID
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Organization retrieved
+     */
     this.router.get(
       `${this.path}/:orgId`,
       [authenticatedMiddleware],
       this.getOrganizationById
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams:
+     *   get:
+     *     tags: [organizations]
+     *     summary: Get teams in an organization
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Teams retrieved
+     */
     this.router.get(
       `${this.path}/:orgId/teams`,
       [authenticatedMiddleware],

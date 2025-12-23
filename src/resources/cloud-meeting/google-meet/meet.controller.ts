@@ -13,16 +13,73 @@ class GoogleMeetController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/google-meet/authorize:
+     *   get:
+     *     tags: [google-meet]
+     *     summary: Authorize Google Meet integration
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       302:
+     *         description: Redirect to Google OAuth
+     */
     this.router.get(
       `${this.path}/authorize`,
       authenticatedMiddleware,
       this.authorize
     );
+
+    /**
+     * @openapi
+     * /api/google-meet/callback:
+     *   get:
+     *     tags: [google-meet]
+     *     summary: Handle Google OAuth callback
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: code
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Authentication successful
+     */
     this.router.get(
       `${this.path}/callback`,
       authenticatedMiddleware,
       this.callback
     );
+
+    /**
+     * @openapi
+     * /api/google-meet/createMeeting:
+     *   post:
+     *     tags: [google-meet]
+     *     summary: Create a Google Meet meeting
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [topic, startTime, duration]
+     *             properties:
+     *               topic:
+     *                 type: string
+     *               startTime:
+     *                 type: string
+     *               duration:
+     *                 type: number
+     *     responses:
+     *       200:
+     *         description: Meeting created
+     */
     this.router.post(
       `${this.path}/createMeeting`,
       authenticatedMiddleware,

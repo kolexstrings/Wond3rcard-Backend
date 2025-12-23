@@ -32,18 +32,77 @@ class AdminController implements GlobalController {
    * Users
    */
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/admin/all-users:
+     *   get:
+     *     tags: [admin]
+     *     summary: Retrieve paginated list of users
+     *     parameters:
+     *       - in: query
+     *         name: page
+     *         schema:
+     *           type: integer
+     *           default: 1
+     *       - in: query
+     *         name: limit
+     *         schema:
+     *           type: integer
+     *           default: 10
+     *     responses:
+     *       200:
+     *         description: Users retrieved
+     */
     this.router.get(
       `${this.path}/all-users`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getAllUsers
     );
 
+    /**
+     * @openapi
+     * /api/admin/users/{id}:
+     *   get:
+     *     tags: [admin]
+     *     summary: Retrieve a user by id
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: User retrieved
+     */
     this.router.get(
       `${this.path}/users/:id`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getUserById
     );
 
+    /**
+     * @openapi
+     * /api/admin/users/{id}:
+     *   patch:
+     *     tags: [admin]
+     *     summary: Update a user's profile attributes
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/AdminUpdateUser'
+     *     responses:
+     *       200:
+     *         description: User updated
+     */
     this.router.patch(
       `${this.path}/users/:id`,
       [
@@ -54,18 +113,66 @@ class AdminController implements GlobalController {
       this.updateUser
     );
 
+    /**
+     * @openapi
+     * /api/admin/users/{id}:
+     *   delete:
+     *     tags: [admin]
+     *     summary: Permanently delete a user
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: User deleted
+     */
     this.router.delete(
       `${this.path}/users/:id`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.deleteUser
     );
 
+    /**
+     * @openapi
+     * /api/admin/users/{id}/ban:
+     *   post:
+     *     tags: [admin]
+     *     summary: Ban a user account
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: User banned
+     */
     this.router.post(
       `${this.path}/users/:id/ban`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.banUser
     );
 
+    /**
+     * @openapi
+     * /api/admin/users/{id}/unban:
+     *   post:
+     *     tags: [admin]
+     *     summary: Lift ban on a user
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: User unbanned
+     */
     this.router.post(
       `${this.path}/users/:id/unban`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
@@ -75,18 +182,65 @@ class AdminController implements GlobalController {
     /**
      * Privilledges and control
      */
+    /**
+     * @openapi
+     * /api/admin/roles:
+     *   get:
+     *     tags: [admin]
+     *     summary: List available roles
+     *     responses:
+     *       200:
+     *         description: Roles retrieved
+     */
     this.router.get(
       `${this.path}/roles`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getRoles
     );
 
+    /**
+     * @openapi
+     * /api/admin/statuses:
+     *   get:
+     *     tags: [admin]
+     *     summary: List available statuses
+     *     responses:
+     *       200:
+     *         description: Statuses retrieved
+     */
     this.router.get(
       `${this.path}/statuses`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getStatuses
     );
 
+    /**
+     * @openapi
+     * /api/admin/users/{id}/role:
+     *   patch:
+     *     tags: [admin]
+     *     summary: Change a user's role
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               userRole:
+     *                 type: string
+     *                 enum: ["admin","staff","customer"]
+     *             required: [userRole]
+     *     responses:
+     *       200:
+     *         description: User role updated
+     */
     this.router.patch(
       `${this.path}/users/:id/role`,
       [
@@ -97,6 +251,33 @@ class AdminController implements GlobalController {
       this.changeUserRole
     );
 
+    /**
+     * @openapi
+     * /api/admin/users/{id}/tier:
+     *   patch:
+     *     tags: [admin]
+     *     summary: Change a user's subscription tier
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               userTiers:
+     *                 type: string
+     *                 enum: ["basic","premium","business"]
+     *             required: [userTiers]
+     *     responses:
+     *       200:
+     *         description: User tier updated
+     */
     this.router.patch(
       `${this.path}/users/:id/tier`,
       [
@@ -107,6 +288,33 @@ class AdminController implements GlobalController {
       this.changeUserTier
     );
 
+    /**
+     * @openapi
+     * /api/admin/users/{id}/status:
+     *   patch:
+     *     tags: [admin]
+     *     summary: Change a user's status
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               userStatus:
+     *                 type: string
+     *                 enum: ["active","banned","suspended"]
+     *             required: [userStatus]
+     *     responses:
+     *       200:
+     *         description: User status updated
+     */
     this.router.patch(
       `${this.path}/users/:id/status`,
       [

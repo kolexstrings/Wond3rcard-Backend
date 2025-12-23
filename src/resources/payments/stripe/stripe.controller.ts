@@ -19,11 +19,55 @@ class StripeController {
   }
 
   private initializeRoutes() {
+    /**
+     * @openapi
+     * /api/stripe/initialize-payment:
+     *   post:
+     *     tags: [stripe]
+     *     summary: Initialize a Stripe payment session
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [userId, plan, billingCycle]
+     *             properties:
+     *               userId:
+     *                 type: string
+     *               plan:
+     *                 type: string
+     *               billingCycle:
+     *                 type: string
+     *                 enum: [monthly, yearly]
+     *     responses:
+     *       200:
+     *         description: Checkout URL returned
+     */
     this.router.post(
       `${this.path}/initialize-payment`,
       [authenticatedMiddleware, validationMiddleware(validateStripePayment)],
       this.createCheckoutSession
     );
+
+    /**
+     * @openapi
+     * /api/stripe/webhook:
+     *   post:
+     *     tags: [stripe]
+     *     summary: Handle Stripe webhook events
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *     responses:
+     *       200:
+     *         description: Webhook processed
+     */
     this.router.post(`${this.path}/webhook`, this.handleWebhook);
   }
 

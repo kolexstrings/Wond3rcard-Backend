@@ -14,6 +14,18 @@ class UserController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/users/user-profile:
+     *   get:
+     *     tags: [users]
+     *     summary: Get the authenticated user's profile
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Profile retrieved
+     */
     this.router.get(
       `${this.path}/user-profile`,
       authenticatedMiddleware,

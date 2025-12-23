@@ -25,6 +25,35 @@ class PaystackController implements GeneralController {
   }
 
   private initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/paystack/initialize-payment:
+     *   post:
+     *     tags:
+     *       - paystack
+     *     summary: Initialize a Paystack subscription payment
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - userId
+     *               - plan
+     *               - billingCycle
+     *             properties:
+     *               userId:
+     *                 type: string
+     *               plan:
+     *                 type: string
+     *               billingCycle:
+     *                 type: string
+     *                 enum: [monthly, yearly]
+     *     responses:
+     *       200:
+     *         description: Checkout URL or subscription details returned
+     */
     this.router.post(
       `${this.path}/initialize-payment`,
       [authenticatedMiddleware, validationMiddleware(validatePaystackPayment)],
@@ -39,6 +68,32 @@ class PaystackController implements GeneralController {
 
     this.router.get(`${this.path}/verify/:reference`, this.verifyTransaction);
 
+    /**
+     * @openapi
+     * /api/paystack/cancel-subscription:
+     *   post:
+     *     tags:
+     *       - paystack
+     *     summary: Cancel the authenticated user's active Paystack subscription
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - userId
+     *               - subscriptionId
+     *             properties:
+     *               userId:
+     *                 type: string
+     *               subscriptionId:
+     *                 type: string
+     *                 description: Paystack subscription identifier
+     *     responses:
+     *       200:
+     *         description: Subscription cancelled
+     */
     this.router.post(
       `${this.path}/cancel-subscription`,
       [
@@ -48,6 +103,36 @@ class PaystackController implements GeneralController {
       this.cancelSubscription
     );
 
+    /**
+     * @openapi
+     * /api/paystack/change-subscription:
+     *   post:
+     *     tags:
+     *       - paystack
+     *     summary: Upgrade or downgrade an existing Paystack subscription
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - userId
+     *               - newPlan
+     *               - billingCycle
+     *             properties:
+     *               userId:
+     *                 type: string
+     *               newPlan:
+     *                 type: string
+     *                 enum: [basic, premium, business]
+     *               billingCycle:
+     *                 type: string
+     *                 enum: [monthly, yearly]
+     *     responses:
+     *       200:
+     *         description: Subscription updated
+     */
     this.router.post(
       `${this.path}/change-subscription`,
       [

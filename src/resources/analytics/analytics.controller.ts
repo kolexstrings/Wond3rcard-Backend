@@ -15,7 +15,36 @@ class AnalyticsController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/analytics/log:
+     *   post:
+     *     tags: [analytics]
+     *     summary: Log analytics data
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/LogAnalytics'
+     *     responses:
+     *       200:
+     *         description: Analytics logged
+     */
     this.router.post(`${this.path}/log`, this.logAnalytics);
+
+    /**
+     * @openapi
+     * /api/analytics/insights:
+     *   get:
+     *     tags: [analytics]
+     *     summary: Get analytics insights (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Insights retrieved
+     */
     this.router.get(
       `${this.path}/insights`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],

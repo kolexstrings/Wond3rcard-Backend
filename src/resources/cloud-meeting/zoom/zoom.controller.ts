@@ -15,18 +15,71 @@ class ZoomController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/zoom/authorize:
+     *   get:
+     *     tags: [zoom]
+     *     summary: Authorize Zoom integration
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       302:
+     *         description: Redirect to Zoom OAuth
+     */
     this.router.get(
       `${this.path}/authorize`,
       [authenticatedMiddleware],
       this.authorize
     );
 
+    /**
+     * @openapi
+     * /api/zoom/callback:
+     *   get:
+     *     tags: [zoom]
+     *     summary: Handle Zoom OAuth callback
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: code
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Authentication successful
+     */
     this.router.get(
       `${this.path}/callback`,
       [authenticatedMiddleware],
       this.callback
     );
 
+    /**
+     * @openapi
+     * /api/zoom/createMeeting:
+     *   post:
+     *     tags: [zoom]
+     *     summary: Create a Zoom meeting
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [topic, duration]
+     *             properties:
+     *               topic:
+     *                 type: string
+     *               duration:
+     *                 type: number
+     *     responses:
+     *       200:
+     *         description: Meeting created
+     */
     this.router.post(
       `${this.path}/createMeeting`,
       [authenticatedMiddleware],

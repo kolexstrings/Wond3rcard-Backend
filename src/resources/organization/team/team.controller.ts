@@ -20,6 +20,30 @@ class TeamController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams/:
+     *   post:
+     *     tags: [teams]
+     *     summary: Create a new team in an organization
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CreateTeam'
+     *     responses:
+     *       201:
+     *         description: Team created
+     */
     this.router.post(
       `${this.path}/`,
       authenticatedMiddleware,
@@ -27,14 +51,84 @@ class TeamController {
       this.createNewTeam
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams:
+     *   get:
+     *     tags: [teams]
+     *     summary: Get all teams in an organization
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Teams retrieved
+     */
     this.router.get(`${this.path}`, authenticatedMiddleware, this.getAllTeams);
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams/{teamId}:
+     *   get:
+     *     tags: [teams]
+     *     summary: Get a specific team by ID
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: teamId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Team retrieved
+     */
     this.router.get(
       `${this.path}/:teamId`,
       authenticatedMiddleware,
       this.getTeamById
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams/{teamId}:
+     *   put:
+     *     tags: [teams]
+     *     summary: Update a team (Team Lead only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: teamId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateTeam'
+     *     responses:
+     *       200:
+     *         description: Team updated
+     */
     this.router.put(
       `${this.path}/:teamId`,
       authenticatedMiddleware,
@@ -43,6 +137,29 @@ class TeamController {
       this.updateTeam
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams/{teamId}:
+     *   delete:
+     *     tags: [teams]
+     *     summary: Delete a team (Team Lead only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: teamId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Team deleted
+     */
     this.router.delete(
       `${this.path}/:teamId`,
       authenticatedMiddleware,
@@ -50,6 +167,35 @@ class TeamController {
       this.deleteTeam
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams/{teamId}/members:
+     *   post:
+     *     tags: [teams]
+     *     summary: Add a member to a team (Lead/Moderator only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: teamId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/AddTeamMember'
+     *     responses:
+     *       200:
+     *         description: Member added
+     */
     this.router.post(
       `${this.path}/:teamId/members`,
       authenticatedMiddleware,
@@ -58,6 +204,39 @@ class TeamController {
       this.addTeamMember
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams/{teamId}/members:
+     *   delete:
+     *     tags: [teams]
+     *     summary: Remove a member from a team (Lead/Moderator only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: teamId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [memberId]
+     *             properties:
+     *               memberId:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Member removed
+     */
     this.router.delete(
       `${this.path}/:teamId/members`,
       authenticatedMiddleware,
@@ -66,6 +245,35 @@ class TeamController {
       this.removeTeamMember
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams/{teamId}/assign-role:
+     *   put:
+     *     tags: [teams]
+     *     summary: Assign role to a team member (Lead only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: teamId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/AssignRole'
+     *     responses:
+     *       200:
+     *         description: Role assigned
+     */
     this.router.put(
       `${this.path}/:teamId/assign-role`,
       authenticatedMiddleware,
@@ -74,6 +282,29 @@ class TeamController {
       this.assignRoleToMember
     );
 
+    /**
+     * @openapi
+     * /api/organizations/{orgId}/teams/{teamId}/members:
+     *   get:
+     *     tags: [teams]
+     *     summary: Get members of a team
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orgId
+     *         required: true
+     *         schema:
+     *           type: string
+     *       - in: path
+     *         name: teamId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Members retrieved
+     */
     this.router.get(
       `${this.path}/:teamId/members`,
       authenticatedMiddleware,

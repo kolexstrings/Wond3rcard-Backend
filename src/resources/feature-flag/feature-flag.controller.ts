@@ -19,8 +19,36 @@ class FeatureFlagsController implements GlobalController {
   }
 
   private initializeRoutes(): void {
+    /**
+     * @openapi
+     * /api/feature-flags:
+     *   get:
+     *     tags: [feature-flags]
+     *     summary: List all feature flags
+     *     responses:
+     *       200:
+     *         description: Feature flags retrieved
+     */
     this.router.get(`${this.path}`, this.listFeatureFlags);
 
+    /**
+     * @openapi
+     * /api/feature-flags/create-feature:
+     *   post:
+     *     tags: [feature-flags]
+     *     summary: Create a new feature flag (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CreateFeatureFlag'
+     *     responses:
+     *       201:
+     *         description: Feature flag created
+     */
     this.router.post(
       `${this.path}/create-feature`,
       [
@@ -31,12 +59,50 @@ class FeatureFlagsController implements GlobalController {
       this.createFeatureFlag
     );
 
+    /**
+     * @openapi
+     * /api/feature-flags/get-feature:
+     *   post:
+     *     tags: [feature-flags]
+     *     summary: Retrieve a feature flag by name
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [featureName]
+     *             properties:
+     *               featureName:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Feature flag retrieved
+     */
     this.router.post(
       `${this.path}/get-feature`,
       [validationMiddleware(validate.validateGetFeatureFlag)],
       this.getFeatureFlag
     );
 
+    /**
+     * @openapi
+     * /api/feature-flags/update-feature:
+     *   post:
+     *     tags: [feature-flags]
+     *     summary: Update an existing feature flag (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateFeatureFlag'
+     *     responses:
+     *       200:
+     *         description: Feature flag updated
+     */
     this.router.post(
       `${this.path}/update-feature`,
       [
@@ -47,6 +113,28 @@ class FeatureFlagsController implements GlobalController {
       this.updateFeatureFlag
     );
 
+    /**
+     * @openapi
+     * /api/feature-flags/delete-feature:
+     *   post:
+     *     tags: [feature-flags]
+     *     summary: Delete a feature flag (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name]
+     *             properties:
+     *               name:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Feature flag deleted
+     */
     this.router.post(
       `${this.path}/delete-feature`,
       [
@@ -57,6 +145,25 @@ class FeatureFlagsController implements GlobalController {
       this.deleteFeatureFlag
     );
 
+    /**
+     * @openapi
+     * /api/feature-flags/by-tier/{tier}:
+     *   get:
+     *     tags: [feature-flags]
+     *     summary: Get feature flags for a specific user tier
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: tier
+     *         required: true
+     *         schema:
+     *           type: string
+     *           enum: [basic, premium, business]
+     *     responses:
+     *       200:
+     *         description: Feature flags for tier retrieved
+     */
     this.router.get(
       `${this.path}/by-tier/:tier`,
       authenticatedMiddleware,
