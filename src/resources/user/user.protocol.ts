@@ -40,6 +40,11 @@ interface User extends Document {
     subscriptionCode: string | null;
     expiresAt: Date | null;
   };
+  activeSubscription?: {
+    provider: "stripe" | "paystack" | null;
+    subscriptionId: string | null;
+    expiryDate: Date | null;
+  };
   organizations: OrganizationMember[];
   paystackCustomerId: string;
   stripeCustomerId: string;
