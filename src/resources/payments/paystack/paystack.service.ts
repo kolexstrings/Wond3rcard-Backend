@@ -9,6 +9,17 @@ import NodeMailerService from "../../mails/nodemailer.service";
 import { generateTransactionId } from "../../../utils/generateTransactionId";
 import { UserTiers } from "../../user/user.protocol";
 
+type CancelSubscriptionParams = {
+  targetUserId: string;
+  subscriptionId: string;
+};
+
+type ChangeSubscriptionParams = {
+  targetUserId: string;
+  newPlan: UserTiers;
+  billingCycle: "monthly" | "yearly";
+};
+
 class PaystackSubscriptionService {
   private secretKey = process.env.PAYSTACK_SECRET_KEY;
   private baseUrl = "https://api.paystack.co";
@@ -96,39 +107,61 @@ class PaystackSubscriptionService {
       subscriptionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${subscriptionResponse.data.data.reference}`;
 
       return {
-        type: "subscription",
+        type: "subscription" as const,
         subscriptionData: subscriptionResponse.data.data,
       };
-    } else {
-      // No saved authorization: Initialize payment
-      const transactionResponse = await axios.post(
-        `${this.baseUrl}/transaction/initialize`,
-        {
-          email: user.email,
-          amount: amount,
-          callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
-          metadata: {
-            userId,
-            plan,
-            billingCycle,
-            durationInDays,
-            amount,
-            transactionType: "subscription",
-          },
+    }
+
+    // No saved authorization: Initialize payment
+    const transactionResponse = await axios.post(
+      `${this.baseUrl}/transaction/initialize`,
+      {
+        email: user.email,
+        amount: amount,
+        callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
+        metadata: {
+          userId,
+          plan,
+          billingCycle,
+          durationInDays,
+          amount,
+          transactionType: "subscription",
         },
+      },
+      {
+        headers: { Authorization: `Bearer ${this.secretKey}` },
+      }
+    );
+
+    // Update callback URL with reference after getting response
+    transactionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${transactionResponse.data.data.reference}`;
+
+    return {
+      type: "payment" as const,
+      checkoutUrl: transactionResponse.data.data.authorization_url,
+      reference: transactionResponse.data.data.reference,
+    };
+  }
+
+  private async disablePaystackSubscription(
+    subscriptionCode: string
+  ): Promise<void> {
+    try {
+      await axios.post(
+        `${this.baseUrl}/subscription/${subscriptionCode}/disable`,
+        {},
         {
-          headers: { Authorization: `Bearer ${this.secretKey}` },
+          headers: {
+            Authorization: `Bearer ${this.secretKey}`,
+            "Content-Type": "application/json",
+          },
         }
       );
-
-      // Update callback URL with reference after getting response
-      transactionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${transactionResponse.data.data.reference}`;
-
-      return {
-        type: "payment",
-        checkoutUrl: transactionResponse.data.data.authorization_url,
-        reference: transactionResponse.data.data.reference,
-      };
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        "Unable to disable Paystack subscription";
+      throw new HttpException(502, "error", message);
     }
   }
 
@@ -148,7 +181,9 @@ class PaystackSubscriptionService {
       data.metadata;
 
     const user = await userModel.findById(userId);
-    const profile = await profileModel.findById(userId);
+    const profile =
+      (await profileModel.findOne({ uid: userId })) ||
+      (await profileModel.findById(userId));
 
     if (!user) throw new HttpException(404, "error", "User not found");
 
@@ -249,109 +284,130 @@ class PaystackSubscriptionService {
     return { message: "Subscription activated" };
   }
 
-  public async cancelSubscription(userId: string) {
-    const user = await userModel.findById(userId);
-    if (!user || user.userTier.status !== "active")
-      throw new HttpException(
-        404,
-        "error",
-        "User not found or subscription inactive"
-      );
+  public async cancelSubscription({
+    targetUserId,
+    subscriptionId,
+  }: CancelSubscriptionParams) {
+    const user = await userModel.findById(targetUserId);
+    if (!user) {
+      throw new HttpException(404, "error", "User not found");
+    }
 
-    // Disable Paystack subscription if a subscriptionCode exists
-    if (user.userTier.subscriptionCode) {
-      await axios.post(
-        `https://api.paystack.co/subscription/${user.userTier.subscriptionCode}/disable`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
+    const activeSubscriptionCode =
+      user.userTier.subscriptionCode ||
+      user.activeSubscription?.subscriptionId ||
+      null;
+
+    if (!activeSubscriptionCode || user.userTier.status !== "active") {
+      throw new HttpException(
+        400,
+        "error",
+        "User does not have an active Paystack subscription"
       );
     }
 
-    // Update the user's subscription locally
+    if (subscriptionId && subscriptionId !== activeSubscriptionCode) {
+      throw new HttpException(
+        400,
+        "error",
+        "Provided subscription ID does not match the active subscription"
+      );
+    }
+
+    await this.disablePaystackSubscription(activeSubscriptionCode);
+
     user.userTier.status = "inactive";
+    user.userTier.subscriptionCode = null;
+    user.userTier.transactionId = null;
+    user.userTier.expiresAt = null;
+
+    if (user.activeSubscription?.provider === "paystack") {
+      user.activeSubscription.provider = null;
+      user.activeSubscription.subscriptionId = null;
+      user.activeSubscription.expiryDate = null;
+    }
+
     await user.save();
 
-    // Notify user via email
-    const profile = await profileModel.findById(userId);
-    const template = MailTemplates.subscriptionCancelled;
-    const emailData = {
-      name: profile.firstname,
-      plan: user.userTier.plan,
+    const profile =
+      (await profileModel.findOne({ uid: targetUserId })) ||
+      (await profileModel.findById(targetUserId));
+
+    if (profile) {
+      const template = MailTemplates.subscriptionCancelled;
+      const emailData = {
+        name: profile.firstname,
+        plan: user.userTier.plan,
+      };
+
+      await this.mailer.sendMail(
+        user.email,
+        "Subscription Cancelled",
+        template,
+        "Subscription",
+        emailData
+      );
+    }
+
+    return {
+      message: "Subscription canceled successfully",
+      subscriptionId: activeSubscriptionCode,
     };
-
-    await this.mailer.sendMail(
-      user.email,
-      "Subscription Canceled",
-      template,
-      "Subscription",
-      emailData
-    );
-
-    return { message: "Subscription canceled successfully" };
   }
 
-  public async changeSubscription(
-    userId: string,
-    newPlan: UserTiers,
-    newBillingCycle: "monthly" | "yearly"
-  ) {
-    const user = await userModel.findById(userId);
+  public async changeSubscription({
+    targetUserId,
+    newPlan,
+    billingCycle,
+  }: ChangeSubscriptionParams) {
+    const user = await userModel.findById(targetUserId);
     if (!user) throw new HttpException(404, "error", "User not found");
 
-    const newTier = await tierModel.findOne({ name: newPlan });
+    const normalizedPlan = newPlan.toLowerCase();
+    const newTier = await tierModel.findOne({ name: normalizedPlan });
     if (!newTier)
       throw new HttpException(404, "error", "New subscription plan not found");
 
-    const { price, durationInDays, planCode } =
-      newTier.billingCycle[newBillingCycle];
+    const activeSubscriptionCode =
+      user.userTier.subscriptionCode ||
+      user.activeSubscription?.subscriptionId ||
+      null;
 
-    // Disable old Paystack subscription if exists
-    if (user.userTier.subscriptionCode) {
-      await axios.post(
-        `https://api.paystack.co/subscription/${user.userTier.subscriptionCode}/disable`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    if (activeSubscriptionCode) {
+      await this.disablePaystackSubscription(activeSubscriptionCode);
     }
 
-    await this.initializePayment(userId, newPlan, newBillingCycle);
+    const initializationResult = await this.initializePayment(
+      targetUserId,
+      normalizedPlan,
+      billingCycle
+    );
 
-    // Set new subscription data (active or inactive depending on your logic)
-    user.userTier = {
-      plan: newPlan,
-      status: "inactive", // or 'active' depending on your intended workflow
-      transactionId: "",
-      subscriptionCode: "",
-      expiresAt: new Date(Date.now() + durationInDays * 24 * 60 * 60 * 1000),
+    user.userTier.plan = newPlan;
+    user.userTier.status = "inactive";
+    user.userTier.transactionId = null;
+    user.userTier.subscriptionCode =
+      initializationResult.type === "subscription"
+        ? initializationResult.subscriptionData.subscription_code
+        : null;
+    user.userTier.expiresAt = null;
+
+    user.activeSubscription = {
+      provider: "paystack",
+      subscriptionId: user.userTier.subscriptionCode,
+      expiryDate: null,
     };
 
     await user.save();
 
-    await TransactionModel.create({
-      userId,
-      userName: user.username,
-      email: user.email,
-      plan: newPlan,
-      billingCycle: newBillingCycle,
-      amount: price,
-      transactionType: "upgrade/downgrade",
-      status: "success",
-      paymentProvider: "paystack",
-      paidAt: new Date(),
-      expiresAt: new Date(Date.now() + durationInDays * 24 * 60 * 60 * 1000),
-    });
-
-    return { message: "Subscription plan updated successfully" };
+    return {
+      message: "Subscription change initiated",
+      nextAction:
+        initializationResult.type === "payment"
+          ? "complete_payment"
+          : "await_activation",
+      data: initializationResult,
+    };
   }
 }
 

@@ -5,6 +5,7 @@ import GeneralController from "../../../protocols/global.controller";
 import PaystackSubscriptionService from "./paystack.service";
 import PaystackOrderService from "../../physical-card/order-physical-card/paystack/paystack.service";
 import userModel from "../../user/user.model";
+import { UserRole } from "../../user/user.protocol";
 import validationMiddleware from "../../../middlewares/validation.middleware";
 import {
   validateCancelSubscription,
@@ -287,22 +288,46 @@ class PaystackController implements GeneralController {
     }
   };
 
+  private resolveTargetUserId = (
+    user: any,
+    requestedUserId?: string
+  ): string => {
+    const authenticatedId = user?._id?.toString() ?? user?.id;
+
+    if (!requestedUserId || requestedUserId === authenticatedId) {
+      return authenticatedId;
+    }
+
+    if (user.userRole !== UserRole.Admin) {
+      throw new HttpException(
+        403,
+        "error",
+        "You are not authorized to manage another user's subscription"
+      );
+    }
+
+    return requestedUserId;
+  };
+
   private cancelSubscription = async (
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { userId } = req.body;
+      const authUser = req.user;
+      const targetUserId = this.resolveTargetUserId(authUser, req.body.userId);
+      const { subscriptionId } = req.body;
 
-      const result = await this.paystackSubscriptionService.cancelSubscription(
-        userId
-      );
+      const result = await this.paystackSubscriptionService.cancelSubscription({
+        targetUserId,
+        subscriptionId,
+      });
 
       res.status(200).json({
         statusCode: 200,
         status: "success",
-        message: result,
+        payload: result,
       });
     } catch (error) {
       next(error);
@@ -315,22 +340,24 @@ class PaystackController implements GeneralController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { userId, newPlan, billingCycle } = req.body;
+      const { newPlan, billingCycle } = req.body;
+      const authUser = req.user;
+      const targetUserId = this.resolveTargetUserId(authUser, req.body.userId);
 
       if (!["monthly", "yearly"].includes(billingCycle)) {
         return next(new HttpException(400, "error", "Invalid billing cycle"));
       }
 
-      const result = await this.paystackSubscriptionService.changeSubscription(
-        userId,
+      const result = await this.paystackSubscriptionService.changeSubscription({
+        targetUserId,
         newPlan,
-        billingCycle
-      );
+        billingCycle,
+      });
 
       res.status(200).json({
         statusCode: 200,
         status: "success",
-        message: result,
+        payload: result,
       });
     } catch (error) {
       next(error);

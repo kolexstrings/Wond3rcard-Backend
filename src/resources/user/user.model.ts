@@ -37,6 +37,7 @@ const UserSchema = new Schema(
         default: "inactive",
       },
       transactionId: { type: String, default: null },
+      subscriptionCode: { type: String, default: null },
       expiresAt: { type: Date, default: null },
     },
     refreshToken: { type: String, default: "" },
