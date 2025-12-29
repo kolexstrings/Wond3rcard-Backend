@@ -6,7 +6,13 @@ import userModel from "../../user/user.model";
 import StripeSubscriptionService from "./stripe.service";
 import StripeOrderService from "../../physical-card/order-physical-card/stripe/stripe.service";
 import validationMiddleware from "../../../middlewares/validation.middleware";
-import { validateStripePayment } from "./stripe.vaidations";
+import HttpException from "../../../exceptions/http.exception";
+import { UserRole } from "../../user/user.protocol";
+import {
+  validateStripePayment,
+  validateStripeCancelSubscription,
+  validateStripeChangeSubscription,
+} from "./stripe.vaidations";
 
 class StripeController {
   public path = "/stripe";
@@ -52,6 +58,24 @@ class StripeController {
       this.createCheckoutSession
     );
 
+    this.router.post(
+      `${this.path}/cancel-subscription`,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validateStripeCancelSubscription),
+      ],
+      this.cancelSubscription
+    );
+
+    this.router.post(
+      `${this.path}/change-subscription`,
+      [
+        authenticatedMiddleware,
+        validationMiddleware(validateStripeChangeSubscription),
+      ],
+      this.changeSubscription
+    );
+
     /**
      * @openapi
      * /api/stripe/webhook:
@@ -77,14 +101,33 @@ class StripeController {
     next: NextFunction
   ) => {
     try {
-      const { userId, plan, billingCycle } = req.body;
+      const { plan, billingCycle } = req.body;
+      const targetUserId = this.resolveTargetUserId(req.user, req.body.userId);
+
       const session =
         await this.stripeSubscriptionService.createCheckoutSession(
-          userId,
+          targetUserId,
           plan,
           billingCycle
         );
-      res.status(200).json({ url: session.url });
+
+      if (session.type === "checkout") {
+        return res.status(200).json({
+          statusCode: 200,
+          status: "success",
+          payload: {
+            checkoutUrl: session.url,
+          },
+        });
+      }
+
+      return res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: {
+          subscriptionId: session.subscriptionId,
+        },
+      });
     } catch (error) {
       next(error);
     }
@@ -137,6 +180,76 @@ class StripeController {
     }
 
     res.status(400).json({ message: "Unhandled event type" });
+  };
+
+  private resolveTargetUserId = (
+    user: any,
+    requestedUserId?: string
+  ): string => {
+    const authenticatedId = user?._id?.toString() ?? user?.id;
+
+    if (!requestedUserId || requestedUserId === authenticatedId) {
+      return authenticatedId;
+    }
+
+    if (user.userRole !== UserRole.Admin) {
+      throw new HttpException(
+        403,
+        "error",
+        "You are not authorized to manage another user's subscription"
+      );
+    }
+
+    return requestedUserId;
+  };
+
+  private cancelSubscription = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const targetUserId = this.resolveTargetUserId(req.user, req.body.userId);
+      const { subscriptionId } = req.body;
+
+      const result = await this.stripeSubscriptionService.cancelSubscription({
+        targetUserId,
+        subscriptionId,
+      });
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private changeSubscription = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const targetUserId = this.resolveTargetUserId(req.user, req.body.userId);
+      const { newPlan, billingCycle } = req.body;
+
+      const result = await this.stripeSubscriptionService.changeSubscription({
+        targetUserId,
+        newPlan,
+        billingCycle,
+      });
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        payload: result,
+      });
+    } catch (error) {
+      next(error);
+    }
   };
 }
 
