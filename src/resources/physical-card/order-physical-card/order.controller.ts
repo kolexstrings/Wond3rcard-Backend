@@ -26,6 +26,24 @@ class PhysicalCardOrderController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/card-orders/create:
+     *   post:
+     *     tags: [card-orders]
+     *     summary: Create a physical card order
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CreateCardOrder'
+     *     responses:
+     *       201:
+     *         description: Order created
+     */
     this.router.post(
       `${this.path}/create`,
       [
@@ -35,6 +53,24 @@ class PhysicalCardOrderController implements GeneralController {
       this.createOrder
     );
 
+    /**
+     * @openapi
+     * /api/card-orders/create-manual:
+     *   post:
+     *     tags: [card-orders]
+     *     summary: Create a manual physical card order (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CreateManualCardOrder'
+     *     responses:
+     *       201:
+     *         description: Manual order created
+     */
     this.router.post(
       `${this.path}/create-manual`,
       [
@@ -45,32 +81,142 @@ class PhysicalCardOrderController implements GeneralController {
       this.createManualOrder
     );
 
+    /**
+     * @openapi
+     * /api/card-orders/webhook/stripe:
+     *   post:
+     *     tags: [card-orders]
+     *     summary: Handle Stripe webhook for card orders
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *     responses:
+     *       200:
+     *         description: Webhook processed
+     */
     this.router.post(`${this.path}/webhook/stripe`, this.handleStripeWebhook);
 
+    /**
+     * @openapi
+     * /api/card-orders/:
+     *   get:
+     *     tags: [card-orders]
+     *     summary: Get all card orders (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Orders retrieved
+     */
     this.router.get(
       `${this.path}/`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getAllOrders
     );
 
+    /**
+     * @openapi
+     * /api/card-orders/order/{orderId}:
+     *   get:
+     *     tags: [card-orders]
+     *     summary: Get a card order by ID
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orderId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Order retrieved
+     */
     this.router.get(
       `${this.path}/order/:orderId`,
       authenticatedMiddleware,
       this.getOrderById
     );
 
+    /**
+     * @openapi
+     * /api/card-orders/user/{userId}/orders:
+     *   get:
+     *     tags: [card-orders]
+     *     summary: Get orders for a user
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: userId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: User orders retrieved
+     */
     this.router.get(
       `${this.path}/user/:userId/orders`,
       authenticatedMiddleware,
       this.getUserOrders
     );
 
+    /**
+     * @openapi
+     * /api/card-orders/{orderId}/status:
+     *   patch:
+     *     tags: [card-orders]
+     *     summary: Update order status (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orderId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [status]
+     *             properties:
+     *               status:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Order status updated
+     */
     this.router.patch(
       `${this.path}/:orderId/status`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.updateOrderStatus
     );
 
+    /**
+     * @openapi
+     * /api/card-orders/{orderId}:
+     *   delete:
+     *     tags: [card-orders]
+     *     summary: Delete a card order (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: orderId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Order deleted
+     */
     this.router.delete(
       `${this.path}/:orderId`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],

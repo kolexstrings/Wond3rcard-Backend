@@ -19,8 +19,45 @@ class FontsController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/fonts/:
+     *   get:
+     *     tags: [fonts]
+     *     summary: Retrieve all fonts
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       201:
+     *         description: Fonts retrieved
+     */
     this.router.get(`${this.path}/`, [authenticatedMiddleware], this.getFonts);
 
+    /**
+     * @openapi
+     * /api/fonts/:
+     *   post:
+     *     tags: [fonts]
+     *     summary: Upload a new font (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required: [fontFile]
+     *             properties:
+     *               fontFile:
+     *                 type: string
+     *                 format: binary
+     *               style:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: Font uploaded
+     */
     this.router.post(
       `${this.path}/`,
       [
@@ -32,6 +69,24 @@ class FontsController implements GeneralController {
       this.uploadFont
     );
 
+    /**
+     * @openapi
+     * /api/fonts/:
+     *   put:
+     *     tags: [fonts]
+     *     summary: Update an existing font (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateFont'
+     *     responses:
+     *       200:
+     *         description: Font updated
+     */
     this.router.put(
       `${this.path}/`,
       [
@@ -44,6 +99,28 @@ class FontsController implements GeneralController {
       this.updateFont
     );
 
+    /**
+     * @openapi
+     * /api/fonts/:
+     *   delete:
+     *     tags: [fonts]
+     *     summary: Delete a font (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [id]
+     *             properties:
+     *               id:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Font deleted
+     */
     this.router.delete(
       `${this.path}/`,
       [

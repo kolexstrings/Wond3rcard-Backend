@@ -15,6 +15,24 @@ class ManualPaymentController {
   }
 
   private initializeRoutes() {
+    /**
+     * @openapi
+     * /api/manual-payment/initialize-payment:
+     *   post:
+     *     tags: [manual-payment]
+     *     summary: Initialize a manual payment (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/InitializeManualPayment'
+     *     responses:
+     *       201:
+     *         description: Payment initialized
+     */
     this.router.post(
       `${this.path}/initialize-payment`,
       [

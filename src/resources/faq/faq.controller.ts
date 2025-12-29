@@ -17,8 +17,46 @@ class FAQController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/faq/:
+     *   get:
+     *     tags: [faq]
+     *     summary: Retrieve all FAQs, optionally filtered by category
+     *     parameters:
+     *       - in: query
+     *         name: category
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: FAQs retrieved
+     */
     this.router.get(`${this.path}/`, this.getAllFAQs);
 
+    /**
+     * @openapi
+     * /api/faq/:
+     *   post:
+     *     tags: [faq]
+     *     summary: Create a new FAQ (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [question, answer, category]
+     *             properties:
+     *               question: { type: "string" }
+     *               answer: { type: "string" }
+     *               category: { type: "string" }
+     *     responses:
+     *       201:
+     *         description: FAQ created
+     */
     this.router.post(
       `${this.path}/`,
       [
@@ -29,12 +67,54 @@ class FAQController implements GeneralController {
       this.createFAQ
     );
 
+    /**
+     * @openapi
+     * /api/faq/{id}:
+     *   put:
+     *     tags: [faq]
+     *     summary: Update an existing FAQ (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateFAQ'
+     *     responses:
+     *       200:
+     *         description: FAQ updated
+     */
     this.router.put(
       `${this.path}/:id`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.updateFAQ
     );
 
+    /**
+     * @openapi
+     * /api/faq/{id}:
+     *   delete:
+     *     tags: [faq]
+     *     summary: Delete an FAQ (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: FAQ deleted
+     */
     this.router.delete(
       `${this.path}/:id`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],

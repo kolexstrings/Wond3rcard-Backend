@@ -18,8 +18,45 @@ class SocialMediaController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/social-medias/:
+     *   get:
+     *     tags: [social-medias]
+     *     summary: Get all social media links
+     *     responses:
+     *       200:
+     *         description: Social media links retrieved
+     */
     this.router.get(`${this.path}/`, this.getAllSocialMedias);
 
+    /**
+     * @openapi
+     * /api/social-medias/:
+     *   post:
+     *     tags: [social-medias]
+     *     summary: Create a new social media entry (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required: [name, mediaType]
+     *             properties:
+     *               name:
+     *                 type: string
+     *               mediaType:
+     *                 type: string
+     *               image:
+     *                 type: string
+     *                 format: binary
+     *     responses:
+     *       201:
+     *         description: Social media created
+     */
     this.router.post(
       `${this.path}/`,
       [
@@ -31,6 +68,30 @@ class SocialMediaController implements GeneralController {
       this.createSocialMedia
     );
 
+    /**
+     * @openapi
+     * /api/social-medias/{id}:
+     *   put:
+     *     tags: [social-medias]
+     *     summary: Update a social media entry (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateSocialMedia'
+     *     responses:
+     *       200:
+     *         description: Social media updated
+     */
     this.router.put(
       `${this.path}/:id`,
       [
@@ -41,6 +102,24 @@ class SocialMediaController implements GeneralController {
       this.updateSocialMedia
     );
 
+    /**
+     * @openapi
+     * /api/social-medias/{id}:
+     *   delete:
+     *     tags: [social-medias]
+     *     summary: Delete a social media entry (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Social media deleted
+     */
     this.router.delete(
       `${this.path}/:id`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],

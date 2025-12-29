@@ -18,6 +18,53 @@ class AuthController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/auth/sign-up:
+     *   post:
+     *     tags: [auth]
+     *     summary: Register a new user account
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - firstName
+     *               - lastName
+     *               - email
+     *               - password
+     *             properties:
+     *               firstName:
+     *                 type: string
+     *               lastName:
+     *                 type: string
+     *               otherName:
+     *                 type: string
+     *               email:
+     *                 type: string
+     *               mobileNumber:
+     *                 type: string
+     *               password:
+     *                 type: string
+     *                 format: password
+     *               fcmToken:
+     *                 type: string
+     *               companyName:
+     *                 type: string
+     *               designation:
+     *                 type: string
+     *               profilePhoto:
+     *                 type: string
+     *                 format: binary
+     *               coverPhoto:
+     *                 type: string
+     *                 format: binary
+     *     responses:
+     *       201:
+     *         description: User created and verification email sent
+     */
     this.router.post(
       `${this.path}/sign-up`,
       uploadProfileAndCoverMiddleware,
@@ -25,46 +72,210 @@ class AuthController implements GeneralController {
       this.signUp
     );
 
+    /**
+     * @openapi
+     * /api/auth/verify-account:
+     *   post:
+     *     tags: [auth]
+     *     summary: Verify new account using OTP
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email, otp]
+     *             properties:
+     *               email:
+     *                 type: string
+     *               otp:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: Account verified
+     */
     this.router.post(
       `${this.path}/verify-account`,
       validationMiddleware(validate.validateVerifyAccount),
       this.verifyAccount
     );
 
+    /**
+     * @openapi
+     * /api/auth/request-verify-account:
+     *   post:
+     *     tags: [auth]
+     *     summary: Request verification OTP email
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email]
+     *             properties:
+     *               email:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: Verification instructions sent
+     */
     this.router.post(
       `${this.path}/request-verify-account`,
       validationMiddleware(validate.validateRequestVerifyAccount),
       this.requestAccountVerification
     );
 
+    /**
+     * @openapi
+     * /api/auth/delete-account:
+     *   delete:
+     *     tags: [auth]
+     *     summary: Delete authenticated user's account
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       201:
+     *         description: Account deleted
+     */
     this.router.delete(
       `${this.path}/delete-account`,
       [authenticatedMiddleware],
       this.deleteAccount
     );
 
+    /**
+     * @openapi
+     * /api/auth/sign-in:
+     *   post:
+     *     tags: [auth]
+     *     summary: Sign in with email and password
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email, password]
+     *             properties:
+     *               email:
+     *                 type: string
+     *               password:
+     *                 type: string
+     *                 format: password
+     *     responses:
+     *       200:
+     *         description: Sign-in successful
+     */
     this.router.post(
       `${this.path}/sign-in`,
       validationMiddleware(validate.validateSignIn),
       this.signIn
     );
 
+    /**
+     * @openapi
+     * /api/auth/refresh-token:
+     *   post:
+     *     tags: [auth]
+     *     summary: Refresh access token
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [refreshToken]
+     *             properties:
+     *               refreshToken:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: New tokens issued
+     */
     this.router.post(`${this.path}/refresh-token`, this.refreshToken);
 
     // this.router.post(`${this.path}/logout`, [passportMiddleware], this.logout);
 
+    /**
+     * @openapi
+     * /api/auth/forgot-password:
+     *   post:
+     *     tags: [auth]
+     *     summary: Request password reset OTP
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email]
+     *             properties:
+     *               email:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: OTP sent
+     */
     this.router.post(
       `${this.path}/forgot-password`,
       validationMiddleware(validate.validateDeleteAccount),
       this.forgotPassword
     );
 
+    /**
+     * @openapi
+     * /api/auth/verify-otp:
+     *   post:
+     *     tags: [auth]
+     *     summary: Verify password reset OTP
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email, code]
+     *             properties:
+     *               email:
+     *                 type: string
+     *               code:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: OTP verified
+     */
     this.router.post(
       `${this.path}/verify-otp`,
       [validationMiddleware(validate.validateOTPCode)],
       this.verifyOTP
     );
 
+    /**
+     * @openapi
+     * /api/auth/change-password:
+     *   post:
+     *     tags: [auth]
+     *     summary: Change password after OTP verification
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email, newPassword]
+     *             properties:
+     *               email:
+     *                 type: string
+     *               newPassword:
+     *                 type: string
+     *                 format: password
+     *     responses:
+     *       201:
+     *         description: Password changed
+     */
     this.router.post(
       `${this.path}/change-password`,
       [
@@ -76,12 +287,45 @@ class AuthController implements GeneralController {
 
     // this.router.post(`${this.path}/logout`, [passportMiddleware], this.logout);
 
+    /**
+     * @openapi
+     * /api/auth/setup-mfa:
+     *   post:
+     *     tags: [auth]
+     *     summary: Initialize MFA setup
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: MFA secret generated
+     */
     this.router.post(
       `${this.path}/setup-mfa`,
       [authenticatedMiddleware],
       this.setupMFA
     );
 
+    /**
+     * @openapi
+     * /api/auth/verify-mfa:
+     *   post:
+     *     tags: [auth]
+     *     summary: Verify MFA token
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               token:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: MFA verified
+     */
     this.router.post(
       `${this.path}/verify-mfa`,
       validationMiddleware(validate.validateVerifyMFA),
@@ -89,18 +333,64 @@ class AuthController implements GeneralController {
       this.verifyMFA
     );
 
+    /**
+     * @openapi
+     * /api/auth/reset-mfa:
+     *   post:
+     *     tags: [auth]
+     *     summary: Reset MFA configuration
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: MFA reset request processed
+     */
     this.router.post(
       `${this.path}/reset-mfa`,
       [authenticatedMiddleware],
       this.resetMFA
     );
 
+    /**
+     * @openapi
+     * /api/auth/request-2fa:
+     *   post:
+     *     tags: [auth]
+     *     summary: Request 2FA setup instructions
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       201:
+     *         description: Instructions sent
+     */
     this.router.post(
       `${this.path}/request-2fa`,
       [authenticatedMiddleware],
       this.request2FA
     );
 
+    /**
+     * @openapi
+     * /api/auth/enable-2fa:
+     *   post:
+     *     tags: [auth]
+     *     summary: Enable 2FA with OTP
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [otpCode]
+     *             properties:
+     *               otpCode:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: 2FA enabled
+     */
     this.router.post(
       `${this.path}/enable-2fa`,
       [authenticatedMiddleware],

@@ -17,8 +17,36 @@ class AppInfoController implements GeneralController {
   }
 
   private initializeRoutes(): void {
+    /**
+     * @openapi
+     * /api/app-info:
+     *   get:
+     *     tags: [app-info]
+     *     summary: Get app information
+     *     responses:
+     *       200:
+     *         description: App info retrieved
+     */
     this.router.get(`${this.path}`, this.getAppInfo);
 
+    /**
+     * @openapi
+     * /api/app-info:
+     *   post:
+     *     tags: [app-info]
+     *     summary: Create or update app info (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/AppInfo'
+     *     responses:
+     *       200:
+     *         description: App info updated
+     */
     this.router.post(
       `${this.path}`,
       [
@@ -29,6 +57,30 @@ class AppInfoController implements GeneralController {
       this.createOrUpdateAppInfo
     );
 
+    /**
+     * @openapi
+     * /api/app-info/{id}:
+     *   put:
+     *     tags: [app-info]
+     *     summary: Update app info by ID (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/AppInfo'
+     *     responses:
+     *       200:
+     *         description: App info updated
+     */
     this.router.put(
       `${this.path}/:id`,
       [
@@ -39,6 +91,24 @@ class AppInfoController implements GeneralController {
       this.updateAppInfo
     );
 
+    /**
+     * @openapi
+     * /api/app-info/{id}:
+     *   delete:
+     *     tags: [app-info]
+     *     summary: Delete app info (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       204:
+     *         description: App info deleted
+     */
     this.router.delete(
       `${this.path}/:id`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],

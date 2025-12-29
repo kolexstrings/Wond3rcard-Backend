@@ -17,18 +17,87 @@ class ProfileController {
   }
 
   private initializeRoutes() {
+    /**
+     * @openapi
+     * /api/profile/{id}/contacts:
+     *   get:
+     *     tags: [profile]
+     *     summary: Get contacts for a user profile
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Contacts retrieved
+     */
     this.router.get(
       `${this.path}/:id/contacts`,
       [authenticatedMiddleware],
       this.getContacts
     );
 
+    /**
+     * @openapi
+     * /api/profile/{id}/contacts:
+     *   post:
+     *     tags: [profile]
+     *     summary: Add a contact to user profile
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [contactEmail]
+     *             properties:
+     *               contactEmail:
+     *                 type: string
+     *                 format: email
+     *     responses:
+     *       200:
+     *         description: Contact added
+     */
     this.router.post(
       `${this.path}/:id/contacts`,
       [authenticatedMiddleware, validationMiddleware(validator.addContact)],
       this.addContact
     );
 
+    /**
+     * @openapi
+     * /api/profile/connect:
+     *   post:
+     *     tags: [profile]
+     *     summary: Connect with another user
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [userId]
+     *             properties:
+     *               userId:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Connection established
+     */
     this.router.post(
       `${this.path}/connect`,
       [
@@ -38,18 +107,64 @@ class ProfileController {
       this.connect
     );
 
+    /**
+     * @openapi
+     * /api/profile/connections:
+     *   get:
+     *     tags: [profile]
+     *     summary: Get user's connections
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Connections retrieved
+     */
     this.router.get(
       `${this.path}/connections`,
       authenticatedMiddleware,
       this.getConnections
     );
 
+    /**
+     * @openapi
+     * /api/profile/suggestions:
+     *   get:
+     *     tags: [profile]
+     *     summary: Get connection suggestions
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Suggestions retrieved
+     */
     this.router.get(
       `${this.path}/suggestions`,
       authenticatedMiddleware,
       this.suggestConnections
     );
 
+    /**
+     * @openapi
+     * /api/profile/remove-contact:
+     *   patch:
+     *     tags: [profile]
+     *     summary: Remove a contact from profile
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [userId]
+     *             properties:
+     *               userId:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Contact removed
+     */
     this.router.patch(
       `${this.path}/remove-contact`,
       [
@@ -59,6 +174,28 @@ class ProfileController {
       this.removeContact
     );
 
+    /**
+     * @openapi
+     * /api/profile/remove-connection:
+     *   patch:
+     *     tags: [profile]
+     *     summary: Remove a connection
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [userId]
+     *             properties:
+     *               userId:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Connection removed
+     */
     this.router.patch(
       `${this.path}/remove-connection`,
       [

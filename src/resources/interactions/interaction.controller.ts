@@ -16,23 +16,102 @@ class InteractionController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/interaction/:
+     *   get:
+     *     tags: [interactions]
+     *     summary: Get all user card analytics
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       201:
+     *         description: Analytics retrieved
+     */
     this.router.get(`${this.path}/`, [authenticatedMiddleware], this.analytics);
+
+    /**
+     * @openapi
+     * /api/interaction/by-time-period:
+     *   get:
+     *     tags: [interactions]
+     *     summary: Get analytics by time period
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: timePeriod
+     *         schema:
+     *           type: string
+     *     responses:
+     *       201:
+     *         description: Analytics retrieved
+     */
     this.router.get(
       `${this.path}/by-time-period`,
       [authenticatedMiddleware],
       this.analyticsByTimePeriod
     );
+
+    /**
+     * @openapi
+     * /api/interaction/user-card-analytics:
+     *   get:
+     *     tags: [interactions]
+     *     summary: Get analytics for a specific user card
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: cardId
+     *         schema:
+     *           type: string
+     *     responses:
+     *       201:
+     *         description: Card analytics retrieved
+     */
     this.router.get(
       `${this.path}/user-card-analytics`,
       [authenticatedMiddleware],
       this.fetchUserCardAnalytics
     );
+
+    /**
+     * @openapi
+     * /api/interaction/geo-dist:
+     *   get:
+     *     tags: [interactions]
+     *     summary: Get geographic distribution of interactions
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Geographic distribution retrieved
+     */
     this.router.get(
       `${this.path}/geo-dist`,
       [authenticatedMiddleware],
       this.geoDistributions
     );
 
+    /**
+     * @openapi
+     * /api/interaction/:
+     *   post:
+     *     tags: [interactions]
+     *     summary: Record a card interaction
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Interaction'
+     *     responses:
+     *       201:
+     *         description: Interaction recorded
+     */
     this.router.post(
       `${this.path}/`,
       [authenticatedMiddleware, validationMiddleware(validator.interact)],

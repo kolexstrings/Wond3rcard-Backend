@@ -23,6 +23,35 @@ class PhysicalCardController implements GeneralController {
   }
 
   initializeRoute(): void {
+    /**
+     * @openapi
+     * /api/phy-cards/create-template:
+     *   post:
+     *     tags: [physical-cards]
+     *     summary: Create a new card template (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required: [name, priceNaira, priceUsd, svgFile]
+     *             properties:
+     *               name:
+     *                 type: string
+     *               priceNaira:
+     *                 type: number
+     *               priceUsd:
+     *                 type: number
+     *               svgFile:
+     *                 type: string
+     *                 format: binary
+     *     responses:
+     *       201:
+     *         description: Template created
+     */
     this.router.post(
       `${this.path}/create-template`,
       [
@@ -34,6 +63,32 @@ class PhysicalCardController implements GeneralController {
       this.createTemplate
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/create-custom-template:
+     *   post:
+     *     tags: [physical-cards]
+     *     summary: Create a custom card template (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name, priceNaira, priceUsd]
+     *             properties:
+     *               name:
+     *                 type: string
+     *               priceNaira:
+     *                 type: number
+     *               priceUsd:
+     *                 type: number
+     *     responses:
+     *       201:
+     *         description: Custom template created
+     */
     this.router.post(
       `${this.path}/create-custom-template`,
       [
@@ -44,18 +99,72 @@ class PhysicalCardController implements GeneralController {
       this.createCustomTemplate
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/templates:
+     *   get:
+     *     tags: [physical-cards]
+     *     summary: Get all card templates
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Templates retrieved
+     */
     this.router.get(
       `${this.path}/templates`,
       authenticatedMiddleware,
       this.getTemplates
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/template/{templateId}:
+     *   get:
+     *     tags: [physical-cards]
+     *     summary: Get a card template by ID
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: templateId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Template retrieved
+     */
     this.router.get(
       `${this.path}/template/:templateId`,
       [authenticatedMiddleware],
       this.getTemplateById
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/update-card-template/{templateId}:
+     *   put:
+     *     tags: [physical-cards]
+     *     summary: Update a card template (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: templateId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateCardTemplate'
+     *     responses:
+     *       200:
+     *         description: Template updated
+     */
     this.router.put(
       `${this.path}/update-card-template/:templateId`,
       [
@@ -66,6 +175,30 @@ class PhysicalCardController implements GeneralController {
       this.updateCardTemplate
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/update-custom-card-template/{templateId}:
+     *   put:
+     *     tags: [physical-cards]
+     *     summary: Update a custom card template (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: templateId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateCustomCardTemplate'
+     *     responses:
+     *       200:
+     *         description: Custom template updated
+     */
     this.router.put(
       `${this.path}/update-custom-card-template/:templateId`,
       [
@@ -76,12 +209,48 @@ class PhysicalCardController implements GeneralController {
       this.updateCustomCardTemplate
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/template/{templateId}:
+     *   delete:
+     *     tags: [physical-cards]
+     *     summary: Delete a card template (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: templateId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Template deleted
+     */
     this.router.delete(
       `${this.path}/template/:templateId`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.deleteCardTemplate
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/create-physical-card:
+     *   post:
+     *     tags: [physical-cards]
+     *     summary: Create a physical card
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CreatePhysicalCard'
+     *     responses:
+     *       201:
+     *         description: Physical card created
+     */
     this.router.post(
       `${this.path}/create-physical-card`,
       [
@@ -91,6 +260,24 @@ class PhysicalCardController implements GeneralController {
       this.createPhysicalCard
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/create-custom:
+     *   post:
+     *     tags: [physical-cards]
+     *     summary: Create a custom physical card
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             $ref: '#/components/schemas/CreateCustomPhysicalCard'
+     *     responses:
+     *       201:
+     *         description: Custom physical card created
+     */
     this.router.post(
       `${this.path}/create-custom`,
       [
@@ -101,24 +288,96 @@ class PhysicalCardController implements GeneralController {
       this.createCustomPhysicalCard
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/physical-cards:
+     *   get:
+     *     tags: [physical-cards]
+     *     summary: Get all physical cards (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Physical cards retrieved
+     */
     this.router.get(
       `${this.path}/physical-cards`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getAllPhysicalCards
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/physical/{userId}:
+     *   get:
+     *     tags: [physical-cards]
+     *     summary: Get physical cards for a user
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: userId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: User physical cards retrieved
+     */
     this.router.get(
       `${this.path}/physical/:userId`,
       authenticatedMiddleware,
       this.getUserPhysicalCards
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/physical/{cardId}:
+     *   get:
+     *     tags: [physical-cards]
+     *     summary: Get a physical card by ID
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Physical card retrieved
+     */
     this.router.get(
       `${this.path}/physical/:cardId`,
       [authenticatedMiddleware],
       this.getPhysicalCardById
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/update-physical-card/{cardId}:
+     *   put:
+     *     tags: [physical-cards]
+     *     summary: Update a physical card
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdatePhysicalCard'
+     *     responses:
+     *       200:
+     *         description: Physical card updated
+     */
     this.router.put(
       `${this.path}/update-physical-card/:cardId`,
       authenticatedMiddleware,
@@ -126,12 +385,54 @@ class PhysicalCardController implements GeneralController {
       this.updatePhysicalCard
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/update-custom-physical-card/{cardId}:
+     *   put:
+     *     tags: [physical-cards]
+     *     summary: Update a custom physical card
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateCustomPhysicalCard'
+     *     responses:
+     *       200:
+     *         description: Custom physical card updated
+     */
     this.router.put(
       `${this.path}/update-custom-physical-card/:cardId`,
       [authenticatedMiddleware, uploadPhysicalCardMiddleware],
       this.updateCustomPhysicalCard
     );
 
+    /**
+     * @openapi
+     * /api/phy-cards/delete-physical-card/{cardId}:
+     *   delete:
+     *     tags: [physical-cards]
+     *     summary: Delete a physical card
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Physical card deleted
+     */
     this.router.delete(
       `${this.path}/delete-physical-card/:cardId`,
       authenticatedMiddleware,

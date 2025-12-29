@@ -14,11 +14,83 @@ class TransactionsController {
   }
 
   private initializeRoute() {
+    /**
+     * @openapi
+     * /api/payments/transactions:
+     *   get:
+     *     tags: [transactions]
+     *     summary: Get transactions with optional filters (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: provider
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: status
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: userId
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: plan
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: billingCycle
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: paymentMethod
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: transactionId
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: referenceId
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: transactionType
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: startDate
+     *         schema:
+     *           type: string
+     *           format: date
+     *       - in: query
+     *         name: endDate
+     *         schema:
+     *           type: string
+     *           format: date
+     *     responses:
+     *       200:
+     *         description: Transactions retrieved
+     */
     this.router.get(
       `${this.path}/transactions`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
       this.getTransactions
     );
+
+    /**
+     * @openapi
+     * /api/payments/analytics:
+     *   get:
+     *     tags: [transactions]
+     *     summary: Get transaction analytics (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Analytics retrieved
+     */
     this.router.get(
       `${this.path}/analytics`,
       [authenticatedMiddleware, verifyRolesMiddleware([UserRole.Admin])],
