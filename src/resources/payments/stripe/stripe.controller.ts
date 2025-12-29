@@ -58,6 +58,32 @@ class StripeController {
       this.createCheckoutSession
     );
 
+    /**
+     * @openapi
+     * /api/stripe/cancel-subscription:
+     *   post:
+     *     tags: [stripe]
+     *     summary: Cancel the authenticated user's active Stripe subscription
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [subscriptionId]
+     *             properties:
+     *               userId:
+     *                 type: string
+     *                 description: Optional override (admin only)
+     *               subscriptionId:
+     *                 type: string
+     *                 description: Stripe subscription identifier to cancel
+     *     responses:
+     *       200:
+     *         description: Cancellation scheduled
+     */
     this.router.post(
       `${this.path}/cancel-subscription`,
       [
@@ -67,6 +93,35 @@ class StripeController {
       this.cancelSubscription
     );
 
+    /**
+     * @openapi
+     * /api/stripe/change-subscription:
+     *   post:
+     *     tags: [stripe]
+     *     summary: Upgrade or downgrade a Stripe subscription
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [newPlan, billingCycle]
+     *             properties:
+     *               userId:
+     *                 type: string
+     *                 description: Optional override (admin only)
+     *               newPlan:
+     *                 type: string
+     *                 enum: [basic, premium, business]
+     *               billingCycle:
+     *                 type: string
+     *                 enum: [monthly, yearly]
+     *     responses:
+     *       200:
+     *         description: Subscription change initiated
+     */
     this.router.post(
       `${this.path}/change-subscription`,
       [
