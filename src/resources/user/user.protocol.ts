@@ -41,7 +41,7 @@ interface User extends Document {
     expiresAt: Date | null;
   };
   activeSubscription?: {
-    provider: "stripe" | "paystack" | null;
+    provider: "stripe" | "paystack" | "manual" | null;
     subscriptionId: string | null;
     expiryDate: Date | null;
   };

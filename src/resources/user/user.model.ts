@@ -45,7 +45,11 @@ const UserSchema = new Schema(
     stripeCustomerId: { type: String, default: null },
     paystackCustomerId: { type: String, default: null },
     activeSubscription: {
-      provider: { type: String, enum: ["stripe", "paystack"], default: null },
+      provider: {
+        type: String,
+        enum: ["stripe", "paystack", "manual"],
+        default: null,
+      },
       subscriptionId: { type: String, default: null },
       expiryDate: { type: Date, default: null },
     },
