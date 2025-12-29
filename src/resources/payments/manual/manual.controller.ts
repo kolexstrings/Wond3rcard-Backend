@@ -47,6 +47,29 @@ class ManualPaymentController {
       this.createManualPayment
     );
 
+    /**
+     * @openapi
+     * /api/manual-payment/cancel-subscription:
+     *   post:
+     *     tags: [manual-payment]
+     *     summary: Cancel an existing manual subscription (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [userId]
+     *             properties:
+     *               userId:
+     *                 type: string
+     *                 description: Target user whose manual subscription should be cancelled
+     *     responses:
+     *       200:
+     *         description: Manual subscription cancelled
+     */
     this.router.post(
       `${this.path}/cancel-subscription`,
       [
@@ -57,6 +80,43 @@ class ManualPaymentController {
       this.cancelManualSubscription
     );
 
+    /**
+     * @openapi
+     * /api/manual-payment/change-subscription:
+     *   post:
+     *     tags: [manual-payment]
+     *     summary: Change a user's manual subscription plan (Admin only)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [userId, newPlan, billingCycle]
+     *             properties:
+     *               userId:
+     *                 type: string
+     *               newPlan:
+     *                 type: string
+     *                 enum: [basic, premium, business]
+     *               billingCycle:
+     *                 type: string
+     *                 enum: [monthly, yearly]
+     *               amount:
+     *                 type: number
+     *                 description: Optional amount recorded for the manual adjustment
+     *               paymentMethod:
+     *                 type: string
+     *                 description: Optional description of the manual payment method
+     *               durationInDays:
+     *                 type: number
+     *                 description: Optional override for subscription duration in days
+     *     responses:
+     *       200:
+     *         description: Manual subscription updated
+     */
     this.router.post(
       `${this.path}/change-subscription`,
       [
