@@ -47,7 +47,12 @@ class FAQController implements GeneralController {
      *       content:
      *         application/json:
      *           schema:
-     *             $ref: '#/components/schemas/CreateFAQ'
+     *             type: object
+     *             required: [question, answer, category]
+     *             properties:
+     *               question: { type: "string" }
+     *               answer: { type: "string" }
+     *               category: { type: "string" }
      *     responses:
      *       201:
      *         description: FAQ created

@@ -44,7 +44,12 @@ class FeatureFlagsController implements GlobalController {
      *       content:
      *         application/json:
      *           schema:
-     *             $ref: '#/components/schemas/CreateFeatureFlag'
+     *             type: object
+     *             required: [name]
+     *             properties:
+     *               name: { type: "string" }
+     *               description: { type: "string" }
+     *               enabled: { type: "boolean" }
      *     responses:
      *       201:
      *         description: Feature flag created
@@ -98,7 +103,12 @@ class FeatureFlagsController implements GlobalController {
      *       content:
      *         application/json:
      *           schema:
-     *             $ref: '#/components/schemas/UpdateFeatureFlag'
+     *             type: object
+     *             required: [name, description, enabled]
+     *             properties:
+     *               name: { type: "string" }
+     *               description: { type: "string" }
+     *               enabled: { type: "boolean" }
      *     responses:
      *       200:
      *         description: Feature flag updated

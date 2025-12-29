@@ -1,8 +1,12 @@
 import { Application } from "express";
+import path from "path";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 
-export const setupSwaggerDocs = (app: Application, port: number): void => {
+export const setupSwaggerDocs = async (
+  app: Application,
+  port: number
+): Promise<void> => {
   const serverUrl =
     process.env.SWAGGER_SERVER_URL || `http://localhost:${port}`;
 
@@ -25,6 +29,13 @@ export const setupSwaggerDocs = (app: Application, port: number): void => {
       },
     ],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
       schemas: {
         AdminUpdateUser: {
           type: "object",
@@ -47,17 +58,59 @@ export const setupSwaggerDocs = (app: Application, port: number): void => {
             designation: { type: "string" },
           },
         },
+        CreateFAQ: {
+          type: "object",
+          required: ["question", "answer", "category"],
+          properties: {
+            question: { type: "string" },
+            answer: { type: "string" },
+            category: {
+              type: "string",
+              enum: ["General", "Technical", "Billing", "Account"],
+            },
+          },
+        },
+        UpdateFAQ: {
+          type: "object",
+          properties: {
+            question: { type: "string" },
+            answer: { type: "string" },
+            category: {
+              type: "string",
+              enum: ["General", "Technical", "Billing", "Account"],
+            },
+          },
+        },
       },
     },
   };
 
-  const swaggerSpec = swaggerJsdoc({
+  const controllerGlobs = [
+    path.resolve(__dirname, "../resources/**/*.controller.ts"),
+    path.resolve(__dirname, "../resources/**/*.controller.js"),
+  ];
+
+  const swaggerSpec = await swaggerJsdoc({
     definition: swaggerDefinition,
-    apis: ["./src/resources/**/*.controller.ts"],
+    apis: controllerGlobs,
   });
 
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.get("/docs.json", (_req, res) => res.json(swaggerSpec));
+
+  /**
+   * Swagger UI attempts to register a service worker at /sw.js for offline support.
+   * Serve a minimal no-op worker so the registration succeeds without 404 spam.
+   */
+  app.get("/sw.js", (_req, res) => {
+    res.set({
+      "Content-Type": "application/javascript",
+      "Cache-Control": "no-store",
+    });
+    res.send(
+      "self.addEventListener('install', () => self.skipWaiting());self.addEventListener('activate', () => self.clients.claim());"
+    );
+  });
 };
 
 export default setupSwaggerDocs;
