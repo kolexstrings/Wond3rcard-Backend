@@ -27,10 +27,15 @@ export const validateSubscriptionTier = Joi.object({
   }),
   billingCycle: Joi.object({
     monthly: Joi.object({
-      price: Joi.number().positive().required().messages({
-        "any.required": "Monthly price is required",
-        "number.base": "Monthly price must be a number",
-        "number.positive": "Monthly price must be a positive number",
+      priceUSD: Joi.number().positive().required().messages({
+        "any.required": "Monthly USD price is required",
+        "number.base": "Monthly USD price must be a number",
+        "number.positive": "Monthly USD price must be a positive number",
+      }),
+      priceNGN: Joi.number().positive().required().messages({
+        "any.required": "Monthly NGN price is required",
+        "number.base": "Monthly NGN price must be a number",
+        "number.positive": "Monthly NGN price must be a positive number",
       }),
       durationInDays: Joi.number().positive().default(30).messages({
         "number.base": "Duration must be a number",
@@ -44,10 +49,15 @@ export const validateSubscriptionTier = Joi.object({
       }),
     }).required(),
     yearly: Joi.object({
-      price: Joi.number().positive().required().messages({
-        "any.required": "Yearly price is required",
-        "number.base": "Yearly price must be a number",
-        "number.positive": "Yearly price must be a positive number",
+      priceUSD: Joi.number().positive().required().messages({
+        "any.required": "Yearly USD price is required",
+        "number.base": "Yearly USD price must be a number",
+        "number.positive": "Yearly USD price must be a positive number",
+      }),
+      priceNGN: Joi.number().positive().required().messages({
+        "any.required": "Yearly NGN price is required",
+        "number.base": "Yearly NGN price must be a number",
+        "number.positive": "Yearly NGN price must be a positive number",
       }),
       durationInDays: Joi.number().positive().default(365).messages({
         "number.base": "Duration must be a number",

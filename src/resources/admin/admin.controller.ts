@@ -364,12 +364,16 @@ class AdminController implements GlobalController {
      *                 properties:
      *                   monthly:
      *                     type: object
-     *                     required: [price, stripePlanCode, paystackPlanCode]
+     *                     required: [priceUSD, priceNGN, stripePlanCode, paystackPlanCode]
      *                     properties:
-     *                       price:
+     *                       priceUSD:
      *                         type: number
-     *                         description: Monthly price amount
-     *                         example: 1000
+     *                         description: Monthly price in USD
+     *                         example: 10
+     *                       priceNGN:
+     *                         type: number
+     *                         description: Monthly price in Nigerian Naira
+     *                         example: 5000
      *                       durationInDays:
      *                         type: number
      *                         description: Duration in days (default: 30)
@@ -384,12 +388,16 @@ class AdminController implements GlobalController {
      *                         example: "PLN_abc123"
      *                   yearly:
      *                     type: object
-     *                     required: [price, stripePlanCode, paystackPlanCode]
+     *                     required: [priceUSD, priceNGN, stripePlanCode, paystackPlanCode]
      *                     properties:
-     *                       price:
+     *                       priceUSD:
      *                         type: number
-     *                         description: Yearly price amount
-     *                         example: 10000
+     *                         description: Yearly price in USD
+     *                         example: 100
+     *                       priceNGN:
+     *                         type: number
+     *                         description: Yearly price in Nigerian Naira
+     *                         example: 50000
      *                       durationInDays:
      *                         type: number
      *                         description: Duration in days (default: 365)

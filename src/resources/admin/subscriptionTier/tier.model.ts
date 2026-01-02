@@ -4,13 +4,15 @@ export interface ITier extends Document {
   name: string;
   billingCycle: {
     monthly: {
-      price: number;
+      priceUSD: number;
+      priceNGN: number;
       durationInDays: number;
       stripePlanCode: string;
       paystackPlanCode: string;
     };
     yearly: {
-      price: number;
+      priceUSD: number;
+      priceNGN: number;
       durationInDays: number;
       stripePlanCode: string;
       paystackPlanCode: string;
@@ -24,13 +26,15 @@ export interface ITier extends Document {
 
 const BillingCycleSchema = new Schema({
   monthly: {
-    price: { type: Number, required: true },
+    priceUSD: { type: Number, required: true },
+    priceNGN: { type: Number, required: true },
     durationInDays: { type: Number, default: 30 },
     stripePlanCode: { type: String, required: true },
     paystackPlanCode: { type: String, required: true },
   },
   yearly: {
-    price: { type: Number, required: true },
+    priceUSD: { type: Number, required: true },
+    priceNGN: { type: Number, required: true },
     durationInDays: { type: Number, default: 365 },
     stripePlanCode: { type: String, required: true },
     paystackPlanCode: { type: String, required: true },

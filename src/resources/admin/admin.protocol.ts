@@ -2,13 +2,15 @@ export interface CreateSubscriptionTier {
   name: string;
   billingCycle: {
     monthly: {
-      price: number;
+      priceUSD: number;
+      priceNGN: number;
       durationInDays?: number;
       stripePlanCode: string;
       paystackPlanCode: string;
     };
     yearly: {
-      price: number;
+      priceUSD: number;
+      priceNGN: number;
       durationInDays?: number;
       stripePlanCode: string;
       paystackPlanCode: string;
