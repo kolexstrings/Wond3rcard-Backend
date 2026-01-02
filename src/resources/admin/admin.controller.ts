@@ -338,6 +338,123 @@ class AdminController implements GlobalController {
     /**
      * Subscription
      */
+    /**
+     * @openapi
+     * /api/admin/subscription-tiers:
+     *   post:
+     *     tags: [admin]
+     *     summary: Create a new subscription tier
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name, billingCycle, description, trialPeriod, autoRenew, features]
+     *             properties:
+     *               name:
+     *                 type: string
+     *                 description: Name of the subscription tier
+     *                 example: "premium"
+     *               billingCycle:
+     *                 type: object
+     *                 required: [monthly, yearly]
+     *                 properties:
+     *                   monthly:
+     *                     type: object
+     *                     required: [priceUSD, priceNGN, stripePlanCode, paystackPlanCode]
+     *                     properties:
+     *                       priceUSD:
+     *                         type: number
+     *                         description: Monthly price in USD
+     *                         example: 10
+     *                       priceNGN:
+     *                         type: number
+     *                         description: Monthly price in Nigerian Naira
+     *                         example: 5000
+     *                       durationInDays:
+     *                         type: number
+     *                         description: Duration in days (default: 30)
+     *                         example: 30
+     *                       stripePlanCode:
+     *                         type: string
+     *                         description: Stripe Price ID for USD payments
+     *                         example: "price_1XYZ..."
+     *                       paystackPlanCode:
+     *                         type: string
+     *                         description: Paystack Plan Code for NGN payments
+     *                         example: "PLN_abc123"
+     *                   yearly:
+     *                     type: object
+     *                     required: [priceUSD, priceNGN, stripePlanCode, paystackPlanCode]
+     *                     properties:
+     *                       priceUSD:
+     *                         type: number
+     *                         description: Yearly price in USD
+     *                         example: 100
+     *                       priceNGN:
+     *                         type: number
+     *                         description: Yearly price in Nigerian Naira
+     *                         example: 50000
+     *                       durationInDays:
+     *                         type: number
+     *                         description: Duration in days (default: 365)
+     *                         example: 365
+     *                       stripePlanCode:
+     *                         type: string
+     *                         description: Stripe Price ID for USD payments
+     *                         example: "price_2ABC..."
+     *                       paystackPlanCode:
+     *                         type: string
+     *                         description: Paystack Plan Code for NGN payments
+     *                         example: "PLN_def456"
+     *               description:
+     *                 type: string
+     *                 description: Description of the subscription tier
+     *                 example: "Premium tier with all features"
+     *               trialPeriod:
+     *                 type: number
+     *                 description: Trial period in days
+     *                 example: 7
+     *               autoRenew:
+     *                 type: boolean
+     *                 description: Whether subscription auto-renews
+     *                 example: true
+     *               features:
+     *                 type: array
+     *                 items:
+     *                   type: string
+     *                 description: List of features included in this tier
+     *                 example: ["feature1", "feature2", "feature3"]
+     *     responses:
+     *       201:
+     *         description: Subscription tier created successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 statusCode:
+     *                   type: number
+     *                   example: 201
+     *                 status:
+     *                   type: string
+     *                   example: "success"
+     *                 message:
+     *                   type: string
+     *                   example: "Subscription tier created successfully"
+     *                 payload:
+     *                   type: object
+     *                   description: The created subscription tier
+     *       400:
+     *         description: Bad request - Invalid data provided
+     *       401:
+     *         description: Unauthorized - Admin access required
+     *       409:
+     *         description: Conflict - Subscription tier already exists
+     */
     this.router.post(
       `${this.path}/subscription-tiers`,
       [
@@ -360,6 +477,118 @@ class AdminController implements GlobalController {
       this.getSubscriptionTierById
     );
 
+    /**
+     * @openapi
+     * /api/admin/subscription-tiers/{id}:
+     *   patch:
+     *     tags: [admin]
+     *     summary: Update a subscription tier
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Subscription tier ID
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               name:
+     *                 type: string
+     *                 description: Name of the subscription tier
+     *                 example: "premium"
+     *               billingCycle:
+     *                 type: object
+     *                 properties:
+     *                   monthly:
+     *                     type: object
+     *                     properties:
+     *                       price:
+     *                         type: number
+     *                         description: Monthly price amount
+     *                         example: 1000
+     *                       durationInDays:
+     *                         type: number
+     *                         description: Duration in days
+     *                         example: 30
+     *                       stripePlanCode:
+     *                         type: string
+     *                         description: Stripe Price ID for USD payments
+     *                         example: "price_1XYZ..."
+     *                       paystackPlanCode:
+     *                         type: string
+     *                         description: Paystack Plan Code for NGN payments
+     *                         example: "PLN_abc123"
+     *                   yearly:
+     *                     type: object
+     *                     properties:
+     *                       price:
+     *                         type: number
+     *                         description: Yearly price amount
+     *                         example: 10000
+     *                       durationInDays:
+     *                         type: number
+     *                         description: Duration in days
+     *                         example: 365
+     *                       stripePlanCode:
+     *                         type: string
+     *                         description: Stripe Price ID for USD payments
+     *                         example: "price_2ABC..."
+     *                       paystackPlanCode:
+     *                         type: string
+     *                         description: Paystack Plan Code for NGN payments
+     *                         example: "PLN_def456"
+     *               description:
+     *                 type: string
+     *                 description: Description of the subscription tier
+     *                 example: "Premium tier with all features"
+     *               trialPeriod:
+     *                 type: number
+     *                 description: Trial period in days
+     *                 example: 7
+     *               autoRenew:
+     *                 type: boolean
+     *                 description: Whether subscription auto-renews
+     *                 example: true
+     *               features:
+     *                 type: array
+     *                 items:
+     *                   type: string
+     *                 description: List of features included in this tier
+     *                 example: ["feature1", "feature2", "feature3"]
+     *     responses:
+     *       200:
+     *         description: Subscription tier updated successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 statusCode:
+     *                   type: number
+     *                   example: 200
+     *                 status:
+     *                   type: string
+     *                   example: "success"
+     *                 message:
+     *                   type: string
+     *                   example: "Subscription tier updated successfully"
+     *                 payload:
+     *                   type: object
+     *                   description: The updated subscription tier
+     *       400:
+     *         description: Bad request - Invalid data provided
+     *       401:
+     *         description: Unauthorized - Admin access required
+     *       404:
+     *         description: Subscription tier not found
+     */
     this.router.patch(
       `${this.path}/subscription-tiers/:id`,
       [

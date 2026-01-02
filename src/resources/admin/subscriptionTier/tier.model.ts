@@ -3,8 +3,20 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ITier extends Document {
   name: string;
   billingCycle: {
-    monthly: { price: number; durationInDays: number; planCode: string };
-    yearly: { price: number; durationInDays: number; planCode: string };
+    monthly: {
+      priceUSD: number;
+      priceNGN: number;
+      durationInDays: number;
+      stripePlanCode: string;
+      paystackPlanCode: string;
+    };
+    yearly: {
+      priceUSD: number;
+      priceNGN: number;
+      durationInDays: number;
+      stripePlanCode: string;
+      paystackPlanCode: string;
+    };
   };
   description: string;
   trialPeriod: number;
@@ -14,14 +26,18 @@ export interface ITier extends Document {
 
 const BillingCycleSchema = new Schema({
   monthly: {
-    price: { type: Number, required: true },
-    durationInDays: { type: Number, required: true, default: 30 },
-    planCode: { type: String, required: true },
+    priceUSD: { type: Number, required: true },
+    priceNGN: { type: Number, required: true },
+    durationInDays: { type: Number, default: 30 },
+    stripePlanCode: { type: String, required: true },
+    paystackPlanCode: { type: String, required: true },
   },
   yearly: {
-    price: { type: Number, required: true },
-    durationInDays: { type: Number, required: true, default: 365 },
-    planCode: { type: String, required: true },
+    priceUSD: { type: Number, required: true },
+    priceNGN: { type: Number, required: true },
+    durationInDays: { type: Number, default: 365 },
+    stripePlanCode: { type: String, required: true },
+    paystackPlanCode: { type: String, required: true },
   },
 });
 

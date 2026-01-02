@@ -30,117 +30,276 @@ class PaystackSubscriptionService {
     plan: string,
     billingCycle: "monthly" | "yearly"
   ) {
-    const user = await userModel.findById(userId);
-    if (!user) throw new Error("User not found");
-
-    const profile = await profileModel.findOne({ uid: userId });
-    if (!profile) throw new Error("User profile not found");
-
-    const tier = await tierModel.findOne({ name: plan.toLowerCase() });
-    if (!tier) throw new Error("Invalid subscription tier");
-
-    const { durationInDays, planCode } = tier.billingCycle[billingCycle];
-
-    const planDetails = await axios.get(`${this.baseUrl}/plan/${planCode}`, {
-      headers: { Authorization: `Bearer ${this.secretKey}` },
-    });
-
-    const amount = planDetails.data.data.amount;
-
-    // Ensure customer exists
-    let customerCode = user.paystackCustomerId;
-
-    if (!customerCode) {
-      const customerResponse = await axios.post(
-        `${this.baseUrl}/customer`,
-        {
-          email: user.email,
-          first_name: profile.firstname,
-          last_name: profile.lastname,
-        },
-        {
-          headers: { Authorization: `Bearer ${this.secretKey}` },
-        }
-      );
-
-      customerCode = customerResponse.data.data.customer_code;
-
-      user.paystackCustomerId = customerCode;
-      await user.save();
-    }
-
-    // Fetch customer's authorization history
-    const customerDetails = await axios.get(
-      `${this.baseUrl}/customer/${customerCode}`,
-      {
-        headers: { Authorization: `Bearer ${this.secretKey}` },
+    try {
+      // Validate input parameters
+      if (!userId || !plan || !billingCycle) {
+        throw new HttpException(
+          400,
+          "invalid_request",
+          "Missing required parameters: userId, plan, and billingCycle are required"
+        );
       }
-    );
 
-    const authorizations = customerDetails.data.data.authorizations;
-    const savedAuthorization = authorizations?.[0]?.authorization_code;
+      if (!["monthly", "yearly"].includes(billingCycle)) {
+        throw new HttpException(
+          400,
+          "invalid_billing_cycle",
+          "Invalid billing cycle. Must be either 'monthly' or 'yearly'"
+        );
+      }
 
-    if (savedAuthorization) {
-      // User already has a saved card: Create subscription directly
-      const subscriptionResponse = await axios.post(
-        `${this.baseUrl}/subscription`,
-        {
-          customer: customerCode,
-          plan: planCode,
-          authorization: savedAuthorization,
-          callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
-          metadata: {
-            userId,
-            plan,
-            billingCycle,
-            durationInDays,
-            amount,
-            transactionType: "subscription",
+      const user = await userModel.findById(userId);
+      if (!user) {
+        throw new HttpException(
+          404,
+          "user_not_found",
+          "User account not found for payment initialization"
+        );
+      }
+
+      const profile = await profileModel.findOne({ uid: userId });
+      if (!profile) {
+        throw new HttpException(
+          404,
+          "profile_not_found",
+          "User profile not found. Please complete your profile first."
+        );
+      }
+
+      const tier = await tierModel.findOne({ name: plan.toLowerCase() });
+      if (!tier) {
+        throw new HttpException(
+          404,
+          "tier_not_found",
+          `Subscription tier '${plan}' not found. Available tiers: basic, premium, business`
+        );
+      }
+
+      const { durationInDays, paystackPlanCode } =
+        tier.billingCycle[billingCycle];
+
+      if (!paystackPlanCode) {
+        throw new HttpException(
+          500,
+          "payment_configuration_error",
+          `Paystack PlanCode not configured for ${plan} ${billingCycle} tier. Please contact administrator.`
+        );
+      }
+
+      let planDetails;
+      try {
+        const response = await axios.get(
+          `${this.baseUrl}/plan/${paystackPlanCode}`,
+          {
+            headers: { Authorization: `Bearer ${this.secretKey}` },
+          }
+        );
+        planDetails = response.data;
+      } catch (error) {
+        if (error.response?.status === 404) {
+          throw new HttpException(
+            500,
+            "payment_configuration_error",
+            "Paystack plan not found. Please contact administrator."
+          );
+        }
+        if (error.response?.status === 401) {
+          throw new HttpException(
+            500,
+            "payment_configuration_error",
+            "Paystack authentication failed. Please contact administrator."
+          );
+        }
+        throw new HttpException(
+          503,
+          "payment_gateway_unavailable",
+          "Unable to connect to Paystack service. Please try again later."
+        );
+      }
+
+      if (!planDetails.status || !planDetails.data) {
+        throw new HttpException(
+          500,
+          "payment_gateway_error",
+          "Invalid response from Paystack plan service"
+        );
+      }
+
+      const amount = planDetails.data.amount;
+
+      // Ensure customer exists
+      let customerCode = user.paystackCustomerId;
+
+      if (!customerCode) {
+        try {
+          const customerResponse = await axios.post(
+            `${this.baseUrl}/customer`,
+            {
+              email: user.email,
+              first_name: profile.firstname,
+              last_name: profile.lastname,
+            },
+            {
+              headers: { Authorization: `Bearer ${this.secretKey}` },
+            }
+          );
+
+          if (!customerResponse.data.status) {
+            throw new HttpException(
+              500,
+              "customer_creation_failed",
+              "Failed to create customer account with Paystack"
+            );
+          }
+
+          customerCode = customerResponse.data.data.customer_code;
+          user.paystackCustomerId = customerCode;
+          await user.save();
+        } catch (error) {
+          if (error instanceof HttpException) {
+            throw error;
+          }
+          throw new HttpException(
+            500,
+            "customer_creation_failed",
+            "Failed to create Paystack customer account"
+          );
+        }
+      }
+
+      // Fetch customer's authorization history
+      let customerDetails;
+      try {
+        const response = await axios.get(
+          `${this.baseUrl}/customer/${customerCode}`,
+          {
+            headers: { Authorization: `Bearer ${this.secretKey}` },
+          }
+        );
+        customerDetails = response.data;
+      } catch (error) {
+        throw new HttpException(
+          503,
+          "payment_gateway_unavailable",
+          "Unable to fetch customer details from Paystack"
+        );
+      }
+
+      const authorizations = customerDetails.data.data.authorizations;
+      const savedAuthorization = authorizations?.[0]?.authorization_code;
+
+      if (savedAuthorization) {
+        // User already has a saved card: Create subscription directly
+        try {
+          const subscriptionResponse = await axios.post(
+            `${this.baseUrl}/subscription`,
+            {
+              customer: customerCode,
+              plan: paystackPlanCode,
+              authorization: savedAuthorization,
+              callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
+              metadata: {
+                userId,
+                plan,
+                billingCycle,
+                durationInDays,
+                amount,
+                transactionType: "subscription",
+              },
+            },
+            {
+              headers: { Authorization: `Bearer ${this.secretKey}` },
+            }
+          );
+
+          if (!subscriptionResponse.data.status) {
+            throw new HttpException(
+              500,
+              "subscription_creation_failed",
+              "Failed to create subscription with saved card"
+            );
+          }
+
+          // Update callback URL with reference after getting response
+          subscriptionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${subscriptionResponse.data.data.reference}`;
+
+          return {
+            type: "subscription" as const,
+            subscriptionData: subscriptionResponse.data.data,
+          };
+        } catch (error) {
+          if (error instanceof HttpException) {
+            throw error;
+          }
+          throw new HttpException(
+            500,
+            "subscription_creation_failed",
+            "Failed to create subscription with saved payment method"
+          );
+        }
+      }
+
+      // No saved authorization: Initialize payment
+      try {
+        const transactionResponse = await axios.post(
+          `${this.baseUrl}/transaction/initialize`,
+          {
+            email: user.email,
+            amount: amount,
+            callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
+            metadata: {
+              userId,
+              plan,
+              billingCycle,
+              durationInDays,
+              amount,
+              transactionType: "subscription",
+            },
           },
-        },
-        {
-          headers: { Authorization: `Bearer ${this.secretKey}` },
+          {
+            headers: { Authorization: `Bearer ${this.secretKey}` },
+          }
+        );
+
+        if (!transactionResponse.data.status) {
+          throw new HttpException(
+            500,
+            "payment_initialization_failed",
+            "Failed to initialize payment with Paystack"
+          );
         }
-      );
 
-      // Update callback URL with reference after getting response
-      subscriptionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${subscriptionResponse.data.data.reference}`;
+        // Update callback URL with reference after getting response
+        transactionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${transactionResponse.data.data.reference}`;
 
-      return {
-        type: "subscription" as const,
-        subscriptionData: subscriptionResponse.data.data,
-      };
-    }
-
-    // No saved authorization: Initialize payment
-    const transactionResponse = await axios.post(
-      `${this.baseUrl}/transaction/initialize`,
-      {
-        email: user.email,
-        amount: amount,
-        callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
-        metadata: {
-          userId,
-          plan,
-          billingCycle,
-          durationInDays,
-          amount,
-          transactionType: "subscription",
-        },
-      },
-      {
-        headers: { Authorization: `Bearer ${this.secretKey}` },
+        return {
+          type: "payment" as const,
+          checkoutUrl: transactionResponse.data.data.authorization_url,
+          reference: transactionResponse.data.data.reference,
+        };
+      } catch (error) {
+        if (error instanceof HttpException) {
+          throw error;
+        }
+        throw new HttpException(
+          500,
+          "payment_initialization_failed",
+          "Failed to initialize payment. Please try again or use a different payment method."
+        );
       }
-    );
+    } catch (error) {
+      console.error("Error in Paystack initializePayment:", error);
 
-    // Update callback URL with reference after getting response
-    transactionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${transactionResponse.data.data.reference}`;
+      if (error instanceof HttpException) {
+        throw error;
+      }
 
-    return {
-      type: "payment" as const,
-      checkoutUrl: transactionResponse.data.data.authorization_url,
-      reference: transactionResponse.data.data.reference,
-    };
+      throw new HttpException(
+        500,
+        "payment_initialization_failed",
+        "An unexpected error occurred while initializing payment. Please try again or contact support."
+      );
+    }
   }
 
   private async disablePaystackSubscription(
@@ -207,13 +366,13 @@ class PaystackSubscriptionService {
 
     if (data.authorization?.authorization_code) {
       const tier = await tierModel.findOne({ name: plan.toLowerCase() });
-      const planCode = tier.billingCycle[billingCycle].planCode;
+      const paystackPlanCode = tier.billingCycle[billingCycle].paystackPlanCode;
 
       const subscriptionResponse = await axios.post(
         `${this.baseUrl}/subscription`,
         {
           customer: data.customer.customer_code,
-          plan: planCode,
+          plan: paystackPlanCode,
           authorization: data.authorization.authorization_code,
           callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${data.reference}`,
           metadata: {

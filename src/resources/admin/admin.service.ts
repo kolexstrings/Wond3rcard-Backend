@@ -445,15 +445,19 @@ class AdminService {
       const { monthly, yearly } = billingCycle;
 
       if (
-        !monthly.price ||
-        !monthly.planCode ||
-        !yearly.price ||
-        !yearly.planCode
+        !monthly.priceUSD ||
+        !monthly.priceNGN ||
+        !yearly.priceUSD ||
+        !yearly.priceNGN ||
+        !monthly.stripePlanCode ||
+        !monthly.paystackPlanCode ||
+        !yearly.stripePlanCode ||
+        !yearly.paystackPlanCode
       ) {
         throw new HttpException(
           400,
           "bad_request",
-          "Both monthly and yearly pricing and Paystack plan codes must be provided."
+          "Both monthly and yearly pricing (USD and NGN) and both Stripe/Paystack plan codes must be provided."
         );
       }
 
@@ -472,14 +476,18 @@ class AdminService {
         name: normalizedTierName as UserTiers,
         billingCycle: {
           monthly: {
-            price: monthly.price,
+            priceUSD: monthly.priceUSD,
+            priceNGN: monthly.priceNGN,
             durationInDays: monthly.durationInDays || 30,
-            planCode: monthly.planCode,
+            stripePlanCode: monthly.stripePlanCode,
+            paystackPlanCode: monthly.paystackPlanCode,
           },
           yearly: {
-            price: yearly.price,
+            priceUSD: yearly.priceUSD,
+            priceNGN: yearly.priceNGN,
             durationInDays: yearly.durationInDays || 365,
-            planCode: yearly.planCode,
+            stripePlanCode: yearly.stripePlanCode,
+            paystackPlanCode: yearly.paystackPlanCode,
           },
         },
         description,

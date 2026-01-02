@@ -20,11 +20,11 @@ export const setupSwaggerDocs = async (
     },
     servers: [
       {
-        url: `${serverUrl}/api`,
+        url: serverUrl,
         description: "Primary host",
       },
       {
-        url: "/api",
+        url: "",
         description: "Relative path (useful behind proxies)",
       },
     ],
