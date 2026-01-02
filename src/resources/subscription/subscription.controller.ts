@@ -231,7 +231,7 @@ class SubscriptionController implements GeneralController {
       // Fetch all tiers from database
       const tiers = await tierModel.find({}).lean();
 
-      // Transform tiers based on selected currency
+      // Transform tiers based on selected currency (clean schema)
       const transformedTiers = tiers.map((tier) => ({
         id: tier._id.toString(),
         name: tier.name,
