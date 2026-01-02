@@ -39,11 +39,15 @@ class PaystackSubscriptionService {
     const tier = await tierModel.findOne({ name: plan.toLowerCase() });
     if (!tier) throw new Error("Invalid subscription tier");
 
-    const { durationInDays, planCode } = tier.billingCycle[billingCycle];
+    const { durationInDays, paystackPlanCode } =
+      tier.billingCycle[billingCycle];
 
-    const planDetails = await axios.get(`${this.baseUrl}/plan/${planCode}`, {
-      headers: { Authorization: `Bearer ${this.secretKey}` },
-    });
+    const planDetails = await axios.get(
+      `${this.baseUrl}/plan/${paystackPlanCode}`,
+      {
+        headers: { Authorization: `Bearer ${this.secretKey}` },
+      }
+    );
 
     const amount = planDetails.data.data.amount;
 
@@ -86,7 +90,7 @@ class PaystackSubscriptionService {
         `${this.baseUrl}/subscription`,
         {
           customer: customerCode,
-          plan: planCode,
+          plan: paystackPlanCode,
           authorization: savedAuthorization,
           callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success`,
           metadata: {
@@ -207,13 +211,13 @@ class PaystackSubscriptionService {
 
     if (data.authorization?.authorization_code) {
       const tier = await tierModel.findOne({ name: plan.toLowerCase() });
-      const planCode = tier.billingCycle[billingCycle].planCode;
+      const paystackPlanCode = tier.billingCycle[billingCycle].paystackPlanCode;
 
       const subscriptionResponse = await axios.post(
         `${this.baseUrl}/subscription`,
         {
           customer: data.customer.customer_code,
-          plan: planCode,
+          plan: paystackPlanCode,
           authorization: data.authorization.authorization_code,
           callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${data.reference}`,
           metadata: {

@@ -446,14 +446,16 @@ class AdminService {
 
       if (
         !monthly.price ||
-        !monthly.planCode ||
+        !monthly.stripePlanCode ||
+        !monthly.paystackPlanCode ||
         !yearly.price ||
-        !yearly.planCode
+        !yearly.stripePlanCode ||
+        !yearly.paystackPlanCode
       ) {
         throw new HttpException(
           400,
           "bad_request",
-          "Both monthly and yearly pricing and Paystack plan codes must be provided."
+          "Both monthly and yearly pricing and both Stripe/Paystack plan codes must be provided."
         );
       }
 
@@ -474,12 +476,14 @@ class AdminService {
           monthly: {
             price: monthly.price,
             durationInDays: monthly.durationInDays || 30,
-            planCode: monthly.planCode,
+            stripePlanCode: monthly.stripePlanCode,
+            paystackPlanCode: monthly.paystackPlanCode,
           },
           yearly: {
             price: yearly.price,
             durationInDays: yearly.durationInDays || 365,
-            planCode: yearly.planCode,
+            stripePlanCode: yearly.stripePlanCode,
+            paystackPlanCode: yearly.paystackPlanCode,
           },
         },
         description,

@@ -36,8 +36,11 @@ export const validateSubscriptionTier = Joi.object({
         "number.base": "Duration must be a number",
         "number.positive": "Duration must be a positive number",
       }),
-      planCode: Joi.string().required().messages({
-        "string.empty": "Monthly planCode is required",
+      stripePlanCode: Joi.string().required().messages({
+        "string.empty": "Monthly Stripe plan code is required",
+      }),
+      paystackPlanCode: Joi.string().required().messages({
+        "string.empty": "Monthly Paystack plan code is required",
       }),
     }).required(),
     yearly: Joi.object({
@@ -50,8 +53,11 @@ export const validateSubscriptionTier = Joi.object({
         "number.base": "Duration must be a number",
         "number.positive": "Duration must be a positive number",
       }),
-      planCode: Joi.string().required().messages({
-        "string.empty": "Yearly planCode is required",
+      stripePlanCode: Joi.string().required().messages({
+        "string.empty": "Yearly Stripe plan code is required",
+      }),
+      paystackPlanCode: Joi.string().required().messages({
+        "string.empty": "Yearly Paystack plan code is required",
       }),
     }).required(),
   })

@@ -67,19 +67,19 @@ class StripeSubscriptionService {
         ? tier.billingCycle.yearly
         : tier.billingCycle.monthly;
 
-    const planCode = selectedBilling.planCode;
-    if (!planCode)
+    const stripePlanCode = selectedBilling.stripePlanCode;
+    if (!stripePlanCode)
       throw new HttpException(
         500,
         "error",
-        "PlanCode not configured for this plan"
+        "Stripe PlanCode not configured for this plan"
       );
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
-          price: planCode,
+          price: stripePlanCode,
           quantity: 1,
         },
       ],
@@ -215,12 +215,12 @@ class StripeSubscriptionService {
     if (!tier)
       throw new HttpException(404, "error", "Subscription tier not found");
 
-    const newPriceId = tier.billingCycle[billingCycle].planCode;
+    const newPriceId = tier.billingCycle[billingCycle].stripePlanCode;
     if (!newPriceId)
       throw new HttpException(
         500,
         "error",
-        "PlanCode not configured for requested tier"
+        "Stripe PlanCode not configured for requested tier"
       );
 
     const activeSubscriptionCode =

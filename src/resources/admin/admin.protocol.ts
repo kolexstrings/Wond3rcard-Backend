@@ -4,12 +4,14 @@ export interface CreateSubscriptionTier {
     monthly: {
       price: number;
       durationInDays?: number;
-      planCode: string;
+      stripePlanCode: string;
+      paystackPlanCode: string;
     };
     yearly: {
       price: number;
       durationInDays?: number;
-      planCode: string;
+      stripePlanCode: string;
+      paystackPlanCode: string;
     };
   };
   description: string;
