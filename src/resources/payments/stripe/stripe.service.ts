@@ -59,147 +59,334 @@ class StripeSubscriptionService {
     plan: string,
     billingCycle: "monthly" | "yearly"
   ): Promise<InitializeStripePaymentResult> {
-    const tier = await tierModel.findOne({ name: plan }).lean();
-    if (!tier) throw new HttpException(404, "error", "Invalid plan selected");
+    try {
+      // Validate input parameters
+      if (!userId || !plan || !billingCycle) {
+        throw new HttpException(
+          400,
+          "invalid_request",
+          "Missing required parameters: userId, plan, and billingCycle are required"
+        );
+      }
 
-    const selectedBilling =
-      billingCycle === "yearly"
-        ? tier.billingCycle.yearly
-        : tier.billingCycle.monthly;
+      if (!["monthly", "yearly"].includes(billingCycle)) {
+        throw new HttpException(
+          400,
+          "invalid_billing_cycle",
+          "Invalid billing cycle. Must be either 'monthly' or 'yearly'"
+        );
+      }
 
-    const stripePlanCode = selectedBilling.stripePlanCode;
-    if (!stripePlanCode)
+      const tier = await tierModel.findOne({ name: plan }).lean();
+      if (!tier) {
+        throw new HttpException(
+          404,
+          "tier_not_found",
+          `Subscription tier '${plan}' not found. Available tiers: basic, premium, business`
+        );
+      }
+
+      const selectedBilling =
+        billingCycle === "yearly"
+          ? tier.billingCycle.yearly
+          : tier.billingCycle.monthly;
+
+      const stripePlanCode = selectedBilling.stripePlanCode;
+      if (!stripePlanCode) {
+        throw new HttpException(
+          500,
+          "payment_configuration_error",
+          `Stripe PlanCode not configured for ${plan} ${billingCycle} tier. Please contact administrator.`
+        );
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: stripePlanCode,
+            quantity: 1,
+          },
+        ],
+        mode: "subscription",
+        metadata: {
+          userId,
+          plan,
+          billingCycle,
+          transactionType: "subscription",
+        },
+        success_url: `${process.env.FRONTEND_BASE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.FRONTEND_BASE_URL}/payment-failed`,
+      });
+
+      if (!session.url) {
+        throw new HttpException(
+          502,
+          "payment_gateway_error",
+          "Stripe did not return a checkout URL. The payment gateway may be temporarily unavailable."
+        );
+      }
+
+      return { type: "checkout", url: session.url };
+    } catch (error) {
+      // Handle Stripe-specific errors
+      if (error.type === "StripeCardError") {
+        throw new HttpException(
+          400,
+          "card_error",
+          `Card payment failed: ${error.message}`
+        );
+      }
+
+      if (error.type === "StripeRateLimitError") {
+        throw new HttpException(
+          429,
+          "rate_limit_exceeded",
+          "Too many requests to Stripe. Please try again in a few moments."
+        );
+      }
+
+      if (error.type === "StripeInvalidRequestError") {
+        throw new HttpException(
+          400,
+          "invalid_request",
+          `Invalid request to Stripe: ${error.message}`
+        );
+      }
+
+      if (error.type === "StripeAPIError") {
+        throw new HttpException(
+          502,
+          "payment_gateway_error",
+          "Stripe API is temporarily unavailable. Please try again later."
+        );
+      }
+
+      if (error.type === "StripeConnectionError") {
+        throw new HttpException(
+          503,
+          "payment_gateway_unavailable",
+          "Unable to connect to Stripe payment service. Please check your internet connection and try again."
+        );
+      }
+
+      if (error.type === "StripeAuthenticationError") {
+        throw new HttpException(
+          500,
+          "payment_configuration_error",
+          "Stripe authentication failed. Please contact administrator."
+        );
+      }
+
+      // Re-throw our HttpExceptions
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Handle any other unexpected errors
+      console.error("Unexpected error in Stripe createCheckoutSession:", error);
       throw new HttpException(
         500,
-        "error",
-        "Stripe PlanCode not configured for this plan"
-      );
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: stripePlanCode,
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
-      metadata: {
-        userId,
-        plan,
-        billingCycle,
-        transactionType: "subscription",
-      },
-      success_url: `${process.env.FRONTEND_BASE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_BASE_URL}/payment-failed`,
-    });
-
-    if (!session.url) {
-      throw new HttpException(
-        502,
-        "error",
-        "Stripe did not return a checkout URL"
+        "internal_server_error",
+        "An unexpected error occurred while creating payment session. Please try again or contact support if the problem persists."
       );
     }
-
-    return { type: "checkout", url: session.url };
   }
 
   public async handleSuccessfulSubscription(session: any) {
-    const { userId, plan, billingCycle, expiresAt } = session.metadata;
+    try {
+      const { userId, plan, billingCycle, expiresAt } = session.metadata;
 
-    const user = await userModel.findById(userId);
-    if (!user) throw new Error("User not found");
+      // Validate required metadata
+      if (!userId || !plan || !billingCycle) {
+        console.error(
+          "Missing required metadata in Stripe webhook:",
+          session.metadata
+        );
+        throw new HttpException(
+          400,
+          "invalid_webhook_data",
+          "Missing required metadata in webhook payload"
+        );
+      }
 
-    const transactionId = session.id; // Stripe’s unique ID
-    const subscriptionCode = session.subscription; // Extract the subscription ID
-    const referenceId = generateTransactionId("subscription", "stripe"); // Custom transaction ID
-    const paymentMethod = session.payment_method_types?.[0] || "unknown";
-    const paidAt = new Date(session.created * 1000); // Stripe timestamps in seconds
+      const user = await userModel.findById(userId);
+      if (!user) {
+        console.error(`User not found for ID: ${userId}`);
+        throw new HttpException(
+          404,
+          "user_not_found",
+          `User account not found for subscription activation`
+        );
+      }
 
-    // Update user subscription
-    user.userTier = {
-      plan,
-      status: "active",
-      transactionId,
-      subscriptionCode,
-      expiresAt: new Date(expiresAt),
-    };
-    await user.save();
+      // Check for duplicate processing
+      const existingTransaction = await TransactionModel.findOne({
+        transactionId: session.id,
+      });
+      if (existingTransaction) {
+        console.log(`Transaction ${session.id} already processed, skipping`);
+        return { received: true, message: "Transaction already processed" };
+      }
 
-    // Store transaction details
-    await TransactionModel.create({
-      userId,
-      userName: user.username,
-      email: user.email,
-      plan,
-      billingCycle,
-      amount: session.amount_total / 100,
-      referenceId, // Custom transaction ID
-      transactionId, // Stripe's ID
-      transactionType: "subscription",
-      subscriptionCode,
-      paymentProvider: "stripe",
-      status: "success",
-      paymentMethod,
-      paidAt,
-      expiresAt: new Date(expiresAt),
-    });
+      const transactionId = session.id; // Stripe's unique ID
+      const subscriptionCode = session.subscription; // Extract the subscription ID
+      const referenceId = generateTransactionId("subscription", "stripe"); // Custom transaction ID
+      const paymentMethod = session.payment_method_types?.[0] || "unknown";
+      const paidAt = new Date(session.created * 1000); // Stripe timestamps in seconds
 
-    return { received: true };
+      // Validate subscription data
+      if (!subscriptionCode) {
+        throw new HttpException(
+          400,
+          "missing_subscription_data",
+          "No subscription ID found in Stripe session"
+        );
+      }
+
+      // Update user subscription
+      user.userTier = {
+        plan,
+        status: "active",
+        transactionId,
+        subscriptionCode,
+        expiresAt: new Date(expiresAt),
+      };
+
+      await user.save();
+
+      // Store transaction details
+      await TransactionModel.create({
+        userId,
+        userName: user.username,
+        email: user.email,
+        plan,
+        billingCycle,
+        amount: session.amount_total / 100,
+        referenceId, // Custom transaction ID
+        transactionId, // Stripe's ID
+        transactionType: "subscription",
+        subscriptionCode,
+        paymentProvider: "stripe",
+        status: "success",
+        paymentMethod,
+        paidAt,
+        expiresAt: new Date(expiresAt),
+      });
+
+      console.log(
+        `Successfully activated subscription for user ${userId}, plan ${plan}`
+      );
+      return { received: true };
+    } catch (error) {
+      console.error("Error handling successful Stripe subscription:", error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        500,
+        "subscription_activation_failed",
+        "Failed to activate subscription. Please contact support with your transaction ID."
+      );
+    }
   }
 
   public async cancelSubscription({
     targetUserId,
     subscriptionId,
   }: StripeCancelSubscriptionParams) {
-    const user = await userModel.findById(targetUserId);
-    if (!user) {
-      throw new HttpException(404, "error", "User not found");
-    }
+    try {
+      // Validate input parameters
+      if (!targetUserId || !subscriptionId) {
+        throw new HttpException(
+          400,
+          "invalid_request",
+          "Missing required parameters: targetUserId and subscriptionId are required"
+        );
+      }
 
-    const activeSubscriptionCode =
-      user.userTier.subscriptionCode ||
-      user.activeSubscription?.subscriptionId ||
-      null;
+      const user = await userModel.findById(targetUserId);
+      if (!user) {
+        throw new HttpException(
+          404,
+          "user_not_found",
+          "User account not found for subscription cancellation"
+        );
+      }
 
-    if (!activeSubscriptionCode || user.userTier.status !== "active") {
+      const activeSubscriptionCode =
+        user.userTier.subscriptionCode ||
+        user.activeSubscription?.subscriptionId ||
+        null;
+
+      if (!activeSubscriptionCode || user.userTier.status !== "active") {
+        throw new HttpException(
+          400,
+          "no_active_subscription",
+          "You do not have an active subscription to cancel"
+        );
+      }
+
+      if (subscriptionId !== activeSubscriptionCode) {
+        throw new HttpException(
+          400,
+          "subscription_mismatch",
+          "The provided subscription ID does not match your active subscription"
+        );
+      }
+
+      try {
+        await stripe.subscriptions.update(subscriptionId, {
+          cancel_at_period_end: true,
+        });
+      } catch (stripeError) {
+        if (stripeError.type === "StripeInvalidRequestError") {
+          throw new HttpException(
+            400,
+            "invalid_subscription",
+            "Subscription not found or already cancelled in Stripe"
+          );
+        }
+        throw stripeError;
+      }
+
+      // Update user subscription status
+      user.userTier.status = "inactive";
+      user.userTier.subscriptionCode = null;
+      user.userTier.transactionId = null;
+      user.userTier.expiresAt = null;
+
+      if (user.activeSubscription?.provider === "stripe") {
+        user.activeSubscription.provider = null;
+        user.activeSubscription.subscriptionId = null;
+        user.activeSubscription.expiryDate = null;
+      }
+
+      await user.save();
+
+      console.log(
+        `Successfully cancelled subscription for user ${targetUserId}`
+      );
+      return {
+        message:
+          "Subscription cancellation scheduled. You will continue to have access until the end of your current billing period.",
+        subscriptionId,
+      };
+    } catch (error) {
+      console.error("Error cancelling Stripe subscription:", error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       throw new HttpException(
-        400,
-        "error",
-        "User does not have an active Stripe subscription"
+        500,
+        "cancellation_failed",
+        "Failed to cancel subscription. Please try again or contact support."
       );
     }
-
-    if (subscriptionId !== activeSubscriptionCode) {
-      throw new HttpException(
-        400,
-        "error",
-        "Provided subscription ID does not match the active subscription"
-      );
-    }
-
-    await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true,
-    });
-
-    user.userTier.status = "inactive";
-    user.userTier.subscriptionCode = null;
-    user.userTier.transactionId = null;
-    user.userTier.expiresAt = null;
-
-    if (user.activeSubscription?.provider === "stripe") {
-      user.activeSubscription.provider = null;
-      user.activeSubscription.subscriptionId = null;
-      user.activeSubscription.expiryDate = null;
-    }
-
-    await user.save();
-
-    return {
-      message: "Stripe subscription cancellation scheduled",
-      subscriptionId,
-    };
   }
 
   public async changeSubscription({
