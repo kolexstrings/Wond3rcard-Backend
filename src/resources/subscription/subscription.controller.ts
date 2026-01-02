@@ -14,6 +14,155 @@ class SubscriptionController implements GeneralController {
   }
 
   private initializeRoutes(): void {
+    /**
+     * @openapi
+     * /api/subscriptions/tiers:
+     *   get:
+     *     tags: [subscription]
+     *     summary: Get subscription tiers with location-based pricing
+     *     description: Retrieves subscription tiers with pricing based on user location or explicit currency selection. Nigeria users see NGN prices by default, others see USD prices.
+     *     parameters:
+     *       - in: query
+     *         name: country
+     *         schema:
+     *           type: string
+     *           enum: [NG, US, GB, CA, AU, DE, FR, IT, ES, NL]
+     *         description: User's country code (2-letter ISO). If not provided, will attempt to detect from request headers.
+     *         example: "NG"
+     *       - in: query
+     *         name: currency
+     *         schema:
+     *           type: string
+     *           enum: [USD, NGN]
+     *         description: Explicit currency override. If provided, will ignore country detection.
+     *         example: "USD"
+     *     responses:
+     *       200:
+     *         description: Subscription tiers retrieved successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: "success"
+     *                 message:
+     *                   type: string
+     *                   example: "Available subscription tiers"
+     *                 data:
+     *                   type: object
+     *                   properties:
+     *                     detectedCountry:
+     *                       type: string
+     *                       description: The detected country from request headers
+     *                       example: "NG"
+     *                     selectedCurrency:
+     *                       type: string
+     *                       description: The currency used for pricing (USD or NGN)
+     *                       example: "NGN"
+     *                     tiers:
+     *                       type: array
+     *                       items:
+     *                         type: object
+     *                         properties:
+     *                           id:
+     *                             type: string
+     *                             description: Tier ID
+     *                             example: "64a1b2c3d4e5f6789012345"
+     *                           name:
+     *                             type: string
+     *                             description: Tier name
+     *                             example: "premium"
+     *                           description:
+     *                             type: string
+     *                             description: Tier description
+     *                             example: "Premium tier with all features"
+     *                           features:
+     *                             type: array
+     *                             items:
+     *                               type: string
+     *                             description: List of features included in this tier
+     *                             example: ["feature1", "feature2", "feature3"]
+     *                           trialPeriod:
+     *                             type: number
+     *                             description: Trial period in days
+     *                             example: 7
+     *                           autoRenew:
+     *                             type: boolean
+     *                             description: Whether subscription auto-renews
+     *                             example: true
+     *                           monthly:
+     *                             type: object
+     *                             properties:
+     *                               price:
+     *                                 type: number
+     *                                 description: Monthly price in selected currency
+     *                                 example: 5000
+     *                               currency:
+     *                                 type: string
+     *                                 description: Currency code
+     *                                 example: "NGN"
+     *                               symbol:
+     *                                 type: string
+     *                                 description: Currency symbol
+     *                                 example: "₦"
+     *                               durationInDays:
+     *                                 type: number
+     *                                 description: Duration in days
+     *                                 example: 30
+     *                           yearly:
+     *                             type: object
+     *                             properties:
+     *                               price:
+     *                                 type: number
+     *                                 description: Yearly price in selected currency
+     *                                 example: 50000
+     *                               currency:
+     *                                 type: string
+     *                                 description: Currency code
+     *                                 example: "NGN"
+     *                               symbol:
+     *                                 type: string
+     *                                 description: Currency symbol
+     *                                 example: "₦"
+     *                               durationInDays:
+     *                                 type: number
+     *                                 description: Duration in days
+     *                                 example: 365
+     *       400:
+     *         description: Bad request - Invalid currency parameter
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 statusCode:
+     *                   type: number
+     *                   example: 400
+     *                 status:
+     *                   type: string
+     *                   example: "invalid_currency"
+     *                 message:
+     *                   type: string
+     *                   example: "Invalid currency. Supported currencies: USD, NGN"
+     *       500:
+     *         description: Internal server error
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 statusCode:
+     *                   type: number
+     *                   example: 500
+     *                 status:
+     *                   type: string
+     *                   example: "fetch_tiers_failed"
+     *                 message:
+     *                   type: string
+     *                   example: "Failed to fetch subscription tiers. Please try again later."
+     */
     this.router.get(`${this.path}/tiers`, this.getPublicTiers);
   }
 
