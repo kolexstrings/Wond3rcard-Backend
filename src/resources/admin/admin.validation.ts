@@ -99,29 +99,43 @@ export const validateSubscriptionTierUpdate = Joi.object({
   }),
   billingCycle: Joi.object({
     monthly: Joi.object({
-      price: Joi.number().positive().messages({
-        "number.base": "Monthly price must be a number",
-        "number.positive": "Monthly price must be a positive number",
+      priceUSD: Joi.number().positive().messages({
+        "number.base": "Monthly USD price must be a number",
+        "number.positive": "Monthly USD price must be a positive number",
+      }),
+      priceNGN: Joi.number().positive().messages({
+        "number.base": "Monthly NGN price must be a number",
+        "number.positive": "Monthly NGN price must be a positive number",
       }),
       durationInDays: Joi.number().integer().positive().messages({
         "number.base": "Monthly duration must be a number",
         "number.positive": "Monthly duration must be a positive number",
       }),
-      planCode: Joi.string().required().messages({
-        "string.empty": "Monthly planCode is required",
+      stripePlanCode: Joi.string().messages({
+        "string.empty": "Monthly Stripe plan code cannot be empty",
+      }),
+      paystackPlanCode: Joi.string().messages({
+        "string.empty": "Monthly Paystack plan code cannot be empty",
       }),
     }),
     yearly: Joi.object({
-      price: Joi.number().positive().messages({
-        "number.base": "Yearly price must be a number",
-        "number.positive": "Yearly price must be a positive number",
+      priceUSD: Joi.number().positive().messages({
+        "number.base": "Yearly USD price must be a number",
+        "number.positive": "Yearly USD price must be a positive number",
+      }),
+      priceNGN: Joi.number().positive().messages({
+        "number.base": "Yearly NGN price must be a number",
+        "number.positive": "Yearly NGN price must be a positive number",
       }),
       durationInDays: Joi.number().integer().positive().messages({
         "number.base": "Yearly duration must be a number",
         "number.positive": "Yearly duration must be a positive number",
       }),
-      planCode: Joi.string().required().messages({
-        "string.empty": "Yearly planCode is required",
+      stripePlanCode: Joi.string().messages({
+        "string.empty": "Yearly Stripe plan code cannot be empty",
+      }),
+      paystackPlanCode: Joi.string().messages({
+        "string.empty": "Yearly Paystack plan code cannot be empty",
       }),
     }),
   }),
