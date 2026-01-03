@@ -1333,7 +1333,7 @@ class CardController implements GlobalController {
 
       // Generate VCF download link
       const apiBaseUrl =
-        process.env.BACKEND_BACK_END_URL ||
+        process.env.BACKEND_BACK_END_URL?.replace(/\/$/, "") ||
         process.env.API_BASE_URL ||
         process.env.BACKEND_BASE_URL ||
         "http://localhost:3000";
