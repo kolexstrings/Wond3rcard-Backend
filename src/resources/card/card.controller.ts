@@ -70,6 +70,10 @@ class CardController implements GlobalController {
      *               cardVideo:
      *                 type: string
      *                 format: binary
+     *               socialMediaLinks:
+     *                 type: string
+     *                 description: Array of social media IDs (JSON array or comma-separated)
+     *                 example: "[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" or \"507f1f77bcf86cd799439011,507f1f77bcf86cd799439012\"
      *               style:
      *                 type: object
      *               contactInfo:
@@ -177,6 +181,11 @@ class CardController implements GlobalController {
      *         multipart/form-data:
      *           schema:
      *             type: object
+     *             properties:
+     *               socialMediaLinks:
+     *                 type: string
+     *                 description: Array of social media IDs (JSON array or comma-separated)
+     *                 example: "[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" or \"507f1f77bcf86cd799439011,507f1f77bcf86cd799439012\"
      *     responses:
      *       200:
      *         description: Card updated
