@@ -24,8 +24,12 @@ import {
   SocialMediaLink,
   UpdateCardInput,
 } from "./card.protocol";
+import SocialMediaService from "../social-media/social-media.service";
+import { SocialMedia } from "../social-media/social-media.protocol";
 
 class CardService {
+  private socialMediaService = new SocialMediaService();
+
   async createCard(
     user: User,
     data: Partial<Card>,
@@ -36,27 +40,125 @@ class CardService {
     cardVideo?: Express.Multer.File
   ): Promise<Card> {
     try {
-      // Parse social media links
+      // Parse social media links - now accepts social media IDs in multiple formats
       let socialMediaLinks: CardSocialMediaLink[] = [];
       if (data.socialMediaLinks) {
         try {
+          // Try to parse as JSON first (for backward compatibility)
           const parsedLinks = JSON.parse(data.socialMediaLinks.toString());
-          socialMediaLinks = parsedLinks.map((link: any) => ({
-            media: {
-              iconUrl: link.media.iconUrl,
-              name: link.media.name,
-              type: link.media.type,
-              link: link.media.link,
-            },
-            username: link.username,
-            active: link.active,
-          }));
-        } catch (error) {
-          throw new HttpException(
-            422,
-            "invalid",
-            `'Invalid social media links format'`
+
+          // Handle both old format (full objects) and new format (social media IDs)
+          socialMediaLinks = await Promise.all(
+            parsedLinks.map(async (link: any) => {
+              // Check if it's using the new ID format
+              if (link.socialMediaId) {
+                // Fetch social media details by ID/name
+                const socialMedia = await this.socialMediaService
+                  .getById(link.socialMediaId)
+                  .catch(() => {
+                    // If getById fails, try finding by name
+                    return this.socialMediaService
+                      .getAll()
+                      .then((socialMedias) =>
+                        socialMedias.find(
+                          (sm) =>
+                            sm.name === link.socialMediaId ||
+                            sm._id.toString() === link.socialMediaId
+                        )
+                      );
+                  });
+
+                if (!socialMedia) {
+                  throw new HttpException(
+                    404,
+                    "not_found",
+                    `Social media with ID '${link.socialMediaId}' not found`
+                  );
+                }
+
+                return {
+                  media: {
+                    iconUrl: socialMedia.imageUrl,
+                    name: socialMedia.name,
+                    type: socialMedia.mediaType,
+                    link: link.link || "", // User can provide custom link or leave empty
+                  },
+                  username: link.username,
+                  active: link.active ?? true, // Default to true if not specified
+                };
+              } else {
+                // Legacy format - full media object provided
+                return {
+                  media: {
+                    iconUrl: link.media.iconUrl,
+                    name: link.media.name,
+                    type: link.media.type,
+                    link: link.media.link,
+                  },
+                  username: link.username,
+                  active: link.active,
+                };
+              }
+            })
           );
+        } catch (error) {
+          // If JSON parsing fails, try treating it as a comma-separated string of IDs
+          const socialMediaLinksValue = data.socialMediaLinks as any;
+          if (typeof socialMediaLinksValue === "string") {
+            const socialMediaIds = socialMediaLinksValue
+              .split(",")
+              .map((id: string) => id.trim())
+              .filter((id: string) => id);
+
+            if (socialMediaIds.length > 0) {
+              socialMediaLinks = await Promise.all(
+                socialMediaIds.map(async (socialMediaId: string) => {
+                  const socialMedia = await this.socialMediaService
+                    .getById(socialMediaId)
+                    .catch(() => {
+                      // If getById fails, try finding by name
+                      return this.socialMediaService
+                        .getAll()
+                        .then((socialMedias) =>
+                          socialMedias.find(
+                            (sm) =>
+                              sm.name === socialMediaId ||
+                              sm._id.toString() === socialMediaId
+                          )
+                        );
+                    });
+
+                  if (!socialMedia) {
+                    throw new HttpException(
+                      404,
+                      "not_found",
+                      `Social media with ID '${socialMediaId}' not found`
+                    );
+                  }
+
+                  return {
+                    media: {
+                      iconUrl: socialMedia.imageUrl,
+                      name: socialMedia.name,
+                      type: socialMedia.mediaType,
+                      link: "", // Empty link for simple ID format
+                    },
+                    username: "", // Empty username for simple ID format
+                    active: true, // Default to active
+                  };
+                })
+              );
+            }
+          } else {
+            if (error instanceof HttpException) {
+              throw error;
+            }
+            throw new HttpException(
+              422,
+              "invalid",
+              `'Invalid social media links format'`
+            );
+          }
         }
       }
 
@@ -245,7 +347,73 @@ class CardService {
 
       // Handle social media links - preserve existing if not provided
       if (data.socialMediaLinks) {
-        updateData.socialMediaLinks = data.socialMediaLinks;
+        try {
+          const parsedLinks = JSON.parse(data.socialMediaLinks.toString());
+
+          // Handle both old format (full objects) and new format (social media IDs)
+          updateData.socialMediaLinks = await Promise.all(
+            parsedLinks.map(async (link: any) => {
+              // Check if it's using the new ID format
+              if (link.socialMediaId) {
+                // Fetch social media details by ID/name
+                const socialMedia = await this.socialMediaService
+                  .getById(link.socialMediaId)
+                  .catch(() => {
+                    // If getById fails, try finding by name
+                    return this.socialMediaService
+                      .getAll()
+                      .then((socialMedias) =>
+                        socialMedias.find(
+                          (sm) =>
+                            sm.name === link.socialMediaId ||
+                            sm._id.toString() === link.socialMediaId
+                        )
+                      );
+                  });
+
+                if (!socialMedia) {
+                  throw new HttpException(
+                    404,
+                    "not_found",
+                    `Social media with ID '${link.socialMediaId}' not found`
+                  );
+                }
+
+                return {
+                  media: {
+                    iconUrl: socialMedia.imageUrl,
+                    name: socialMedia.name,
+                    type: socialMedia.mediaType,
+                    link: link.link || "", // User can provide custom link or leave empty
+                  },
+                  username: link.username,
+                  active: link.active ?? true, // Default to true if not specified
+                };
+              } else {
+                // Legacy format - full media object provided
+                return {
+                  media: {
+                    iconUrl: link.media.iconUrl,
+                    name: link.media.name,
+                    type: link.media.type,
+                    link: link.media.link,
+                  },
+                  username: link.username,
+                  active: link.active,
+                };
+              }
+            })
+          );
+        } catch (error) {
+          if (error instanceof HttpException) {
+            throw error;
+          }
+          throw new HttpException(
+            422,
+            "invalid",
+            `'Invalid social media links format'`
+          );
+        }
       }
 
       // Handle testimonials - preserve existing if not provided
