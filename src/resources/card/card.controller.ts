@@ -938,18 +938,14 @@ class CardController implements GlobalController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { cardId, iconUrl, type, name, link } = req.body;
-      const socialMediaLink: SocialMediaLink = {
-        iconUrl,
-        type,
-        name,
-        link,
-      };
+      const { cardId, socialMediaId, username, link } = req.body;
       const uid = req.user.id;
       const card = await this.cardService.addSocialMediaLink(
         cardId,
         uid,
-        socialMediaLink
+        socialMediaId,
+        username,
+        link
       );
       res
         .status(200)
@@ -965,23 +961,19 @@ class CardController implements GlobalController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { cardId, iconUrl, type, name, link, active } = req.body;
+      const { cardId, socialMediaId, username, link, active } = req.body;
 
-      const socialMediaLink: CardSocialMediaLink = {
-        media: {
-          iconUrl,
-          type,
-          name,
-          link,
-        },
+      const updatedLinkData: Partial<CardSocialMediaLink> = {
+        username,
+        link,
         active,
       };
       const uid = req.user.id;
       const card = await this.cardService.updateSocialMediaLink(
         cardId,
         uid,
-        name,
-        socialMediaLink
+        socialMediaId,
+        updatedLinkData
       );
       res
         .status(200)
