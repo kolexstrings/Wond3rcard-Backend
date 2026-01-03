@@ -891,6 +891,73 @@ class CardService {
     return populatedLinks;
   }
 
+  // Generate VCF (vCard) file content from card data
+  public async generateVCF(cardId: string): Promise<string> {
+    const card = await this.getCardById(cardId);
+    if (!card) {
+      throw new HttpException(404, "not_found", "Card not found");
+    }
+
+    // Get populated social media links
+    const populatedLinks = await this.populateSocialMediaLinks(
+      card.socialMediaLinks
+    );
+
+    // Build VCF content
+    let vcfContent = "BEGIN:VCARD\n";
+    vcfContent += "VERSION:3.0\n";
+
+    // Full name
+    const fullName = `${card.firstName} ${
+      card.otherName ? card.otherName + " " : ""
+    }${card.lastName}`;
+    vcfContent += `FN:${fullName}\n`;
+
+    // Formatted name (N:LastName;FirstName;MiddleName;Prefix;Suffix)
+    vcfContent += `N:${card.lastName};${card.firstName};${
+      card.otherName || ""
+    };${card.prefix || ""};;\n`;
+
+    // Organization/Title
+    if (card.designation) {
+      vcfContent += `ORG:${card.designation}\n`;
+      vcfContent += `TITLE:${card.designation}\n`;
+    }
+
+    // Contact information
+    if (card.contactInfo.phone) {
+      vcfContent += `TEL:${card.contactInfo.phone}\n`;
+    }
+
+    if (card.contactInfo.email) {
+      vcfContent += `EMAIL:${card.contactInfo.email}\n`;
+    }
+
+    if (card.contactInfo.website) {
+      vcfContent += `URL:${card.contactInfo.website}\n`;
+    }
+
+    // Social media links (as URLs)
+    populatedLinks.forEach((link) => {
+      if (link.link) {
+        vcfContent += `URL:${link.link}\n`;
+      }
+    });
+
+    // Note about the card
+    vcfContent += `NOTE:Digital business card from Wond3rcard\n`;
+
+    // Card creation date
+    vcfContent += `REV:${card.createdAt
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\..*/, "")}Z\n`;
+
+    vcfContent += "END:VCARD";
+
+    return vcfContent;
+  }
+
   public async toggleSocialMediaStatus(
     cardId: string,
     userId: string,

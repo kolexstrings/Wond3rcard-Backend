@@ -595,6 +595,104 @@ class CardController implements GlobalController {
      *       200:
      *         description: Card view returned
      */
+    /**
+     * @openapi
+     * /api/cards/vcf-qr/{cardId}:
+     *   get:
+     *     tags: [cards]
+     *     summary: Generate VCF download link for QR code or NFC tag
+     *     description: Generates a download URL for VCF (vCard) file that can be used in QR codes or NFC tags for instant contact sharing
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *           example: "507f1f77bcf86cd799439011"
+     *         description: MongoDB ObjectId of the card
+     *     responses:
+     *       200:
+     *         description: VCF link generated successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 statusCode:
+     *                   type: number
+     *                   example: 200
+     *                 status:
+     *                   type: string
+     *                   example: "success"
+     *                 message:
+     *                   type: string
+     *                   example: "VCF link generated successfully"
+     *                 payload:
+     *                   type: object
+     *                   properties:
+     *                     vcfDownloadLink:
+     *                       type: string
+     *                       example: "https://api.wond3rcard.com/api/cards/download-vcf/507f1f77bcf86cd799439011"
+     *                       description: URL to download the VCF file (use this for QR codes and NFC tags)
+     *       404:
+     *         description: Card not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 statusCode:
+     *                   type: number
+     *                   example: 404
+     *                 status:
+     *                   type: string
+     *                   example: "not_found"
+     *                 message:
+     *                   type: string
+     *                   example: "Card not found"
+     *       400:
+     *         description: Invalid card ID
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 statusCode:
+     *                   type: number
+     *                   example: 400
+     *                 status:
+     *                   type: string
+     *                   example: "missing"
+     *                 message:
+     *                   type: string
+     *                   example: "Please provide card ID"
+     */
+    this.router.get(`${this.path}/vcf-qr/:cardId`, this.generateVCFLink);
+
+    /**
+     * @openapi
+     * /api/cards/download-vcf/{cardId}:
+     *   get:
+     *     tags: [cards]
+     *     summary: Download card as VCF (vCard) file
+     *     parameters:
+     *       - in: path
+     *         name: cardId
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: VCF file downloaded
+     *         content:
+     *           text/vcard:
+     *             schema:
+     *               type: string
+     *       404:
+     *         description: Card not found
+     */
+    this.router.get(`${this.path}/download-vcf/:cardId`, this.downloadVCF);
+
     this.router.get(`${this.path}/view-card/:cardId`, this.viewCard);
   }
 
@@ -1217,6 +1315,41 @@ class CardController implements GlobalController {
     }
   };
 
+  private generateVCFLink = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { cardId } = req.params;
+      if (!cardId) {
+        throw new HttpException(400, "missing", "Please provide card ID");
+      }
+
+      // Ensure the card exists
+      const card = await this.cardService.getCardById(cardId);
+      if (!card) {
+        throw new HttpException(404, "not_found", "Card not found");
+      }
+
+      // Generate VCF download link
+      const apiBaseUrl =
+        process.env.API_BASE_URL ||
+        process.env.BACKEND_BASE_URL ||
+        "http://localhost:3000";
+      const vcfDownloadLink = `${apiBaseUrl}/api/cards/download-vcf/${cardId}`;
+
+      res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "VCF link generated successfully",
+        payload: { vcfDownloadLink },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   private viewCard = async (
     req: Request,
     res: Response,
@@ -1233,6 +1366,41 @@ class CardController implements GlobalController {
         res.status(404).json({ message: "Card not found" });
       }
       res.json({ card });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private downloadVCF = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { cardId } = req.params;
+      if (!cardId) {
+        throw new HttpException(400, "missing", "Please provide card ID");
+      }
+
+      // Generate VCF content
+      const vcfContent = await this.cardService.generateVCF(cardId);
+
+      // Get card for filename
+      const card = await this.cardService.getCardById(cardId);
+      const fullName = `${card?.firstName || "contact"}_${
+        card?.lastName || "card"
+      }`;
+      const filename = `${fullName.replace(/\s+/g, "_")}.vcf`;
+
+      // Set headers for VCF download
+      res.setHeader("Content-Type", "text/vcard");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+
+      // Send VCF content
+      res.send(vcfContent);
     } catch (error) {
       next(error);
     }
