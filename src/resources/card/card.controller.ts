@@ -597,7 +597,7 @@ class CardController implements GlobalController {
      */
     /**
      * @openapi
-     * /api/cards/vcf-qr/{cardId}:
+     * /api/cards/vcf/{cardId}:
      *   get:
      *     tags: [cards]
      *     summary: Generate VCF download link for QR code or NFC tag
@@ -667,7 +667,7 @@ class CardController implements GlobalController {
      *                   type: string
      *                   example: "Please provide card ID"
      */
-    this.router.get(`${this.path}/vcf-qr/:cardId`, this.generateVCFLink);
+    this.router.get(`${this.path}/vcf/:cardId`, this.generateVCFLink);
 
     /**
      * @openapi
@@ -692,7 +692,6 @@ class CardController implements GlobalController {
      *         description: Card not found
      */
     this.router.get(`${this.path}/download-vcf/:cardId`, this.downloadVCF);
-
     this.router.get(`${this.path}/view-card/:cardId`, this.viewCard);
   }
 
