@@ -77,7 +77,9 @@ interface SharedWith {
 }
 
 interface CardSocialMediaLink {
-  media: SocialMediaLink;
+  socialMediaId: Types.ObjectId; // Reference to social media collection
+  username: string;
+  link?: string; // Custom profile link override
   active: boolean;
 }
 
