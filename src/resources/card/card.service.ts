@@ -77,25 +77,33 @@ class CardService {
                 }
 
                 return {
-                  media: {
-                    iconUrl: socialMedia.imageUrl,
-                    name: socialMedia.name,
-                    type: socialMedia.mediaType,
-                    link: link.link || "", // User can provide custom link or leave empty
-                  },
+                  socialMediaId: new Types.ObjectId(socialMedia._id.toString()),
                   username: link.username,
+                  link: link.link || "", // User can provide custom link or leave empty
                   active: link.active ?? true, // Default to true if not specified
                 };
               } else {
                 // Legacy format - full media object provided
+                // Convert to new reference format
+                const socialMediaName = link.media.name;
+                const socialMedia = await this.socialMediaService
+                  .getAll()
+                  .then((socialMedias) =>
+                    socialMedias.find((sm) => sm.name === socialMediaName)
+                  );
+
+                if (!socialMedia) {
+                  throw new HttpException(
+                    404,
+                    "not_found",
+                    `Social media with name '${socialMediaName}' not found`
+                  );
+                }
+
                 return {
-                  media: {
-                    iconUrl: link.media.iconUrl,
-                    name: link.media.name,
-                    type: link.media.type,
-                    link: link.media.link,
-                  },
+                  socialMediaId: new Types.ObjectId(socialMedia._id.toString()),
                   username: link.username,
+                  link: link.media.link,
                   active: link.active,
                 };
               }
@@ -137,13 +145,11 @@ class CardService {
                   }
 
                   return {
-                    media: {
-                      iconUrl: socialMedia.imageUrl,
-                      name: socialMedia.name,
-                      type: socialMedia.mediaType,
-                      link: "", // Empty link for simple ID format
-                    },
+                    socialMediaId: new Types.ObjectId(
+                      socialMedia._id.toString()
+                    ),
                     username: "", // Empty username for simple ID format
+                    link: "", // Empty link for simple ID format
                     active: true, // Default to active
                   };
                 })
@@ -259,6 +265,15 @@ class CardService {
       throw new HttpException(400, "invalid", "Invalid Card ID");
     }
     const card = await cardModel.findById(id);
+    if (!card) {
+      return null;
+    }
+
+    // Populate social media details
+    card.socialMediaLinks = await this.populateSocialMediaLinks(
+      card.socialMediaLinks
+    );
+
     return card;
   }
 
@@ -380,25 +395,33 @@ class CardService {
                 }
 
                 return {
-                  media: {
-                    iconUrl: socialMedia.imageUrl,
-                    name: socialMedia.name,
-                    type: socialMedia.mediaType,
-                    link: link.link || "", // User can provide custom link or leave empty
-                  },
+                  socialMediaId: new Types.ObjectId(socialMedia._id.toString()),
                   username: link.username,
+                  link: link.link || "", // User can provide custom link or leave empty
                   active: link.active ?? true, // Default to true if not specified
                 };
               } else {
                 // Legacy format - full media object provided
+                // Convert to new reference format
+                const socialMediaName = link.media.name;
+                const socialMedia = await this.socialMediaService
+                  .getAll()
+                  .then((socialMedias) =>
+                    socialMedias.find((sm) => sm.name === socialMediaName)
+                  );
+
+                if (!socialMedia) {
+                  throw new HttpException(
+                    404,
+                    "not_found",
+                    `Social media with name '${socialMediaName}' not found`
+                  );
+                }
+
                 return {
-                  media: {
-                    iconUrl: link.media.iconUrl,
-                    name: link.media.name,
-                    type: link.media.type,
-                    link: link.media.link,
-                  },
+                  socialMediaId: new Types.ObjectId(socialMedia._id.toString()),
                   username: link.username,
+                  link: link.media.link,
                   active: link.active,
                 };
               }
@@ -727,7 +750,9 @@ class CardService {
   public async addSocialMediaLink(
     cardId: string,
     userId: string,
-    socialMediaLink: SocialMediaLink
+    socialMediaId: string,
+    username: string,
+    link?: string
   ): Promise<Card> {
     const card = await cardModel.findOne({ _id: cardId, ownerId: userId });
     if (!card) {
@@ -738,8 +763,33 @@ class CardService {
       );
     }
 
+    // Find the social media by ID/name
+    const socialMedia = await this.socialMediaService
+      .getById(socialMediaId)
+      .catch(() => {
+        // If getById fails, try finding by name
+        return this.socialMediaService
+          .getAll()
+          .then((socialMedias) =>
+            socialMedias.find(
+              (sm) =>
+                sm.name === socialMediaId || sm._id.toString() === socialMediaId
+            )
+          );
+      });
+
+    if (!socialMedia) {
+      throw new HttpException(
+        404,
+        "not_found",
+        `Social media with ID '${socialMediaId}' not found`
+      );
+    }
+
     card.socialMediaLinks.push({
-      media: socialMediaLink,
+      socialMediaId: new Types.ObjectId(socialMedia._id.toString()),
+      username: username,
+      link: link || "",
       active: true,
     });
 
@@ -750,7 +800,7 @@ class CardService {
   public async updateSocialMediaLink(
     cardId: string,
     userId: string,
-    socialMediaName: string,
+    socialMediaId: string,
     updatedLinkData: Partial<CardSocialMediaLink>
   ): Promise<Card> {
     const card = await cardModel.findOne({ _id: cardId, ownerId: userId });
@@ -763,7 +813,7 @@ class CardService {
     }
 
     const socialMediaLinkIndex = card.socialMediaLinks.findIndex(
-      (link) => link.media.name === socialMediaName
+      (link) => link.socialMediaId.toString() === socialMediaId
     );
     if (socialMediaLinkIndex === -1) {
       throw new HttpException(404, "not found", "Social media link not found.");
@@ -772,7 +822,8 @@ class CardService {
     const socialMediaLink = card.socialMediaLinks[socialMediaLinkIndex];
     card.socialMediaLinks[socialMediaLinkIndex] = {
       ...socialMediaLink,
-      media: { ...socialMediaLink.media, ...updatedLinkData.media },
+      username: updatedLinkData.username ?? socialMediaLink.username,
+      link: updatedLinkData.link ?? socialMediaLink.link,
       active: updatedLinkData.active ?? socialMediaLink.active,
     };
 
@@ -783,7 +834,7 @@ class CardService {
   public async deleteSocialMediaLink(
     cardId: string,
     userId: string,
-    link: string
+    socialMediaId: string
   ): Promise<Card> {
     const card = await cardModel.findOne({ _id: cardId, ownerId: userId });
     if (!card) {
@@ -795,11 +846,49 @@ class CardService {
     }
 
     card.socialMediaLinks = card.socialMediaLinks.filter(
-      (social) => !(social.media.link !== link)
+      (social) => social.socialMediaId.toString() !== socialMediaId
     );
 
     const updatedCard = await card.save();
     return updatedCard;
+  }
+
+  // Helper method to populate social media details for cards
+  private async populateSocialMediaLinks(
+    socialMediaLinks: CardSocialMediaLink[]
+  ): Promise<CardSocialMediaLink[]> {
+    const populatedLinks = await Promise.all(
+      socialMediaLinks.map(async (link) => {
+        const socialMedia = await this.socialMediaService.getById(
+          link.socialMediaId.toString()
+        );
+
+        if (!socialMedia) {
+          // If social media not found, return as-is with null media
+          return {
+            ...link,
+            media: {
+              iconUrl: "",
+              name: "Unknown",
+              type: "unknown",
+              link: link.link || "",
+            },
+          } as any;
+        }
+
+        return {
+          ...link,
+          media: {
+            iconUrl: socialMedia.imageUrl,
+            name: socialMedia.name,
+            type: socialMedia.mediaType,
+            link: link.link || "",
+          },
+        } as any;
+      })
+    );
+
+    return populatedLinks;
   }
 
   public async toggleSocialMediaStatus(
@@ -817,7 +906,7 @@ class CardService {
     }
 
     const socialMediaLink = card.socialMediaLinks.find(
-      (link) => link.media.name === socialMediaId
+      (link) => link.socialMediaId.toString() === socialMediaId
     );
     if (!socialMediaLink) {
       throw new HttpException(404, "not found", "Social media link not found.");
