@@ -73,7 +73,7 @@ class CardController implements GlobalController {
      *               socialMediaLinks:
      *                 type: string
      *                 description: Array of social media IDs (JSON array or comma-separated)
-     *                 example: "[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" or \"507f1f77bcf86cd799439011,507f1f77bcf86cd799439012\"
+     *                 example: '["507f1f77bcf86cd799439011","507f1f77bcf86cd799439012"]' or '507f1f77bcf86cd799439011,507f1f77bcf86cd799439012'
      *               style:
      *                 type: object
      *               contactInfo:
@@ -185,7 +185,7 @@ class CardController implements GlobalController {
      *               socialMediaLinks:
      *                 type: string
      *                 description: Array of social media IDs (JSON array or comma-separated)
-     *                 example: "[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" or \"507f1f77bcf86cd799439011,507f1f77bcf86cd799439012\"
+     *                 example: '["507f1f77bcf86cd799439011","507f1f77bcf86cd799439012"]' or '507f1f77bcf86cd799439011,507f1f77bcf86cd799439012'
      *     responses:
      *       200:
      *         description: Card updated
@@ -608,7 +608,7 @@ class CardController implements GlobalController {
      *         required: true
      *         schema:
      *           type: string
-     *           example: "507f1f77bcf86cd799439011"
+     *           example: '507f1f77bcf86cd799439011'
      *         description: MongoDB ObjectId of the card
      *     responses:
      *       200:
@@ -632,7 +632,7 @@ class CardController implements GlobalController {
      *                   properties:
      *                     vcfDownloadLink:
      *                       type: string
-     *                       example: "https://api.wond3rcard.com/api/cards/download-vcf/507f1f77bcf86cd799439011"
+     *                       example: 'https://api.wond3rcard.com/api/cards/download-vcf/507f1f77bcf86cd799439011'
      *                       description: URL to download the VCF file (use this for QR codes and NFC tags)
      *       404:
      *         description: Card not found
