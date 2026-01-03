@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 class NodeMailerService {
   private parseTemplate(
@@ -16,22 +16,10 @@ class NodeMailerService {
     data: Record<string, string>
   ) {
     try {
-      const user = process.env.EMAIL_USER;
-      const pass = process.env.EMAIL_PASS;
-
-      const gmailTransporter = nodemailer.createTransport({
-        // secure: true,
-        host: "smtp.gmail.com",
-        port: 465,
-        type: "login",
-        auth: {
-          user: user,
-          pass: pass,
-        },
-      });
+      const resend = new Resend(process.env.RESEND_API_KEY);
 
       const sender = {
-        address: user,
+        address: process.env.EMAIL_USER || "noreply@wond3rcard.com",
         name: "Wond3r Card",
       };
 
@@ -40,20 +28,29 @@ class NodeMailerService {
         : [receiverEmails];
       const htmlContent = this.parseTemplate(template, data);
 
-      const info = await gmailTransporter.sendMail({
-        from: sender,
+      console.log("Using FROM address:", sender.address);
+
+      const { data: response, error } = await resend.emails.send({
+        from: `${sender.name} <${sender.address}>`,
         to: recipients,
         subject: subject,
         html: htmlContent,
-        category: mailCategory || "General",
-        sandbox: true,
+        headers: {
+          "X-Category": mailCategory || "General",
+        },
       });
 
-      console.log(`Email sent: ${info.messageId}`);
+      if (error) {
+        console.error(`Error sending email: ${error.message}`);
+        throw error;
+      }
 
-      return info;
+      console.log(`Email sent: ${response?.id}`);
+
+      return response;
     } catch (error) {
-      console.error(`Error sending email: ${error}`);
+      console.error(`Error sending email: ${error.message}`);
+      throw error;
     }
   }
 }

@@ -3,7 +3,7 @@ import { bool, cleanEnv, port, str } from "envalid";
 function validateEnv(): void {
   cleanEnv(process.env, {
     NODE_ENV: str({
-      choices: ["development", "production"]
+      choices: ["development", "production"],
     }),
     MONGO_PASSWORD: str(),
     MONGO_PATH: str(),
@@ -24,6 +24,7 @@ function validateEnv(): void {
     GOOGLE_REDIRECT_URI: str(),
     EMAIL_USER: str(),
     EMAIL_PASS: str(),
+    RESEND_API_KEY: str(),
     MAILGUN_API_KEY: str(),
     MAILGUN_SMTP_HOST: str(),
     MAILGUN_SMTP_PORT: port({ default: 587 }),
@@ -46,8 +47,7 @@ function validateEnv(): void {
     STRIPE_WEBHOOK_SECRET: str(),
     FIREBASE_SERVICE_ACCOUNT_KEY: str(),
     MAINTENANCE_MODE: bool(),
-  })
-
+  });
 }
 
-export default validateEnv
+export default validateEnv;
