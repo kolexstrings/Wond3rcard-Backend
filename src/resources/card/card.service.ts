@@ -893,7 +893,9 @@ class CardService {
 
   // Generate VCF (vCard) file content from card data
   public async generateVCF(cardId: string): Promise<string> {
+    console.log("VCF Generation - Card ID:", cardId);
     const card = await this.getCardById(cardId);
+    console.log("VCF Generation - Card found:", !!card);
     if (!card) {
       throw new HttpException(404, "not_found", "Card not found");
     }

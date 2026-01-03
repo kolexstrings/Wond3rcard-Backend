@@ -692,7 +692,6 @@ class CardController implements GlobalController {
      *         description: Card not found
      */
     this.router.get(`${this.path}/download-vcf/:cardId`, this.downloadVCF);
-
     this.router.get(`${this.path}/view-card/:cardId`, this.viewCard);
   }
 
