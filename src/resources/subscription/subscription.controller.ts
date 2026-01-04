@@ -232,32 +232,37 @@ class SubscriptionController implements GeneralController {
       const tiers = await tierModel.find({}).lean();
 
       // Transform tiers based on selected currency (clean schema)
-      const transformedTiers = tiers.map((tier) => ({
-        id: tier._id.toString(),
-        name: tier.name,
-        description: tier.description,
-        features: tier.features,
-        trialPeriod: tier.trialPeriod,
-        autoRenew: tier.autoRenew,
-        monthly: {
-          price:
-            selectedCurrency === "NGN"
-              ? tier.billingCycle.monthly.priceNGN
-              : tier.billingCycle.monthly.priceUSD,
-          currency: selectedCurrency,
-          symbol: this.getCurrencySymbol(selectedCurrency),
-          durationInDays: tier.billingCycle.monthly.durationInDays,
-        },
-        yearly: {
-          price:
-            selectedCurrency === "NGN"
-              ? tier.billingCycle.yearly.priceNGN
-              : tier.billingCycle.yearly.priceUSD,
-          currency: selectedCurrency,
-          symbol: this.getCurrencySymbol(selectedCurrency),
-          durationInDays: tier.billingCycle.yearly.durationInDays,
-        },
-      }));
+      const transformedTiers = tiers.map((tier) => {
+        const monthlyPrice =
+          selectedCurrency === "NGN"
+            ? tier.billingCycle.monthly.priceNGN
+            : tier.billingCycle.monthly.priceUSD;
+        const yearlyPrice =
+          selectedCurrency === "NGN"
+            ? tier.billingCycle.yearly.priceNGN
+            : tier.billingCycle.yearly.priceUSD;
+
+        return {
+          id: tier._id.toString(),
+          name: tier.name,
+          description: tier.description,
+          features: tier.features,
+          trialPeriod: tier.trialPeriod,
+          autoRenew: tier.autoRenew,
+          monthly: {
+            price: monthlyPrice,
+            currency: selectedCurrency,
+            symbol: this.getCurrencySymbol(selectedCurrency),
+            durationInDays: tier.billingCycle.monthly.durationInDays,
+          },
+          yearly: {
+            price: yearlyPrice,
+            currency: selectedCurrency,
+            symbol: this.getCurrencySymbol(selectedCurrency),
+            durationInDays: tier.billingCycle.yearly.durationInDays,
+          },
+        };
+      });
 
       res.status(200).json({
         status: "success",
