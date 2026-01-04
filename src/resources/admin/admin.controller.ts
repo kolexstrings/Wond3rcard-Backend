@@ -465,12 +465,79 @@ class AdminController implements GlobalController {
       this.createSubscriptionTier
     );
 
+    /**
+     * @openapi
+     * /api/admin/subscription-tiers:
+     *   get:
+     *     tags: [admin]
+     *     summary: List all subscription tiers (lightweight)
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Subscription tiers retrieved successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: "success"
+     *                 message:
+     *                   type: string
+     *                   example: "Subscription tiers retrieved successfully"
+     *                 payload:
+     *                   type: array
+     *                   items:
+     *                     type: object
+     *                     properties:
+     *                       id:
+     *                         type: string
+     *                         example: "64a1b2c3d4e5f6789012345"
+     *                       name:
+     *                         type: string
+     *                         example: "premium"
+     */
     this.router.get(
       `${this.path}/subscription-tiers`,
       [authenticatedMiddleware],
       this.getSubscriptionTiers
     );
 
+    /**
+     * @openapi
+     * /api/admin/subscription-tiers/{id}:
+     *   get:
+     *     tags: [admin]
+     *     summary: Get subscription tier details by ID
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Subscription tier retrieved successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: "success"
+     *                 message:
+     *                   type: string
+     *                   example: "Subscription tier retrieved successfully"
+     *                 payload:
+     *                   $ref: '#/components/schemas/SubscriptionTier'
+     *       404:
+     *         description: Subscription tier not found
+     */
     this.router.get(
       `${this.path}/subscription-tiers/:id`,
       [authenticatedMiddleware],
@@ -509,13 +576,17 @@ class AdminController implements GlobalController {
      *                   monthly:
      *                     type: object
      *                     properties:
-     *                       price:
+     *                       priceUSD:
      *                         type: number
-     *                         description: Monthly price amount
-     *                         example: 1000
+     *                         description: Monthly price in USD
+     *                         example: 10
+     *                       priceNGN:
+     *                         type: number
+     *                         description: Monthly price in NGN
+     *                         example: 5000
      *                       durationInDays:
      *                         type: number
-     *                         description: Duration in days
+     *                         description: Duration in days (default: 30)
      *                         example: 30
      *                       stripePlanCode:
      *                         type: string
@@ -528,13 +599,17 @@ class AdminController implements GlobalController {
      *                   yearly:
      *                     type: object
      *                     properties:
-     *                       price:
+     *                       priceUSD:
      *                         type: number
-     *                         description: Yearly price amount
-     *                         example: 10000
+     *                         description: Yearly price in USD
+     *                         example: 100
+     *                       priceNGN:
+     *                         type: number
+     *                         description: Yearly price in NGN
+     *                         example: 50000
      *                       durationInDays:
      *                         type: number
-     *                         description: Duration in days
+     *                         description: Duration in days (default: 365)
      *                         example: 365
      *                       stripePlanCode:
      *                         type: string
@@ -599,6 +674,43 @@ class AdminController implements GlobalController {
       this.updateSubscriptionTier
     );
 
+    /**
+     * @openapi
+     * /api/admin/subscription-tiers/{id}:
+     *   delete:
+     *     tags: [admin]
+     *     summary: Delete a subscription tier (requires reassignment target)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Subscription tier ID to delete
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [newTierId]
+     *             properties:
+     *               newTierId:
+     *                 type: string
+     *                 description: Tier ID to migrate existing subscribers to
+     *                 example: "64a1b2c3d4e5f6789012345"
+     *     responses:
+     *       200:
+     *         description: Subscription tier deleted successfully
+     *       400:
+     *         description: Bad request - Missing reassignment tier
+     *       401:
+     *         description: Unauthorized - Admin access required
+     *       404:
+     *         description: Subscription tier not found
+     */
     this.router.delete(
       `${this.path}/subscription-tiers/:id`,
       [
