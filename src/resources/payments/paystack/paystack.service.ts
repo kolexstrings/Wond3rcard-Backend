@@ -229,14 +229,22 @@ class PaystackSubscriptionService {
             type: "subscription" as const,
             subscriptionData: subscriptionResponse.data.data,
           };
-        } catch (error) {
+        } catch (error: any) {
           if (error instanceof HttpException) {
             throw error;
           }
+          console.error("Paystack subscription creation error:", {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status,
+          });
+          const paystackMessage =
+            error?.response?.data?.message ||
+            "Failed to create subscription with saved payment method";
           throw new HttpException(
             500,
             "subscription_creation_failed",
-            "Failed to create subscription with saved payment method"
+            paystackMessage
           );
         }
       }
