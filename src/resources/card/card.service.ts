@@ -45,7 +45,11 @@ class CardService {
       if (data.socialMediaLinks) {
         try {
           // Try to parse as JSON first (for backward compatibility)
-          const parsedLinks = JSON.parse(data.socialMediaLinks.toString());
+          const socialMediaLinksPayload =
+            typeof data.socialMediaLinks === "string"
+              ? data.socialMediaLinks
+              : JSON.stringify(data.socialMediaLinks);
+          const parsedLinks = JSON.parse(socialMediaLinksPayload);
 
           // Handle both old format (full objects) and new format (social media IDs)
           socialMediaLinks = await Promise.all(
@@ -151,6 +155,47 @@ class CardService {
                     username: "", // Empty username for simple ID format
                     link: "", // Empty link for simple ID format
                     active: true, // Default to active
+                  };
+                })
+              );
+            }
+          } else if (Array.isArray(socialMediaLinksValue)) {
+            const socialMediaIds = socialMediaLinksValue
+              .map((id: any) => id?.toString?.().trim?.() ?? "")
+              .filter((id: string) => id);
+
+            if (socialMediaIds.length > 0) {
+              socialMediaLinks = await Promise.all(
+                socialMediaIds.map(async (socialMediaId: string) => {
+                  const socialMedia = await this.socialMediaService
+                    .getById(socialMediaId)
+                    .catch(() => {
+                      return this.socialMediaService
+                        .getAll()
+                        .then((socialMedias) =>
+                          socialMedias.find(
+                            (sm) =>
+                              sm.name === socialMediaId ||
+                              sm._id.toString() === socialMediaId
+                          )
+                        );
+                    });
+
+                  if (!socialMedia) {
+                    throw new HttpException(
+                      404,
+                      "not_found",
+                      `Social media with ID '${socialMediaId}' not found`
+                    );
+                  }
+
+                  return {
+                    socialMediaId: new Types.ObjectId(
+                      socialMedia._id.toString()
+                    ),
+                    username: "",
+                    link: "",
+                    active: true,
                   };
                 })
               );
@@ -363,7 +408,11 @@ class CardService {
       // Handle social media links - preserve existing if not provided
       if (data.socialMediaLinks) {
         try {
-          const parsedLinks = JSON.parse(data.socialMediaLinks.toString());
+          const socialMediaLinksPayload =
+            typeof data.socialMediaLinks === "string"
+              ? data.socialMediaLinks
+              : JSON.stringify(data.socialMediaLinks);
+          const parsedLinks = JSON.parse(socialMediaLinksPayload);
 
           // Handle both old format (full objects) and new format (social media IDs)
           updateData.socialMediaLinks = await Promise.all(
