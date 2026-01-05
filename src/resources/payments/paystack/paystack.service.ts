@@ -209,11 +209,42 @@ class PaystackSubscriptionService {
 
           if (activeSubscriptions && activeSubscriptions.length > 0) {
             const existingSub = activeSubscriptions[0];
-            throw new HttpException(
-              400,
-              "subscription_already_exists",
-              `You already have an active subscription for this plan (${existingSub.subscription_code}). Please cancel it first or use the change-subscription endpoint.`
-            );
+            const nextPaymentDate = existingSub.next_payment_date
+              ? new Date(existingSub.next_payment_date)
+              : null;
+
+            user.userTier = {
+              plan: plan as UserTiers,
+              status: existingSub.status === "active" ? "active" : "inactive",
+              transactionId: existingSub.subscription_code,
+              subscriptionCode: existingSub.subscription_code,
+              expiresAt: nextPaymentDate,
+            };
+
+            user.activeSubscription = {
+              provider: "paystack",
+              subscriptionId: existingSub.subscription_code,
+              expiryDate: nextPaymentDate,
+            };
+
+            await user.save();
+
+            if (profile) {
+              profile.plan = plan;
+              await profile.save();
+            }
+
+            return {
+              type: "subscription" as const,
+              subscriptionData: {
+                subscription_code: existingSub.subscription_code,
+                status: existingSub.status,
+                plan: existingSub.plan,
+                next_payment_date: existingSub.next_payment_date,
+                customer: existingSub.customer,
+                callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${existingSub.subscription_code}`,
+              },
+            };
           }
 
           // No active subscription found, create a new one
