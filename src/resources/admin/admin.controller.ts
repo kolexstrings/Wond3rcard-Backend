@@ -328,6 +328,20 @@ class AdminController implements GlobalController {
     /**
      * Cards
      */
+    /**
+     * @openapi
+     * /api/admin/get-all-cards:
+     *   get:
+     *     tags: [admin]
+     *     summary: Retrieve every card created in the platform
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Cards retrieved successfully
+     *       401:
+     *         description: Unauthorized - Admin access required
+     */
     this.router.get(
       `${this.path}/get-all-cards`,
       [authenticatedMiddleware],
@@ -724,6 +738,31 @@ class AdminController implements GlobalController {
     /**
      * Security
      */
+    /**
+     * @openapi
+     * /api/admin/enable-2fa-globally:
+     *   put:
+     *     tags: [admin]
+     *     summary: Force-enable 2FA for every user account
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               enable:
+     *                 type: boolean
+     *                 example: true
+     *             required: [enable]
+     *     responses:
+     *       200:
+     *         description: 2FA enabled for all pending users
+     *       401:
+     *         description: Unauthorized - Admin access required
+     */
     this.router.put(
       `${this.path}/enable-2fa-globally`,
       [
@@ -734,6 +773,32 @@ class AdminController implements GlobalController {
       this.assignGlobal2FA
     );
 
+    /**
+     * @openapi
+     * /api/admin/maintenance:
+     *   patch:
+     *     tags: [admin]
+     *     summary: Toggle platform maintenance mode
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               enable:
+     *                 type: boolean
+     *                 description: Whether maintenance mode should be turned on
+     *                 example: false
+     *             required: [enable]
+     *     responses:
+     *       200:
+     *         description: Maintenance flag updated
+     *       401:
+     *         description: Unauthorized - Admin access required
+     */
     this.router.patch(
       `${this.path}/maintenance`,
       [
