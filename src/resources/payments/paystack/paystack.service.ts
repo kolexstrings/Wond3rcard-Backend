@@ -191,8 +191,32 @@ class PaystackSubscriptionService {
       const savedAuthorization = authorizations[0]?.authorization_code;
 
       if (savedAuthorization) {
-        // User already has a saved card: Create subscription directly
+        // User already has a saved card: Check for existing subscriptions first
         try {
+          // Check if customer already has active subscriptions on Paystack
+          const subscriptionsResponse = await axios.get(
+            `${this.baseUrl}/subscription?customer=${customerCode}`,
+            {
+              headers: { Authorization: `Bearer ${this.secretKey}` },
+            }
+          );
+
+          const activeSubscriptions = subscriptionsResponse.data?.data?.filter(
+            (sub: any) =>
+              sub.status === "active" &&
+              sub.plan?.plan_code === paystackPlanCode
+          );
+
+          if (activeSubscriptions && activeSubscriptions.length > 0) {
+            const existingSub = activeSubscriptions[0];
+            throw new HttpException(
+              400,
+              "subscription_already_exists",
+              `You already have an active subscription for this plan (${existingSub.subscription_code}). Please cancel it first or use the change-subscription endpoint.`
+            );
+          }
+
+          // No active subscription found, create a new one
           const subscriptionResponse = await axios.post(
             `${this.baseUrl}/subscription`,
             {
@@ -241,6 +265,20 @@ class PaystackSubscriptionService {
           const paystackMessage =
             error?.response?.data?.message ||
             "Failed to create subscription with saved payment method";
+
+          // Handle duplicate subscription error
+          if (
+            paystackMessage
+              .toLowerCase()
+              .includes("subscription is already in place")
+          ) {
+            throw new HttpException(
+              400,
+              "subscription_already_exists",
+              "You already have an active subscription for this plan. Please cancel your current subscription before creating a new one."
+            );
+          }
+
           throw new HttpException(
             500,
             "subscription_creation_failed",
