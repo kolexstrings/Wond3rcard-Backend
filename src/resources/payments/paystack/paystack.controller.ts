@@ -108,6 +108,16 @@ class PaystackController implements GeneralController {
       `${this.path}/cancel-subscription`,
       [
         authenticatedMiddleware,
+        (req: Request, res: Response, next: NextFunction) => {
+          if (
+            req.headers["content-type"] &&
+            req.headers["content-type"].includes("application/json") &&
+            (!req.body || Object.keys(req.body).length === 0)
+          ) {
+            req.body = {};
+          }
+          next();
+        },
         validationMiddleware(validateCancelSubscription),
       ],
       this.cancelSubscription
