@@ -366,7 +366,6 @@ class AdminController implements GlobalController {
      *         application/json:
      *           schema:
      *             type: object
-     *             required: [name, billingCycle, description, trialPeriod, autoRenew, features]
      *             properties:
      *               name:
      *                 type: string
@@ -374,55 +373,43 @@ class AdminController implements GlobalController {
      *                 example: "premium"
      *               billingCycle:
      *                 type: object
-     *                 required: [monthly, yearly]
+     *                 description: Billing configuration for the tier
      *                 properties:
      *                   monthly:
      *                     type: object
-     *                     required: [priceUSD, priceNGN, stripePlanCode, paystackPlanCode]
      *                     properties:
      *                       priceUSD:
      *                         type: number
-     *                         description: Monthly price in USD
      *                         example: 10
      *                       priceNGN:
      *                         type: number
-     *                         description: Monthly price in Nigerian Naira
      *                         example: 5000
      *                       durationInDays:
      *                         type: number
-     *                         description: Duration in days (default: 30)
      *                         example: 30
      *                       stripePlanCode:
      *                         type: string
-     *                         description: Stripe Price ID for USD payments
      *                         example: "price_1XYZ..."
      *                       paystackPlanCode:
      *                         type: string
-     *                         description: Paystack Plan Code for NGN payments
      *                         example: "PLN_abc123"
      *                   yearly:
      *                     type: object
-     *                     required: [priceUSD, priceNGN, stripePlanCode, paystackPlanCode]
      *                     properties:
      *                       priceUSD:
      *                         type: number
-     *                         description: Yearly price in USD
      *                         example: 100
      *                       priceNGN:
      *                         type: number
-     *                         description: Yearly price in Nigerian Naira
      *                         example: 50000
      *                       durationInDays:
      *                         type: number
-     *                         description: Duration in days (default: 365)
      *                         example: 365
      *                       stripePlanCode:
      *                         type: string
-     *                         description: Stripe Price ID for USD payments
      *                         example: "price_2ABC..."
      *                       paystackPlanCode:
      *                         type: string
-     *                         description: Paystack Plan Code for NGN payments
      *                         example: "PLN_def456"
      *               description:
      *                 type: string
@@ -442,26 +429,31 @@ class AdminController implements GlobalController {
      *                   type: string
      *                 description: List of features included in this tier
      *                 example: ["feature1", "feature2", "feature3"]
+     *             example:
+     *               name: "premium"
+     *               billingCycle:
+     *                 monthly:
+     *                   priceUSD: 10
+     *                   priceNGN: 5000
+     *                   durationInDays: 30
+     *                   stripePlanCode: "price_1XYZ..."
+     *                   paystackPlanCode: "PLN_abc123"
+     *                 yearly:
+     *                   priceUSD: 100
+     *                   priceNGN: 50000
+     *                   durationInDays: 365
+     *                   stripePlanCode: "price_2ABC..."
+     *                   paystackPlanCode: "PLN_def456"
+     *               description: "Premium tier with all features"
+     *               trialPeriod: 7
+     *               autoRenew: true
+     *               features:
+     *                 - "feature1"
+     *                 - "feature2"
+     *                 - "feature3"
      *     responses:
      *       201:
      *         description: Subscription tier created successfully
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 statusCode:
-     *                   type: number
-     *                   example: 201
-     *                 status:
-     *                   type: string
-     *                   example: "success"
-     *                 message:
-     *                   type: string
-     *                   example: "Subscription tier created successfully"
-     *                 payload:
-     *                   type: object
-     *                   description: The created subscription tier
      *       400:
      *         description: Bad request - Invalid data provided
      *       401:
@@ -586,52 +578,43 @@ class AdminController implements GlobalController {
      *                 example: "premium"
      *               billingCycle:
      *                 type: object
+     *                 description: Billing configuration for the tier
      *                 properties:
      *                   monthly:
      *                     type: object
      *                     properties:
      *                       priceUSD:
      *                         type: number
-     *                         description: Monthly price in USD
      *                         example: 10
      *                       priceNGN:
      *                         type: number
-     *                         description: Monthly price in NGN
      *                         example: 5000
      *                       durationInDays:
      *                         type: number
-     *                         description: Duration in days (default: 30)
      *                         example: 30
      *                       stripePlanCode:
      *                         type: string
-     *                         description: Stripe Price ID for USD payments
      *                         example: "price_1XYZ..."
      *                       paystackPlanCode:
      *                         type: string
-     *                         description: Paystack Plan Code for NGN payments
      *                         example: "PLN_abc123"
      *                   yearly:
      *                     type: object
      *                     properties:
      *                       priceUSD:
      *                         type: number
-     *                         description: Yearly price in USD
      *                         example: 100
      *                       priceNGN:
      *                         type: number
-     *                         description: Yearly price in NGN
      *                         example: 50000
      *                       durationInDays:
      *                         type: number
-     *                         description: Duration in days (default: 365)
      *                         example: 365
      *                       stripePlanCode:
      *                         type: string
-     *                         description: Stripe Price ID for USD payments
      *                         example: "price_2ABC..."
      *                       paystackPlanCode:
      *                         type: string
-     *                         description: Paystack Plan Code for NGN payments
      *                         example: "PLN_def456"
      *               description:
      *                 type: string
@@ -651,26 +634,31 @@ class AdminController implements GlobalController {
      *                   type: string
      *                 description: List of features included in this tier
      *                 example: ["feature1", "feature2", "feature3"]
+     *             example:
+     *               name: "premium"
+     *               billingCycle:
+     *                 monthly:
+     *                   priceUSD: 10
+     *                   priceNGN: 5000
+     *                   durationInDays: 30
+     *                   stripePlanCode: "price_1XYZ..."
+     *                   paystackPlanCode: "PLN_abc123"
+     *                 yearly:
+     *                   priceUSD: 100
+     *                   priceNGN: 50000
+     *                   durationInDays: 365
+     *                   stripePlanCode: "price_2ABC..."
+     *                   paystackPlanCode: "PLN_def456"
+     *               description: "Premium tier with all features"
+     *               trialPeriod: 7
+     *               autoRenew: true
+     *               features:
+     *                 - "feature1"
+     *                 - "feature2"
+     *                 - "feature3"
      *     responses:
      *       200:
      *         description: Subscription tier updated successfully
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 statusCode:
-     *                   type: number
-     *                   example: 200
-     *                 status:
-     *                   type: string
-     *                   example: "success"
-     *                 message:
-     *                   type: string
-     *                   example: "Subscription tier updated successfully"
-     *                 payload:
-     *                   type: object
-     *                   description: The updated subscription tier
      *       400:
      *         description: Bad request - Invalid data provided
      *       401:

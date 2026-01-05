@@ -185,8 +185,10 @@ class PaystackSubscriptionService {
         );
       }
 
-      const authorizations = customerDetails.data.data.authorizations;
-      const savedAuthorization = authorizations?.[0]?.authorization_code;
+      // Paystack customer lookup returns: { status, message, data: { ..., authorizations: [...] } }
+      const customerData = customerDetails?.data;
+      const authorizations = customerData?.authorizations || [];
+      const savedAuthorization = authorizations[0]?.authorization_code;
 
       if (savedAuthorization) {
         // User already has a saved card: Create subscription directly
