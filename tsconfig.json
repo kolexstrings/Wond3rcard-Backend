@@ -15,6 +15,6 @@
   },
   "compileOnSave": true,
   "include": ["src", "src/types/express.d.ts"],
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules", "**/*.test.ts", "**/*.spec.ts"],
   "files": ["./src/utils/definitions/custom.d.ts"]
 }
