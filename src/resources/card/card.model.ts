@@ -79,13 +79,16 @@ const cardSchema = new Schema<Card>(
 
     socialMediaLinks: [
       {
+        socialMediaId: { type: Schema.Types.ObjectId, ref: "SocialMedia" },
+        username: { type: String, default: "" },
+        link: { type: String, default: "" },
+        active: { type: Boolean, default: true },
         media: {
-          iconUrl: { type: String, required: true },
-          name: { type: String, required: true },
-          type: { type: String, required: true },
-          link: { type: String, required: true },
+          iconUrl: { type: String },
+          name: { type: String },
+          type: { type: String },
+          link: { type: String },
         },
-        active: { type: Boolean, required: false, default: false },
       },
     ],
     cardName: { type: String, required: true },
