@@ -77,20 +77,29 @@ class PaystackController implements GeneralController {
      *       - paystack
      *     summary: Cancel the authenticated user's active Paystack subscription
      *     requestBody:
-     *       required: true
+     *       required: false
+     *       description: |
+     *         Optional request body. If omitted, the API will cancel the authenticated
+     *         user's currently active Paystack subscription (if any) based on the
+     *         subscription information stored on their user record.
+     *
+     *         You may optionally provide `userId` (for admins cancelling another user's
+     *         subscription) and/or `subscriptionId` as an extra safety check. If a
+     *         `subscriptionId` is provided and does not match the active subscription
+     *         found on the user, the request will fail.
      *       content:
      *         application/json:
      *           schema:
      *             type: object
-     *             required:
-     *               - userId
-     *               - subscriptionId
      *             properties:
      *               userId:
      *                 type: string
+     *                 description: Optional application user ID. If omitted, the authenticated user's ID is used.
      *               subscriptionId:
      *                 type: string
-     *                 description: Paystack subscription identifier
+     *                 description: |
+     *                   Optional Paystack subscription identifier. If omitted, the active
+     *                   subscription is inferred from the user's stored subscription data.
      *     responses:
      *       200:
      *         description: Subscription cancelled
@@ -118,12 +127,12 @@ class PaystackController implements GeneralController {
      *           schema:
      *             type: object
      *             required:
-     *               - userId
      *               - newPlan
      *               - billingCycle
      *             properties:
      *               userId:
      *                 type: string
+     *                 description: Optional application user ID. If omitted, the authenticated user's ID is used.
      *               newPlan:
      *                 type: string
      *                 enum: [basic, premium, business]

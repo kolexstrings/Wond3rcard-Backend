@@ -55,8 +55,7 @@ export const validateCancelSubscription = Joi.object({
   userId: Joi.string().optional().messages({
     "string.base": "User ID must be a string",
   }),
-  subscriptionId: Joi.string().required().messages({
-    "any.required": "Subscription ID is required",
+  subscriptionId: Joi.string().optional().messages({
     "string.base": "Subscription ID must be a string",
   }),
 });
