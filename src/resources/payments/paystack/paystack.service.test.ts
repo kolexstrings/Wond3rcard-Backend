@@ -3,6 +3,7 @@ import PaystackSubscriptionService from "./paystack.service";
 import userModel from "../../user/user.model";
 import profileModel from "../../profile/profile.model";
 import tierModel from "../../admin/subscriptionTier/tier.model";
+import { UserTiers } from "../../user/user.protocol";
 
 jest.mock("axios");
 
@@ -18,6 +19,13 @@ jest.mock("../../profile/profile.model", () => ({
   default: {
     findOne: jest.fn(),
   },
+}));
+
+jest.mock("../../mails/nodemailer.service", () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => ({
+    sendMail: jest.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 jest.mock("../../admin/subscriptionTier/tier.model", () => ({
@@ -119,5 +127,137 @@ describe("PaystackSubscriptionService.initializePayment", () => {
 
     expect(result.type).toBe("subscription");
     expect(result.subscriptionData.subscription_code).toBe("SUB_123");
+  });
+});
+
+describe("PaystackSubscriptionService.cancelSubscription", () => {
+  const service = new PaystackSubscriptionService();
+  const userId = "user-cancel-1";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("cancels the authenticated user's active Paystack subscription when no subscriptionId is provided", async () => {
+    const userDoc: any = {
+      _id: userId,
+      email: "user@example.com",
+      userTier: {
+        plan: UserTiers.Premium,
+        status: "active",
+        transactionId: "tx_old",
+        subscriptionCode: "SUB_ACTIVE",
+        expiresAt: new Date(),
+      },
+      activeSubscription: {
+        provider: "paystack",
+        subscriptionId: "SUB_ACTIVE",
+        expiryDate: new Date(),
+      },
+      save: jest.fn(),
+    };
+
+    mockedUserModel.findById.mockResolvedValue(userDoc);
+    mockedProfileModel.findOne.mockResolvedValue({
+      firstname: "John",
+      lastname: "Doe",
+    });
+
+    const disableSpy = jest
+      .spyOn(service as any, "disablePaystackSubscription")
+      .mockResolvedValue(undefined);
+
+    const result = await service.cancelSubscription({
+      targetUserId: userId,
+      // Simulate endpoint usage where subscriptionId is omitted
+      subscriptionId: undefined as any,
+    });
+
+    expect(disableSpy).toHaveBeenCalledWith("SUB_ACTIVE");
+    expect(result).toEqual({
+      message: "Subscription canceled successfully",
+      subscriptionId: "SUB_ACTIVE",
+    });
+
+    expect(userDoc.userTier.status).toBe("inactive");
+    expect(userDoc.userTier.subscriptionCode).toBeNull();
+    expect(userDoc.userTier.transactionId).toBeNull();
+    expect(userDoc.userTier.expiresAt).toBeNull();
+    expect(userDoc.activeSubscription.provider).toBeNull();
+    expect(userDoc.activeSubscription.subscriptionId).toBeNull();
+    expect(userDoc.activeSubscription.expiryDate).toBeNull();
+    expect(userDoc.save).toHaveBeenCalled();
+  });
+});
+
+describe("PaystackSubscriptionService.changeSubscription", () => {
+  const service = new PaystackSubscriptionService();
+  const userId = "user-change-1";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("initializes a new subscription change for the authenticated user", async () => {
+    const userDoc: any = {
+      _id: userId,
+      email: "user@example.com",
+      userTier: {
+        plan: UserTiers.Basic,
+        status: "active",
+        transactionId: "old_tx",
+        subscriptionCode: "SUB_OLD",
+        expiresAt: new Date(),
+      },
+      activeSubscription: {
+        provider: "paystack",
+        subscriptionId: "SUB_OLD",
+        expiryDate: new Date(),
+      },
+      save: jest.fn(),
+    };
+
+    mockedUserModel.findById.mockResolvedValue(userDoc);
+
+    const disableSpy = jest
+      .spyOn(service as any, "disablePaystackSubscription")
+      .mockResolvedValue(undefined);
+
+    const initializeSpy = jest
+      .spyOn(service, "initializePayment")
+      .mockResolvedValue({
+        type: "payment" as const,
+        checkoutUrl: "https://checkout.paystack.test/new",
+        reference: "REF_NEW",
+      } as any);
+
+    const result = await service.changeSubscription({
+      targetUserId: userId,
+      newPlan: UserTiers.Premium,
+      billingCycle: "monthly",
+    });
+
+    expect(disableSpy).toHaveBeenCalledWith("SUB_OLD");
+    expect(initializeSpy).toHaveBeenCalledWith(userId, "premium", "monthly");
+
+    expect(result.message).toBe("Subscription change initiated");
+    expect(result.nextAction).toBe("complete_payment");
+    expect(result.data).toEqual(
+      expect.objectContaining({
+        type: "payment",
+        checkoutUrl: expect.any(String),
+      })
+    );
+
+    expect(userDoc.userTier.plan).toBe(UserTiers.Premium);
+    expect(userDoc.userTier.status).toBe("inactive");
+    expect(userDoc.userTier.transactionId).toBeNull();
+    expect(userDoc.userTier.subscriptionCode).toBeNull();
+    expect(userDoc.userTier.expiresAt).toBeNull();
+
+    expect(userDoc.activeSubscription.provider).toBe("paystack");
+    expect(userDoc.activeSubscription.subscriptionId).toBeNull();
+    expect(userDoc.activeSubscription.expiryDate).toBeNull();
+    expect(userDoc.save).toHaveBeenCalled();
   });
 });
