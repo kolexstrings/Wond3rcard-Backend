@@ -904,13 +904,138 @@ class PaystackSubscriptionService {
     if (!newTier)
       throw new HttpException(404, "error", "New subscription plan not found");
 
-    const activeSubscriptionCode =
+    let activeSubscriptionCode =
       user.userTier.subscriptionCode ||
       user.activeSubscription?.subscriptionId ||
       null;
+    let emailToken: string | undefined;
+
+    const treatAsActiveStatuses = ["active", "non-renewing"];
+    if (user.paystackCustomerId) {
+      try {
+        const subscriptionsResponse = await axios.get(
+          `${this.baseUrl}/subscription?customer=${user.paystackCustomerId}`,
+          {
+            headers: { Authorization: `Bearer ${this.secretKey}` },
+          }
+        );
+
+        const activeSubscriptions = subscriptionsResponse.data?.data?.filter(
+          (sub: any) => treatAsActiveStatuses.includes(sub.status)
+        );
+
+        console.log("Change - Paystack subscriptions check:", {
+          paystackCustomerId: user.paystackCustomerId,
+          dbSubscriptionCode: user.userTier.subscriptionCode,
+          dbStatus: user.userTier.status,
+          paystackActiveCount: activeSubscriptions?.length || 0,
+          paystackActiveSubs: activeSubscriptions?.map((s: any) => ({
+            code: s.subscription_code,
+            status: s.status,
+            planCode: s.plan?.plan_code,
+          })),
+        });
+
+        if (activeSubscriptions && activeSubscriptions.length > 0) {
+          const existingSub = activeSubscriptions[0];
+          const nextPaymentDate = existingSub.next_payment_date
+            ? new Date(existingSub.next_payment_date)
+            : null;
+
+          activeSubscriptionCode = existingSub.subscription_code;
+          emailToken = existingSub.email_token;
+
+          user.userTier.subscriptionCode = activeSubscriptionCode;
+          user.userTier.status = treatAsActiveStatuses.includes(
+            existingSub.status
+          )
+            ? "active"
+            : "inactive";
+
+          user.activeSubscription = {
+            provider: "paystack",
+            subscriptionId: activeSubscriptionCode,
+            expiryDate: nextPaymentDate,
+          } as any;
+
+          await user.save();
+        } else {
+          console.log(
+            "Change - customer query returned 0, trying to find subscription by email..."
+          );
+
+          const allSubsResponse = await axios.get(
+            `${this.baseUrl}/subscription`,
+            {
+              headers: { Authorization: `Bearer ${this.secretKey}` },
+              params: { perPage: 100 },
+            }
+          );
+
+          const allSubs = allSubsResponse.data?.data || [];
+          const userSub = allSubs.find(
+            (sub: any) =>
+              treatAsActiveStatuses.includes(sub.status) &&
+              (sub.customer?.email === user.email ||
+                sub.customer?.customer_code === user.paystackCustomerId)
+          );
+
+          console.log("Change - all subscriptions search result:", {
+            totalSubs: allSubs.length,
+            foundUserSub: !!userSub,
+            userSubDetails: userSub
+              ? {
+                  code: userSub.subscription_code,
+                  status: userSub.status,
+                  email: userSub.customer?.email,
+                }
+              : null,
+          });
+
+          if (userSub) {
+            const nextPaymentDate = userSub.next_payment_date
+              ? new Date(userSub.next_payment_date)
+              : null;
+
+            activeSubscriptionCode = userSub.subscription_code;
+            emailToken = userSub.email_token;
+
+            user.userTier.subscriptionCode = activeSubscriptionCode;
+            user.userTier.status = "active";
+
+            user.activeSubscription = {
+              provider: "paystack",
+              subscriptionId: activeSubscriptionCode,
+              expiryDate: nextPaymentDate,
+            } as any;
+
+            if (
+              userSub.customer?.customer_code &&
+              userSub.customer.customer_code !== user.paystackCustomerId
+            ) {
+              user.paystackCustomerId = userSub.customer.customer_code;
+            }
+
+            await user.save();
+          }
+        }
+      } catch (error: any) {
+        console.error(
+          "Failed to reconcile Paystack subscription before change:",
+          {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status,
+          }
+        );
+      }
+    }
 
     if (activeSubscriptionCode) {
-      await this.disablePaystackSubscription(activeSubscriptionCode);
+      await this.disablePaystackSubscription(
+        activeSubscriptionCode,
+        emailToken
+      );
     }
 
     const initializationResult = await this.initializePayment(
