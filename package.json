@@ -7,8 +7,8 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc",
     "start": "npm run build && node dist/index.js",
-    "dev": "npx kill-port 3000 && nodemon --ext ts --exec ts-node src/index.ts",
-    "dev:ts": "npx kill-port 3000 && nodemon --ext ts --exec ts-node src/index.ts",
+    "dev": "nodemon --ext ts --exec ts-node src/index.ts",
+    "dev:ts": "nodemon --ext ts --exec ts-node src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch"
   },

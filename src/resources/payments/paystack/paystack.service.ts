@@ -193,29 +193,72 @@ class PaystackSubscriptionService {
       if (savedAuthorization) {
         // User already has a saved card: Check for existing subscriptions first
         try {
+          const treatAsActiveStatuses = ["active", "non-renewing"];
           // Check if customer already has active subscriptions on Paystack
+          // Try multiple query approaches to find subscriptions
           const subscriptionsResponse = await axios.get(
-            `${this.baseUrl}/subscription?customer=${customerCode}`,
+            `${this.baseUrl}/subscription`,
             {
               headers: { Authorization: `Bearer ${this.secretKey}` },
+              params: {
+                customer: customerCode,
+                perPage: 100,
+              },
             }
           );
 
-          const activeSubscriptions = subscriptionsResponse.data?.data?.filter(
-            (sub: any) =>
-              sub.status === "active" &&
-              sub.plan?.plan_code === paystackPlanCode
+          console.log("Paystack raw subscription response:", {
+            status: subscriptionsResponse.data?.status,
+            message: subscriptionsResponse.data?.message,
+            dataLength: subscriptionsResponse.data?.data?.length,
+            meta: subscriptionsResponse.data?.meta,
+          });
+
+          // Get ALL subscriptions (any status) to understand what exists
+          const allSubscriptions = subscriptionsResponse.data?.data || [];
+
+          // Filter for active/non-renewing
+          const allActiveSubscriptions = allSubscriptions.filter((sub: any) =>
+            treatAsActiveStatuses.includes(sub.status)
           );
+
+          // Filter for this specific plan (any status that could block)
+          const subscriptionsForThisPlan = allSubscriptions.filter(
+            (sub: any) => sub.plan?.plan_code === paystackPlanCode
+          );
+
+          // Active subscriptions for this plan
+          const activeSubscriptions = subscriptionsForThisPlan.filter(
+            (sub: any) => treatAsActiveStatuses.includes(sub.status)
+          );
+
+          // Log for debugging - show ALL subscriptions
+          console.log("Paystack subscriptions check:", {
+            customerCode,
+            paystackPlanCode,
+            totalSubscriptions: allSubscriptions.length,
+            allActiveCount: allActiveSubscriptions.length,
+            forThisPlanCount: subscriptionsForThisPlan.length,
+            matchingActiveCount: activeSubscriptions.length,
+            allSubs: allSubscriptions.map((s: any) => ({
+              code: s.subscription_code,
+              status: s.status,
+              planCode: s.plan?.plan_code,
+            })),
+          });
 
           if (activeSubscriptions && activeSubscriptions.length > 0) {
             const existingSub = activeSubscriptions[0];
             const nextPaymentDate = existingSub.next_payment_date
               ? new Date(existingSub.next_payment_date)
               : null;
+            const isActiveStatus = treatAsActiveStatuses.includes(
+              existingSub.status
+            );
 
             user.userTier = {
               plan: plan as UserTiers,
-              status: existingSub.status === "active" ? "active" : "inactive",
+              status: isActiveStatus ? "active" : "inactive",
               transactionId: existingSub.subscription_code,
               subscriptionCode: existingSub.subscription_code,
               expiresAt: nextPaymentDate,
@@ -277,12 +320,39 @@ class PaystackSubscriptionService {
             );
           }
 
-          // Update callback URL with reference after getting response
-          subscriptionResponse.data.data.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${subscriptionResponse.data.data.reference}`;
+          const newSub = subscriptionResponse.data.data;
+          const nextPaymentDate = newSub.next_payment_date
+            ? new Date(newSub.next_payment_date)
+            : null;
+
+          // Save subscription to user's DB record
+          user.userTier = {
+            plan: plan as UserTiers,
+            status: "active",
+            transactionId: newSub.subscription_code,
+            subscriptionCode: newSub.subscription_code,
+            expiresAt: nextPaymentDate,
+          };
+
+          user.activeSubscription = {
+            provider: "paystack",
+            subscriptionId: newSub.subscription_code,
+            expiryDate: nextPaymentDate,
+          };
+
+          await user.save();
+
+          if (profile) {
+            profile.plan = plan;
+            await profile.save();
+          }
+
+          // Update callback URL with subscription code after getting response
+          newSub.callback_url = `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${newSub.subscription_code}`;
 
           return {
             type: "subscription" as const,
-            subscriptionData: subscriptionResponse.data.data,
+            subscriptionData: newSub,
           };
         } catch (error: any) {
           if (error instanceof HttpException) {
@@ -303,10 +373,100 @@ class PaystackSubscriptionService {
               .toLowerCase()
               .includes("subscription is already in place")
           ) {
+            // Paystack says subscription exists but our API query didn't find it
+            // Try to find it by querying all subscriptions for this plan
+            console.log(
+              "Attempting to find hidden subscription via plan query..."
+            );
+
+            try {
+              const planSubsResponse = await axios.get(
+                `${this.baseUrl}/subscription?plan=${paystackPlanCode}&perPage=100`,
+                {
+                  headers: { Authorization: `Bearer ${this.secretKey}` },
+                }
+              );
+
+              const allPlanSubs = planSubsResponse.data?.data || [];
+              const userSub = allPlanSubs.find(
+                (sub: any) =>
+                  sub.customer?.email === user.email ||
+                  sub.customer?.customer_code === customerCode
+              );
+
+              console.log("Plan subscriptions search result:", {
+                totalForPlan: allPlanSubs.length,
+                foundUserSub: !!userSub,
+                userSubDetails: userSub
+                  ? {
+                      code: userSub.subscription_code,
+                      status: userSub.status,
+                      customerCode: userSub.customer?.customer_code,
+                      email: userSub.customer?.email,
+                    }
+                  : null,
+              });
+
+              if (userSub) {
+                // Found it! Update user records and return
+                const nextPaymentDate = userSub.next_payment_date
+                  ? new Date(userSub.next_payment_date)
+                  : null;
+
+                user.userTier = {
+                  plan: plan as UserTiers,
+                  status: ["active", "non-renewing"].includes(userSub.status)
+                    ? "active"
+                    : "inactive",
+                  transactionId: userSub.subscription_code,
+                  subscriptionCode: userSub.subscription_code,
+                  expiresAt: nextPaymentDate,
+                };
+
+                user.activeSubscription = {
+                  provider: "paystack",
+                  subscriptionId: userSub.subscription_code,
+                  expiryDate: nextPaymentDate,
+                };
+
+                // Update paystackCustomerId if it was different
+                if (
+                  userSub.customer?.customer_code &&
+                  userSub.customer.customer_code !== user.paystackCustomerId
+                ) {
+                  user.paystackCustomerId = userSub.customer.customer_code;
+                }
+
+                await user.save();
+
+                if (profile) {
+                  profile.plan = plan;
+                  await profile.save();
+                }
+
+                return {
+                  type: "subscription" as const,
+                  subscriptionData: {
+                    subscription_code: userSub.subscription_code,
+                    status: userSub.status,
+                    plan: userSub.plan,
+                    next_payment_date: userSub.next_payment_date,
+                    customer: userSub.customer,
+                    callback_url: `${process.env.FRONTEND_BASE_URL}/payment-success?reference=${userSub.subscription_code}`,
+                  },
+                };
+              }
+            } catch (searchError) {
+              console.error(
+                "Failed to search for subscription by plan:",
+                searchError
+              );
+            }
+
             throw new HttpException(
               400,
               "subscription_already_exists",
-              "You already have an active subscription for this plan. Please cancel your current subscription before creating a new one."
+              `A subscription already exists for this plan on Paystack but could not be found via API. Please check your Paystack dashboard for customer ${customerCode} or contact support.`
             );
           }
 
@@ -382,12 +542,17 @@ class PaystackSubscriptionService {
   }
 
   private async disablePaystackSubscription(
-    subscriptionCode: string
+    subscriptionCode: string,
+    emailToken?: string
   ): Promise<void> {
     try {
+      // Paystack disable endpoint requires code and token in request body
       await axios.post(
-        `${this.baseUrl}/subscription/${subscriptionCode}/disable`,
-        {},
+        `${this.baseUrl}/subscription/disable`,
+        {
+          code: subscriptionCode,
+          token: emailToken || subscriptionCode, // Use email_token if available, fallback to code
+        },
         {
           headers: {
             Authorization: `Bearer ${this.secretKey}`,
@@ -396,6 +561,13 @@ class PaystackSubscriptionService {
         }
       );
     } catch (error: any) {
+      console.error("Paystack disable subscription error:", {
+        subscriptionCode,
+        emailToken,
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+      });
       const message =
         error?.response?.data?.message ||
         "Unable to disable Paystack subscription";
@@ -531,10 +703,136 @@ class PaystackSubscriptionService {
       throw new HttpException(404, "error", "User not found");
     }
 
-    const activeSubscriptionCode =
+    let activeSubscriptionCode =
       user.userTier.subscriptionCode ||
       user.activeSubscription?.subscriptionId ||
       null;
+    let emailToken: string | undefined;
+
+    // Always check Paystack for the actual subscription state
+    const treatAsActiveStatuses = ["active", "non-renewing"];
+    if (user.paystackCustomerId) {
+      try {
+        const subscriptionsResponse = await axios.get(
+          `${this.baseUrl}/subscription?customer=${user.paystackCustomerId}`,
+          {
+            headers: { Authorization: `Bearer ${this.secretKey}` },
+          }
+        );
+
+        const activeSubscriptions = subscriptionsResponse.data?.data?.filter(
+          (sub: any) => treatAsActiveStatuses.includes(sub.status)
+        );
+
+        // Log for debugging
+        console.log("Cancel - Paystack subscriptions check:", {
+          paystackCustomerId: user.paystackCustomerId,
+          dbSubscriptionCode: user.userTier.subscriptionCode,
+          dbStatus: user.userTier.status,
+          paystackActiveCount: activeSubscriptions?.length || 0,
+          paystackActiveSubs: activeSubscriptions?.map((s: any) => ({
+            code: s.subscription_code,
+            status: s.status,
+            planCode: s.plan?.plan_code,
+          })),
+        });
+
+        if (activeSubscriptions && activeSubscriptions.length > 0) {
+          const existingSub = activeSubscriptions[0];
+          const nextPaymentDate = existingSub.next_payment_date
+            ? new Date(existingSub.next_payment_date)
+            : null;
+
+          activeSubscriptionCode = existingSub.subscription_code;
+          emailToken = existingSub.email_token;
+
+          user.userTier.subscriptionCode = activeSubscriptionCode;
+          user.userTier.status = treatAsActiveStatuses.includes(
+            existingSub.status
+          )
+            ? "active"
+            : "inactive";
+
+          user.activeSubscription = {
+            provider: "paystack",
+            subscriptionId: activeSubscriptionCode,
+            expiryDate: nextPaymentDate,
+          } as any;
+
+          await user.save();
+        } else {
+          // Paystack customer query returned 0 - try searching by email across all subscriptions
+          console.log(
+            "Customer query returned 0, trying to find subscription by email..."
+          );
+
+          const allSubsResponse = await axios.get(
+            `${this.baseUrl}/subscription`,
+            {
+              headers: { Authorization: `Bearer ${this.secretKey}` },
+              params: { perPage: 100 },
+            }
+          );
+
+          const allSubs = allSubsResponse.data?.data || [];
+          const userSub = allSubs.find(
+            (sub: any) =>
+              treatAsActiveStatuses.includes(sub.status) &&
+              (sub.customer?.email === user.email ||
+                sub.customer?.customer_code === user.paystackCustomerId)
+          );
+
+          console.log("All subscriptions search result:", {
+            totalSubs: allSubs.length,
+            foundUserSub: !!userSub,
+            userSubDetails: userSub
+              ? {
+                  code: userSub.subscription_code,
+                  status: userSub.status,
+                  email: userSub.customer?.email,
+                }
+              : null,
+          });
+
+          if (userSub) {
+            const nextPaymentDate = userSub.next_payment_date
+              ? new Date(userSub.next_payment_date)
+              : null;
+
+            activeSubscriptionCode = userSub.subscription_code;
+            emailToken = userSub.email_token;
+
+            user.userTier.subscriptionCode = activeSubscriptionCode;
+            user.userTier.status = "active";
+
+            user.activeSubscription = {
+              provider: "paystack",
+              subscriptionId: activeSubscriptionCode,
+              expiryDate: nextPaymentDate,
+            } as any;
+
+            // Update customer ID if different
+            if (
+              userSub.customer?.customer_code &&
+              userSub.customer.customer_code !== user.paystackCustomerId
+            ) {
+              user.paystackCustomerId = userSub.customer.customer_code;
+            }
+
+            await user.save();
+          }
+        }
+      } catch (error: any) {
+        console.error(
+          "Failed to reconcile Paystack subscription before cancel:",
+          {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status,
+          }
+        );
+      }
+    }
 
     if (!activeSubscriptionCode || user.userTier.status !== "active") {
       throw new HttpException(
@@ -552,7 +850,7 @@ class PaystackSubscriptionService {
       );
     }
 
-    await this.disablePaystackSubscription(activeSubscriptionCode);
+    await this.disablePaystackSubscription(activeSubscriptionCode, emailToken);
 
     user.userTier.status = "inactive";
     user.userTier.subscriptionCode = null;
