@@ -67,19 +67,18 @@ class StripeController {
      *     security:
      *       - bearerAuth: []
      *     requestBody:
-     *       required: true
+     *       required: false
      *       content:
      *         application/json:
      *           schema:
      *             type: object
-     *             required: [subscriptionId]
      *             properties:
      *               userId:
      *                 type: string
      *                 description: Optional override (admin only)
      *               subscriptionId:
      *                 type: string
-     *                 description: Stripe subscription identifier to cancel
+     *                 description: Stripe subscription identifier to cancel. Defaults to the caller's active subscription.
      *     responses:
      *       200:
      *         description: Cancellation scheduled
@@ -264,12 +263,12 @@ class StripeController {
     next: NextFunction
   ) => {
     try {
-      const targetUserId = this.resolveTargetUserId(req.user, req.body.userId);
-      const { subscriptionId } = req.body;
+      const body = req.body || {};
+      const targetUserId = this.resolveTargetUserId(req.user, body.userId);
 
       const result = await this.stripeSubscriptionService.cancelSubscription({
         targetUserId,
-        subscriptionId,
+        subscriptionId: body.subscriptionId,
       });
 
       res.status(200).json({

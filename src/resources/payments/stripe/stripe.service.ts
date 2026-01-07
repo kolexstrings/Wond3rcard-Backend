@@ -357,7 +357,16 @@ class StripeSubscriptionService {
         );
       }
 
-      if (subscriptionId !== activeSubscriptionCode) {
+      const resolvedSubscriptionId =
+        subscriptionId && subscriptionId.trim().length > 0
+          ? subscriptionId
+          : activeSubscriptionCode;
+
+      if (
+        subscriptionId &&
+        subscriptionId.trim().length > 0 &&
+        subscriptionId !== activeSubscriptionCode
+      ) {
         throw new HttpException(
           400,
           "subscription_mismatch",
@@ -366,7 +375,7 @@ class StripeSubscriptionService {
       }
 
       try {
-        await stripe.subscriptions.update(subscriptionId, {
+        await stripe.subscriptions.update(resolvedSubscriptionId, {
           cancel_at_period_end: true,
         });
       } catch (stripeError) {
@@ -421,7 +430,7 @@ class StripeSubscriptionService {
       return {
         message:
           "Subscription cancellation scheduled. You will continue to have access until the end of your current billing period.",
-        subscriptionId,
+        subscriptionId: resolvedSubscriptionId,
       };
     } catch (error) {
       console.error("Error cancelling Stripe subscription:", error);
