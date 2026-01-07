@@ -2,6 +2,9 @@ import stripe from "../../../config/stripe";
 import HttpException from "../../../exceptions/http.exception";
 import tierModel from "../../admin/subscriptionTier/tier.model";
 import userModel from "../../user/user.model";
+import profileModel from "../../profile/profile.model";
+import MailTemplates from "../../mails/mail.templates";
+import NodeMailerService from "../../mails/nodemailer.service";
 import TransactionModel from "../transactions.model";
 import { generateTransactionId } from "../../../utils/generateTransactionId";
 import { UserTiers } from "../../user/user.protocol";
@@ -22,6 +25,8 @@ type StripeCancelSubscriptionParams = {
 };
 
 class StripeSubscriptionService {
+  private mailer = new NodeMailerService();
+
   // async createCheckoutSession(
   //   userId: string,
   //   plan: string,
@@ -274,6 +279,29 @@ class StripeSubscriptionService {
         expiresAt: new Date(expiresAt),
       });
 
+      const profile =
+        (await profileModel.findOne({ uid: userId })) ||
+        (await profileModel.findById(userId));
+      const dashboardBase =
+        process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
+        "https://dashboard.wond3rcard.com";
+      const emailData = {
+        name: profile?.firstname || user.username,
+        plan,
+        expiresAt:
+          user.userTier.expiresAt?.toDateString() ||
+          (expiresAt ? new Date(expiresAt).toDateString() : "N/A"),
+        dashboardLink: `${dashboardBase}`,
+      };
+
+      await this.mailer.sendMail(
+        user.email,
+        "Subscription Successful",
+        MailTemplates.subscriptionConfirmation,
+        "Subscription",
+        emailData
+      );
+
       console.log(
         `Successfully activated subscription for user ${userId}, plan ${plan}`
       );
@@ -365,6 +393,27 @@ class StripeSubscriptionService {
       }
 
       await user.save();
+
+      const profile =
+        (await profileModel.findOne({ uid: targetUserId })) ||
+        (await profileModel.findById(targetUserId));
+      const dashboardBase =
+        process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
+        "https://dashboard.wond3rcard.com";
+      const emailData = {
+        name: profile?.firstname || user.username,
+        plan: user.userTier.plan,
+        expiresAt: "N/A",
+        dashboardLink: `${dashboardBase}`,
+      };
+
+      await this.mailer.sendMail(
+        user.email,
+        "Subscription Cancelled",
+        MailTemplates.subscriptionCancelled,
+        "Subscription",
+        emailData
+      );
 
       console.log(
         `Successfully cancelled subscription for user ${targetUserId}`
@@ -483,6 +532,29 @@ class StripeSubscriptionService {
     };
 
     await user.save();
+
+    const profile =
+      (await profileModel.findOne({ uid: targetUserId })) ||
+      (await profileModel.findById(targetUserId));
+    const dashboardBase =
+      process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
+      "https://dashboard.wond3rcard.com";
+    const emailData = {
+      name: profile?.firstname || user.username,
+      plan: newPlan,
+      expiresAt: user.userTier.expiresAt
+        ? user.userTier.expiresAt.toDateString()
+        : "N/A",
+      dashboardLink: `${dashboardBase}`,
+    };
+
+    await this.mailer.sendMail(
+      user.email,
+      "Subscription Updated",
+      MailTemplates.subscriptionConfirmation,
+      "Subscription",
+      emailData
+    );
 
     return {
       message: "Stripe subscription updated",

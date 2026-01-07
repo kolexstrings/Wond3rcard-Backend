@@ -527,13 +527,56 @@ class AdminService {
     updateData: Partial<CreateSubscriptionTier>
   ): Promise<ITier | null> {
     try {
-      const updatedTier = await this.tier.findByIdAndUpdate(id, updateData, {
+      const dataToUpdate = { ...updateData };
+
+      if (dataToUpdate.name) {
+        const normalizedName = dataToUpdate.name.toLowerCase() as UserTiers;
+
+        if (!Object.values(UserTiers).includes(normalizedName)) {
+          throw new HttpException(
+            400,
+            "bad_request",
+            `Invalid subscription tier. Allowed tiers: ${Object.values(
+              UserTiers
+            ).join(", ")}`
+          );
+        }
+
+        const existingTier = await this.tier.findOne({
+          name: normalizedName,
+          _id: { $ne: id },
+        });
+
+        if (existingTier) {
+          throw new HttpException(
+            409,
+            "conflict",
+            "Subscription tier already exists."
+          );
+        }
+
+        dataToUpdate.name = normalizedName;
+      }
+
+      const updatedTier = await this.tier.findByIdAndUpdate(id, dataToUpdate, {
         new: true,
         runValidators: true,
       });
 
       return updatedTier;
-    } catch (error) {
+    } catch (error: any) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error?.code === 11000) {
+        throw new HttpException(
+          409,
+          "conflict",
+          "Subscription tier already exists."
+        );
+      }
+
       throw new HttpException(
         500,
         "internal_server_error",
