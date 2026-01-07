@@ -212,9 +212,7 @@ class StripeController {
         const metadata = session.metadata; // Metadata sent when creating the session
 
         if (!metadata || !metadata.transactionType) {
-          return res
-            .status(400)
-            .json({ message: "Missing transaction type in metadata" });
+          return res.json({ received: true });
         }
 
         if (metadata.transactionType === "subscription") {
@@ -223,8 +221,6 @@ class StripeController {
           );
         } else if (metadata.transactionType === "card_order") {
           await this.stripeCardOrderService.handleSuccessfulCardOrder(session);
-        } else {
-          return res.status(400).json({ message: "Unknown transaction type" });
         }
 
         return res.json({ received: true });
@@ -233,7 +229,7 @@ class StripeController {
       }
     }
 
-    res.status(400).json({ message: "Unhandled event type" });
+    return res.json({ received: true });
   };
 
   private resolveTargetUserId = (

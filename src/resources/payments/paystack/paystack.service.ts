@@ -675,17 +675,29 @@ class PaystackSubscriptionService {
 
     const template = MailTemplates.subscriptionConfirmation;
     const email = user.email;
+    const dashboardBase =
+      process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
+      "https://dashboard.wond3rcard.com";
+    const formattedAmount = new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    }).format(amount / 100);
     const emailData = {
-      name: profile.firstname,
-      plan: plan,
-      expiresAt: new Date(
-        Date.now() + durationInDays * 24 * 60 * 60 * 1000
-      ).toDateString(),
+      name: profile?.firstname || user.username,
+      plan: plan.charAt(0).toUpperCase() + plan.slice(1),
+      billingCycle:
+        billingCycle.charAt(0).toUpperCase() + billingCycle.slice(1),
+      startDate: paidAt.toDateString(),
+      expiresAt: expiresAt.toDateString(),
+      paymentMethod:
+        paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1),
+      amount: formattedAmount,
+      dashboardLink: `${dashboardBase}`,
     };
 
     await this.mailer.sendMail(
       email,
-      "Subscription Successful",
+      "Subscription Confirmed - WOND3R CARD",
       template,
       "Subscription",
       emailData
@@ -869,21 +881,25 @@ class PaystackSubscriptionService {
       (await profileModel.findOne({ uid: targetUserId })) ||
       (await profileModel.findById(targetUserId));
 
-    if (profile) {
-      const template = MailTemplates.subscriptionCancelled;
-      const emailData = {
-        name: profile.firstname,
-        plan: user.userTier.plan,
-      };
+    const dashboardBase =
+      process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
+      "https://dashboard.wond3rcard.com";
+    const planName = user.userTier.plan || "Premium";
+    const emailData = {
+      name: profile?.firstname || user.username,
+      plan: planName.charAt(0).toUpperCase() + planName.slice(1),
+      cancelledDate: new Date().toDateString(),
+      accessUntil: "End of billing period",
+      dashboardLink: `${dashboardBase}`,
+    };
 
-      await this.mailer.sendMail(
-        user.email,
-        "Subscription Cancelled",
-        template,
-        "Subscription",
-        emailData
-      );
-    }
+    await this.mailer.sendMail(
+      user.email,
+      "Subscription Cancelled - WOND3R CARD",
+      MailTemplates.subscriptionCancelled,
+      "Subscription",
+      emailData
+    );
 
     return {
       message: "Subscription canceled successfully",

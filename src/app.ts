@@ -43,7 +43,21 @@ class App {
 
     this.express.use(compression());
     this.express.use(cookieParser());
-    this.express.use(bodyParser.json());
+
+    const jsonParser = bodyParser.json();
+
+    this.express.use(
+      "/api/stripe/webhook",
+      express.raw({ type: "application/json" })
+    );
+
+    this.express.use((req, res, next) => {
+      if (req.originalUrl === "/api/stripe/webhook") {
+        return next();
+      }
+      return jsonParser(req, res, next);
+    });
+
     this.express.use(
       (err: any, req: Request, res: Response, next: NextFunction): void => {
         // Gracefully handle empty JSON bodies (e.g. POST with Content-Type: application/json and no payload)
@@ -63,7 +77,6 @@ class App {
       }
     );
     this.express.use(morgan("dev"));
-    this.express.use(express.json());
     this.express.use(express.urlencoded({ extended: false }));
     this.express.use(helmet());
     this.express.use(

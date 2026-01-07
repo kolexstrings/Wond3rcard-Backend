@@ -200,7 +200,7 @@ class StripeSubscriptionService {
 
   public async handleSuccessfulSubscription(session: any) {
     try {
-      const { userId, plan, billingCycle, expiresAt } = session.metadata;
+      const { userId, plan, billingCycle } = session.metadata;
 
       // Validate required metadata
       if (!userId || !plan || !billingCycle) {
@@ -249,13 +249,26 @@ class StripeSubscriptionService {
         );
       }
 
+      const subscription = await stripe.subscriptions.retrieve(
+        subscriptionCode
+      );
+      const expiresAt = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000)
+        : null;
+
       // Update user subscription
       user.userTier = {
         plan,
         status: "active",
         transactionId,
         subscriptionCode,
-        expiresAt: new Date(expiresAt),
+        expiresAt,
+      };
+
+      user.activeSubscription = {
+        provider: "stripe",
+        subscriptionId: subscriptionCode,
+        expiryDate: expiresAt,
       };
 
       await user.save();
@@ -276,7 +289,7 @@ class StripeSubscriptionService {
         status: "success",
         paymentMethod,
         paidAt,
-        expiresAt: new Date(expiresAt),
+        expiresAt,
       });
 
       const profile =
@@ -285,18 +298,26 @@ class StripeSubscriptionService {
       const dashboardBase =
         process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
         "https://dashboard.wond3rcard.com";
+      const formattedAmount = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: session.currency?.toUpperCase() || "USD",
+      }).format(session.amount_total / 100);
       const emailData = {
         name: profile?.firstname || user.username,
-        plan,
-        expiresAt:
-          user.userTier.expiresAt?.toDateString() ||
-          (expiresAt ? new Date(expiresAt).toDateString() : "N/A"),
+        plan: plan.charAt(0).toUpperCase() + plan.slice(1),
+        billingCycle:
+          billingCycle.charAt(0).toUpperCase() + billingCycle.slice(1),
+        startDate: paidAt.toDateString(),
+        expiresAt: user.userTier.expiresAt?.toDateString() || "N/A",
+        paymentMethod:
+          paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1),
+        amount: formattedAmount,
         dashboardLink: `${dashboardBase}`,
       };
 
       await this.mailer.sendMail(
         user.email,
-        "Subscription Successful",
+        "Subscription Confirmed - WOND3R CARD",
         MailTemplates.subscriptionConfirmation,
         "Subscription",
         emailData
@@ -326,12 +347,11 @@ class StripeSubscriptionService {
     subscriptionId,
   }: StripeCancelSubscriptionParams) {
     try {
-      // Validate input parameters
-      if (!targetUserId || !subscriptionId) {
+      if (!targetUserId) {
         throw new HttpException(
           400,
           "invalid_request",
-          "Missing required parameters: targetUserId and subscriptionId are required"
+          "Missing required parameter: targetUserId"
         );
       }
 
@@ -409,16 +429,24 @@ class StripeSubscriptionService {
       const dashboardBase =
         process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
         "https://dashboard.wond3rcard.com";
+      const stripeSubscription = await stripe.subscriptions.retrieve(
+        resolvedSubscriptionId
+      );
+      const accessUntilDate = stripeSubscription.current_period_end
+        ? new Date(stripeSubscription.current_period_end * 1000).toDateString()
+        : "End of billing period";
+      const planName = user.userTier.plan || "Premium";
       const emailData = {
         name: profile?.firstname || user.username,
-        plan: user.userTier.plan,
-        expiresAt: "N/A",
+        plan: planName.charAt(0).toUpperCase() + planName.slice(1),
+        cancelledDate: new Date().toDateString(),
+        accessUntil: accessUntilDate,
         dashboardLink: `${dashboardBase}`,
       };
 
       await this.mailer.sendMail(
         user.email,
-        "Subscription Cancelled",
+        "Subscription Cancelled - WOND3R CARD",
         MailTemplates.subscriptionCancelled,
         "Subscription",
         emailData
