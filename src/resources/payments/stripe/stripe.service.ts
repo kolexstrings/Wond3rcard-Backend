@@ -2,6 +2,9 @@ import stripe from "../../../config/stripe";
 import HttpException from "../../../exceptions/http.exception";
 import tierModel from "../../admin/subscriptionTier/tier.model";
 import userModel from "../../user/user.model";
+import profileModel from "../../profile/profile.model";
+import MailTemplates from "../../mails/mail.templates";
+import NodeMailerService from "../../mails/nodemailer.service";
 import TransactionModel from "../transactions.model";
 import { generateTransactionId } from "../../../utils/generateTransactionId";
 import { UserTiers } from "../../user/user.protocol";
@@ -22,6 +25,8 @@ type StripeCancelSubscriptionParams = {
 };
 
 class StripeSubscriptionService {
+  private mailer = new NodeMailerService();
+
   // async createCheckoutSession(
   //   userId: string,
   //   plan: string,
@@ -195,7 +200,7 @@ class StripeSubscriptionService {
 
   public async handleSuccessfulSubscription(session: any) {
     try {
-      const { userId, plan, billingCycle, expiresAt } = session.metadata;
+      const { userId, plan, billingCycle } = session.metadata;
 
       // Validate required metadata
       if (!userId || !plan || !billingCycle) {
@@ -244,13 +249,26 @@ class StripeSubscriptionService {
         );
       }
 
+      const subscription = await stripe.subscriptions.retrieve(
+        subscriptionCode
+      );
+      const expiresAt = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000)
+        : null;
+
       // Update user subscription
       user.userTier = {
         plan,
         status: "active",
         transactionId,
         subscriptionCode,
-        expiresAt: new Date(expiresAt),
+        expiresAt,
+      };
+
+      user.activeSubscription = {
+        provider: "stripe",
+        subscriptionId: subscriptionCode,
+        expiryDate: expiresAt,
       };
 
       await user.save();
@@ -271,8 +289,39 @@ class StripeSubscriptionService {
         status: "success",
         paymentMethod,
         paidAt,
-        expiresAt: new Date(expiresAt),
+        expiresAt,
       });
+
+      const profile =
+        (await profileModel.findOne({ uid: userId })) ||
+        (await profileModel.findById(userId));
+      const dashboardBase =
+        process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
+        "https://dashboard.wond3rcard.com";
+      const formattedAmount = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: session.currency?.toUpperCase() || "USD",
+      }).format(session.amount_total / 100);
+      const emailData = {
+        name: profile?.firstname || user.username,
+        plan: plan.charAt(0).toUpperCase() + plan.slice(1),
+        billingCycle:
+          billingCycle.charAt(0).toUpperCase() + billingCycle.slice(1),
+        startDate: paidAt.toDateString(),
+        expiresAt: user.userTier.expiresAt?.toDateString() || "N/A",
+        paymentMethod:
+          paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1),
+        amount: formattedAmount,
+        dashboardLink: `${dashboardBase}`,
+      };
+
+      await this.mailer.sendMail(
+        user.email,
+        "Subscription Confirmed - WOND3R CARD",
+        MailTemplates.subscriptionConfirmation,
+        "Subscription",
+        emailData
+      );
 
       console.log(
         `Successfully activated subscription for user ${userId}, plan ${plan}`
@@ -298,12 +347,11 @@ class StripeSubscriptionService {
     subscriptionId,
   }: StripeCancelSubscriptionParams) {
     try {
-      // Validate input parameters
-      if (!targetUserId || !subscriptionId) {
+      if (!targetUserId) {
         throw new HttpException(
           400,
           "invalid_request",
-          "Missing required parameters: targetUserId and subscriptionId are required"
+          "Missing required parameter: targetUserId"
         );
       }
 
@@ -329,7 +377,16 @@ class StripeSubscriptionService {
         );
       }
 
-      if (subscriptionId !== activeSubscriptionCode) {
+      const resolvedSubscriptionId =
+        subscriptionId && subscriptionId.trim().length > 0
+          ? subscriptionId
+          : activeSubscriptionCode;
+
+      if (
+        subscriptionId &&
+        subscriptionId.trim().length > 0 &&
+        subscriptionId !== activeSubscriptionCode
+      ) {
         throw new HttpException(
           400,
           "subscription_mismatch",
@@ -338,7 +395,7 @@ class StripeSubscriptionService {
       }
 
       try {
-        await stripe.subscriptions.update(subscriptionId, {
+        await stripe.subscriptions.update(resolvedSubscriptionId, {
           cancel_at_period_end: true,
         });
       } catch (stripeError) {
@@ -366,13 +423,42 @@ class StripeSubscriptionService {
 
       await user.save();
 
+      const profile =
+        (await profileModel.findOne({ uid: targetUserId })) ||
+        (await profileModel.findById(targetUserId));
+      const dashboardBase =
+        process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
+        "https://dashboard.wond3rcard.com";
+      const stripeSubscription = await stripe.subscriptions.retrieve(
+        resolvedSubscriptionId
+      );
+      const accessUntilDate = stripeSubscription.current_period_end
+        ? new Date(stripeSubscription.current_period_end * 1000).toDateString()
+        : "End of billing period";
+      const planName = user.userTier.plan || "Premium";
+      const emailData = {
+        name: profile?.firstname || user.username,
+        plan: planName.charAt(0).toUpperCase() + planName.slice(1),
+        cancelledDate: new Date().toDateString(),
+        accessUntil: accessUntilDate,
+        dashboardLink: `${dashboardBase}`,
+      };
+
+      await this.mailer.sendMail(
+        user.email,
+        "Subscription Cancelled - WOND3R CARD",
+        MailTemplates.subscriptionCancelled,
+        "Subscription",
+        emailData
+      );
+
       console.log(
         `Successfully cancelled subscription for user ${targetUserId}`
       );
       return {
         message:
           "Subscription cancellation scheduled. You will continue to have access until the end of your current billing period.",
-        subscriptionId,
+        subscriptionId: resolvedSubscriptionId,
       };
     } catch (error) {
       console.error("Error cancelling Stripe subscription:", error);
@@ -483,6 +569,29 @@ class StripeSubscriptionService {
     };
 
     await user.save();
+
+    const profile =
+      (await profileModel.findOne({ uid: targetUserId })) ||
+      (await profileModel.findById(targetUserId));
+    const dashboardBase =
+      process.env.FRONTEND_BASE_URL?.replace(/\/$/, "") ||
+      "https://dashboard.wond3rcard.com";
+    const emailData = {
+      name: profile?.firstname || user.username,
+      plan: newPlan,
+      expiresAt: user.userTier.expiresAt
+        ? user.userTier.expiresAt.toDateString()
+        : "N/A",
+      dashboardLink: `${dashboardBase}`,
+    };
+
+    await this.mailer.sendMail(
+      user.email,
+      "Subscription Updated",
+      MailTemplates.subscriptionConfirmation,
+      "Subscription",
+      emailData
+    );
 
     return {
       message: "Stripe subscription updated",

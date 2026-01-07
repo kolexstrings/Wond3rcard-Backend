@@ -56,4 +56,26 @@ const app = new App(
   Number(process.env.PORT)
 );
 
-app.listen();
+const server = app.listen();
+
+// Graceful shutdown handling for nodemon restarts
+const gracefulShutdown = (reason: string, onClose?: () => void) => {
+  console.log(`${reason} received, shutting down gracefully...`);
+  server.close(() => {
+    console.log("Server closed");
+    onClose?.();
+    process.exit(0);
+  });
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+// nodemon sends SIGUSR2 on restart; without handling it, the old process
+// keeps the port open and the new process can’t start.
+process.once("SIGUSR2", () => {
+  gracefulShutdown("SIGUSR2 (nodemon restart)", () => {
+    process.kill(process.pid, "SIGUSR2");
+  });
+});

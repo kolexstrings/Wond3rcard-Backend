@@ -72,8 +72,11 @@ class CardController implements GlobalController {
      *                 format: binary
      *               socialMediaLinks:
      *                 type: string
-     *                 description: Array of social media IDs (JSON array or comma-separated)
-     *                 example: '["507f1f77bcf86cd799439011","507f1f77bcf86cd799439012"]' or '507f1f77bcf86cd799439011,507f1f77bcf86cd799439012'
+     *                 description: >
+     *                   Array of social media IDs supplied as a JSON array or a comma-separated list.
+     *                 example: |
+     *                   ["507f1f77bcf86cd799439011","507f1f77bcf86cd799439012"]
+     *                   507f1f77bcf86cd799439011,507f1f77bcf86cd799439012
      *               style:
      *                 type: object
      *               contactInfo:
@@ -184,8 +187,11 @@ class CardController implements GlobalController {
      *             properties:
      *               socialMediaLinks:
      *                 type: string
-     *                 description: Array of social media IDs (JSON array or comma-separated)
-     *                 example: '["507f1f77bcf86cd799439011","507f1f77bcf86cd799439012"]' or '507f1f77bcf86cd799439011,507f1f77bcf86cd799439012'
+     *                 description: >
+     *                   Array of social media IDs supplied as a JSON array or a comma-separated list.
+     *                 example: |
+     *                   ["507f1f77bcf86cd799439011","507f1f77bcf86cd799439012"]
+     *                   507f1f77bcf86cd799439011,507f1f77bcf86cd799439012
      *     responses:
      *       200:
      *         description: Card updated
