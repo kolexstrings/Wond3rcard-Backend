@@ -15,7 +15,7 @@ class OTPService {
 
   public async saveOtp(userId: string): Promise<string> {
     const otp = await this.generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     const otpDocument = await this.opt.create({ userId, otp, expiresAt });
 
     return otpDocument.otp;

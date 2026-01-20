@@ -1,3 +1,4 @@
+import { Express } from "express";
 import HttpException from "../../exceptions/http.exception";
 import profileModel from "./profile.model";
 import { Profile } from "./profile.protocol";
@@ -25,7 +26,7 @@ class ProfileService {
 
   public async getAllProfiles(
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<{ customers: Profile[]; total: number }> {
     try {
       const skip = (page - 1) * limit;
@@ -39,7 +40,7 @@ class ProfileService {
 
   public async updateProfile(
     id: number,
-    data: Partial<Profile>
+    data: Partial<Profile>,
   ): Promise<Profile | null> {
     try {
       const updatedCustomer = await this.model.findByIdAndUpdate(id, data, {
@@ -49,6 +50,74 @@ class ProfileService {
     } catch (error) {
       throw new Error(`Error updating customer with ID ${id}: ${error}`);
     }
+  }
+
+  public async getOwnProfile(uid: string): Promise<Profile> {
+    const profile = await this.model.findOne({ uid });
+
+    if (!profile) {
+      throw new HttpException(404, "not_found", "Profile not found");
+    }
+
+    return profile;
+  }
+
+  public async updateOwnProfile(
+    uid: string,
+    data: Partial<Profile>,
+    profilePhoto?: Express.Multer.File,
+    coverPhoto?: Express.Multer.File,
+  ): Promise<Profile> {
+    type EditableProfileFields = Pick<
+      Profile,
+      | "firstname"
+      | "othername"
+      | "lastname"
+      | "mobileNumber"
+      | "companyName"
+      | "designation"
+      | "profileUrl"
+      | "coverUrl"
+    >;
+
+    const allowedFields: (keyof EditableProfileFields)[] = [
+      "firstname",
+      "othername",
+      "lastname",
+      "mobileNumber",
+      "companyName",
+      "designation",
+      "profileUrl",
+      "coverUrl",
+    ];
+
+    const updatePayload: Partial<EditableProfileFields> = {};
+    allowedFields.forEach((field) => {
+      const value = data[field];
+      if (value !== undefined) {
+        updatePayload[field] = value as EditableProfileFields[typeof field];
+      }
+    });
+
+    if (profilePhoto?.path) {
+      updatePayload.profileUrl = profilePhoto.path;
+    }
+
+    if (coverPhoto?.path) {
+      updatePayload.coverUrl = coverPhoto.path;
+    }
+
+    const updatedProfile = await this.model.findOneAndUpdate(
+      { uid },
+      { $set: updatePayload },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedProfile) {
+      throw new HttpException(404, "not found", "User profile not found");
+    }
+
+    return updatedProfile;
   }
 
   public async deleteProfile(id: number): Promise<Profile | null> {
@@ -75,11 +144,11 @@ class ProfileService {
           throw new HttpException(
             404,
             "not found",
-            `Profile not found for contact ID ${contactId}`
+            `Profile not found for contact ID ${contactId}`,
           );
         }
         return profile;
-      })
+      }),
     );
 
     return contacts;
@@ -87,7 +156,7 @@ class ProfileService {
 
   public async addContact(
     userId: string,
-    contactEmail: string
+    contactEmail: string,
   ): Promise<Profile> {
     const user = await this.model.findOne({ uid: userId });
     const contact = await this.model.findOne({ email: contactEmail });
@@ -141,11 +210,11 @@ class ProfileService {
           throw new HttpException(
             404,
             "not found",
-            `Profile not found for contact ID ${id}`
+            `Profile not found for contact ID ${id}`,
           );
         }
         return profile;
-      })
+      }),
     );
     return connections;
   }
@@ -167,11 +236,11 @@ class ProfileService {
           throw new HttpException(
             404,
             "not found",
-            `Profile not found for contact ID ${contactId}`
+            `Profile not found for contact ID ${contactId}`,
           );
         }
         return profile;
-      })
+      }),
     );
 
     const exclusionIds = [user._id, ...contacts.map((contact) => contact._id)];
@@ -191,7 +260,7 @@ class ProfileService {
   // Remove a contact from a user
   public async removeContact(
     userId: string,
-    contactId: string
+    contactId: string,
   ): Promise<Profile> {
     const user = await this.model.findOne({ uid: userId });
     const contact = await this.model.findById(contactId);
@@ -202,7 +271,7 @@ class ProfileService {
 
     // Remove the contact if it exists in the user's contacts
     user.contacts = user.contacts.filter(
-      (id) => id.toString() !== contact.id.toString()
+      (id) => id.toString() !== contact.id.toString(),
     );
     await user.save();
 
@@ -211,7 +280,7 @@ class ProfileService {
 
   public async removeConnection(
     userId: string,
-    targetId: string
+    targetId: string,
   ): Promise<Profile> {
     const user = await this.model.findOne({ uid: userId });
     const target = await this.model.findOne({ uid: targetId });
@@ -221,12 +290,12 @@ class ProfileService {
     }
 
     user.connections = user.connections.filter(
-      (id) => id.toString() !== target.id.toString()
+      (id) => id.toString() !== target.id.toString(),
     );
     await user.save();
 
     target.connections = target.connections.filter(
-      (id) => id.toString() !== user.id.toString()
+      (id) => id.toString() !== user.id.toString(),
     );
     await target.save();
 
