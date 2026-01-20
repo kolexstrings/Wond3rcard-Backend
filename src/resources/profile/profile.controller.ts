@@ -38,7 +38,7 @@ class ProfileController {
     this.router.get(
       `${this.path}/:id/contacts`,
       [authenticatedMiddleware],
-      this.getContacts
+      this.getContacts,
     );
 
     /**
@@ -73,7 +73,7 @@ class ProfileController {
     this.router.post(
       `${this.path}/:id/contacts`,
       [authenticatedMiddleware, validationMiddleware(validator.addContact)],
-      this.addContact
+      this.addContact,
     );
 
     /**
@@ -104,7 +104,7 @@ class ProfileController {
         authenticatedMiddleware,
         validationMiddleware(validator.connectValidator),
       ],
-      this.connect
+      this.connect,
     );
 
     /**
@@ -122,7 +122,7 @@ class ProfileController {
     this.router.get(
       `${this.path}/connections`,
       authenticatedMiddleware,
-      this.getConnections
+      this.getConnections,
     );
 
     /**
@@ -140,7 +140,31 @@ class ProfileController {
     this.router.get(
       `${this.path}/suggestions`,
       authenticatedMiddleware,
-      this.suggestConnections
+      this.suggestConnections,
+    );
+
+    /**
+     * @openapi
+     * /api/profile/me:
+     *   patch:
+     *     tags: [profile]
+     *     summary: Update authenticated user's profile
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdateProfile'
+     *     responses:
+     *       200:
+     *         description: Profile updated
+     */
+    this.router.patch(
+      `${this.path}/me`,
+      [authenticatedMiddleware, validationMiddleware(validator.updateProfile)],
+      this.updateOwnProfile,
     );
 
     /**
@@ -171,7 +195,7 @@ class ProfileController {
         authenticatedMiddleware,
         validationMiddleware(validator.connectValidator),
       ],
-      this.removeContact
+      this.removeContact,
     );
 
     /**
@@ -202,14 +226,14 @@ class ProfileController {
         authenticatedMiddleware,
         validationMiddleware(validator.connectValidator),
       ],
-      this.removeConnection
+      this.removeConnection,
     );
   }
 
   private getContacts = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     try {
       const contacts = await this.profileService.getContacts(req.params.id);
@@ -224,7 +248,7 @@ class ProfileController {
   private addContact = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     try {
       const { error } = validator.idValidator.validate(req.params.id);
@@ -252,7 +276,7 @@ class ProfileController {
   private connect = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     try {
       const uid = req.user.id;
@@ -267,7 +291,7 @@ class ProfileController {
   private getConnections = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     try {
       const uid = req.user.id;
@@ -283,7 +307,7 @@ class ProfileController {
   private suggestConnections = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     try {
       const uid = req.user.id;
@@ -300,7 +324,7 @@ class ProfileController {
   private removeContact = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     try {
       const uid = req.user.id;
@@ -310,7 +334,7 @@ class ProfileController {
         throw new HttpException(
           400,
           "Invalid ID",
-          "Invalid userId or contactId format"
+          "Invalid userId or contactId format",
         );
       }
 
@@ -324,7 +348,7 @@ class ProfileController {
   private removeConnection = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> => {
     try {
       const uid = req.user.id;
@@ -332,6 +356,26 @@ class ProfileController {
 
       const user = await this.profileService.removeConnection(uid, userId);
       res.status(200).json({ message: "Contact added", data: user });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private updateOwnProfile = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const updated = await this.profileService.updateOwnProfile(
+        req.user.id,
+        req.body,
+      );
+
+      res.status(200).json({
+        message: "Profile updated",
+        payload: updated,
+      });
     } catch (error) {
       next(error);
     }
