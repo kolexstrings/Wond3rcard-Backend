@@ -1,3 +1,4 @@
+import { Express } from "express";
 import HttpException from "../../exceptions/http.exception";
 import profileModel from "./profile.model";
 import { Profile } from "./profile.protocol";
@@ -64,6 +65,8 @@ class ProfileService {
   public async updateOwnProfile(
     uid: string,
     data: Partial<Profile>,
+    profilePhoto?: Express.Multer.File,
+    coverPhoto?: Express.Multer.File,
   ): Promise<Profile> {
     type EditableProfileFields = Pick<
       Profile,
@@ -97,6 +100,14 @@ class ProfileService {
         updatePayload[field] = value as EditableProfileFields[typeof field];
       }
     });
+
+    if (profilePhoto?.path) {
+      updatePayload.profileUrl = profilePhoto.path;
+    }
+
+    if (coverPhoto?.path) {
+      updatePayload.coverUrl = coverPhoto.path;
+    }
 
     const updatedProfile = await this.model.findOneAndUpdate(
       { uid },

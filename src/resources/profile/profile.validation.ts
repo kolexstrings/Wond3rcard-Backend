@@ -22,6 +22,6 @@ const updateProfile = Joi.object({
   designation: Joi.string().trim().allow(""),
   profileUrl: Joi.string().uri().allow(""),
   coverUrl: Joi.string().uri().allow(""),
-}).min(1);
+});
 
 export default { addContact, idValidator, connectValidator, updateProfile };
