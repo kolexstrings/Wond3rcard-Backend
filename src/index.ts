@@ -11,7 +11,6 @@ import InteractionController from "./resources/interactions/interaction.controll
 import OrganizationController from "./resources/organization/organization.controller";
 import ProfileController from "./resources/profile/profile.controller";
 import SocialMediaController from "./resources/social-media/social-media.controller";
-import UserController from "./resources/user/user.controller";
 import validateEnv from "./utils/validate-env";
 import PaystackController from "./resources/payments/paystack/paystack.controller";
 import StripeController from "./resources/payments/stripe/stripe.controller";
@@ -40,7 +39,6 @@ const app = new App(
     new OrganizationController(),
     new ProfileController(),
     new SocialMediaController(),
-    new UserController(),
     new PaystackController(),
     new StripeController(),
     new ManualPaymentController(),
@@ -53,7 +51,7 @@ const app = new App(
     new AnalyticsController(),
     new SubscriptionController(),
   ],
-  Number(process.env.PORT)
+  Number(process.env.PORT),
 );
 
 const server = app.listen();

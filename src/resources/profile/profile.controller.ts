@@ -146,6 +146,24 @@ class ProfileController {
     /**
      * @openapi
      * /api/profile/me:
+     *   get:
+     *     tags: [profile]
+     *     summary: Get authenticated user's profile
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Profile retrieved
+     */
+    this.router.get(
+      `${this.path}/me`,
+      authenticatedMiddleware,
+      this.getOwnProfile,
+    );
+
+    /**
+     * @openapi
+     * /api/profile/me:
      *   patch:
      *     tags: [profile]
      *     summary: Update authenticated user's profile
@@ -375,6 +393,23 @@ class ProfileController {
       res.status(200).json({
         message: "Profile updated",
         payload: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  private getOwnProfile = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const profile = await this.profileService.getOwnProfile(req.user.id);
+
+      res.status(200).json({
+        message: "Profile retrieved",
+        payload: profile,
       });
     } catch (error) {
       next(error);

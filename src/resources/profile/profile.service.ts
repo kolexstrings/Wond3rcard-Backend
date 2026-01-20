@@ -51,6 +51,16 @@ class ProfileService {
     }
   }
 
+  public async getOwnProfile(uid: string): Promise<Profile> {
+    const profile = await this.model.findOne({ uid });
+
+    if (!profile) {
+      throw new HttpException(404, "not_found", "Profile not found");
+    }
+
+    return profile;
+  }
+
   public async updateOwnProfile(
     uid: string,
     data: Partial<Profile>,
