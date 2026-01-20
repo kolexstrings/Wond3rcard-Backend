@@ -208,9 +208,6 @@ class ProfileController {
      *                 description: Surname/last name.
      *               mobileNumber:
      *                 type: string
-     *               email:
-     *                 type: string
-     *                 format: email
      *               companyName:
      *                 type: string
      *               designation:

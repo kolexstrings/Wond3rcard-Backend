@@ -74,7 +74,6 @@ class ProfileService {
       | "othername"
       | "lastname"
       | "mobileNumber"
-      | "email"
       | "companyName"
       | "designation"
       | "profileUrl"
@@ -86,7 +85,6 @@ class ProfileService {
       "othername",
       "lastname",
       "mobileNumber",
-      "email",
       "companyName",
       "designation",
       "profileUrl",

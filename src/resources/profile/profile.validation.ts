@@ -17,7 +17,6 @@ const updateProfile = Joi.object({
   othername: Joi.string().trim().allow(""),
   lastname: Joi.string().trim(),
   mobileNumber: Joi.string().trim(),
-  email: Joi.string().email(),
   companyName: Joi.string().trim().allow(""),
   designation: Joi.string().trim().allow(""),
   profileUrl: Joi.string().uri().allow(""),
